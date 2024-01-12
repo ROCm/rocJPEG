@@ -1,2 +1,0 @@
-/opt/rocm/lib/librocjpeg.so
-/opt/rocm/include/rocjpeg/rocjpeg.h

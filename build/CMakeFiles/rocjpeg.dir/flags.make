@@ -6,5 +6,5 @@ CXX_DEFINES = -D__HIP_PLATFORM_AMD__=1 -D__HIP_PLATFORM_HCC__=1 -Drocjpeg_EXPORT
 
 CXX_INCLUDES = -isystem /usr/include/libdrm -isystem /opt/rocm-5.6.0/include
 
-CXX_FLAGS = -D_GLIBCXX_DEBUG -std=gnu++17 -g -std=gnu++17 -fPIC -mllvm -amdgpu-early-inline-all=true -mllvm -amdgpu-function-calls=false -x hip --offload-arch=gfx900 --offload-arch=gfx906 --offload-arch=gfx908 --offload-arch=gfx90a --offload-arch=gfx940 --offload-arch=gfx1030 --offload-arch=gfx1031 --offload-arch=gfx1032
+CXX_FLAGS =  -std=gnu++17 -std=gnu++17 -fPIC -mllvm -amdgpu-early-inline-all=true -mllvm -amdgpu-function-calls=false -x hip --offload-arch=gfx908 --offload-arch=gfx90a --offload-arch=gfx940 --offload-arch=gfx1030 --offload-arch=gfx1031 --offload-arch=gfx1032
 

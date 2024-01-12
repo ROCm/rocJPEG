@@ -18,7 +18,7 @@
 AMDDeviceLibs_DIR:PATH=/opt/rocm/lib/cmake/AMDDeviceLibs
 
 //List of specific machine types for library to target
-AMDGPU_TARGETS:STRING=gfx900;gfx906;gfx908;gfx90a;gfx940;gfx1030;gfx1031;gfx1032
+AMDGPU_TARGETS:STRING=gfx908;gfx90a;gfx940;gfx1030;gfx1031;gfx1032
 
 //Path to a program.
 CMAKE_ADDR2LINE:FILEPATH=/usr/bin/addr2line
@@ -28,7 +28,7 @@ CMAKE_AR:FILEPATH=/usr/bin/ar
 
 //Choose the type of build, options are: None Debug Release RelWithDebInfo
 // MinSizeRel ...
-CMAKE_BUILD_TYPE:STRING=Debug
+CMAKE_BUILD_TYPE:STRING=
 
 //Enable/Disable color output during build.
 CMAKE_COLOR_MAKEFILE:BOOL=ON
@@ -45,7 +45,7 @@ CMAKE_CXX_COMPILER_AR:FILEPATH=/usr/bin/gcc-ar-11
 CMAKE_CXX_COMPILER_RANLIB:FILEPATH=/usr/bin/gcc-ranlib-11
 
 //Flags used by the CXX compiler during all build types.
-CMAKE_CXX_FLAGS:STRING=-D_GLIBCXX_DEBUG
+CMAKE_CXX_FLAGS:STRING=
 
 //Flags used by the CXX compiler during DEBUG builds.
 CMAKE_CXX_FLAGS_DEBUG:STRING=-g
@@ -225,7 +225,7 @@ CMAKE_STRIP:FILEPATH=/usr/bin/strip
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
 //GPU targets to compile for
-GPU_TARGETS:STRING=gfx900;gfx906;gfx908;gfx90a;gfx940;gfx1030;gfx1031;gfx1032
+GPU_TARGETS:STRING=gfx908;gfx90a;gfx940;gfx1030;gfx1031;gfx1032
 
 //The directory containing a CMake configuration file for HIP.
 HIP_DIR:PATH=/opt/rocm/hip/lib/cmake/hip

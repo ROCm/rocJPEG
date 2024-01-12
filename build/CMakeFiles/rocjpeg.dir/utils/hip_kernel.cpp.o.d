@@ -79,17 +79,7 @@ CMakeFiles/rocjpeg.dir/utils/hip_kernel.cpp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/assertions.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_iterator.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/ptr_traits.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/stl_iterator.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/helper_functions.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/debug.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/macros.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/functions.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_function.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/backward/binders.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/debug/formatter.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/typeinfo \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/exception.h \
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/hash_bytes.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/predefined_ops.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/limits \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/tr1/gamma.tcc \
@@ -119,6 +109,7 @@ CMakeFiles/rocjpeg.dir/utils/hip_kernel.cpp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_construct.h \
   /opt/rocm-5.6.0/llvm/lib/clang/16.0.0/include/cuda_wrappers/new \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/new \
+  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/exception.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/uniform_int_dist.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/pstl/glue_algorithm_defs.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/pstl/execution_defs.h \
@@ -145,6 +136,8 @@ CMakeFiles/rocjpeg.dir/utils/hip_kernel.cpp.o: \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/exception_ptr.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/cxxabi_init_exception.h \
   /opt/rocm-5.6.0/llvm/lib/clang/16.0.0/include/__stddef_max_align_t.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/typeinfo \
+  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/hash_bytes.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/nested_exception.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/string \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stringfwd.h \
@@ -172,6 +165,8 @@ CMakeFiles/rocjpeg.dir/utils/hip_kernel.cpp.o: \
   /usr/include/ctype.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/ostream_insert.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/cxxabi_forced.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_function.h \
+  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/backward/binders.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/refwrap.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/invoke.h \
   /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/range_access.h \

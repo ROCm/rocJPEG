@@ -1,0 +1,4 @@
+build/
+samples/*/build
+.vscode/
+doxygen_output*

@@ -1,7 +1,0 @@
-/home/user1/work/rocJPEG/build/CMakeFiles/rocjpeg.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/edit_cache.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/rebuild_cache.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/list_install_components.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/install.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/install/local.dir
-/home/user1/work/rocJPEG/build/CMakeFiles/install/strip.dir

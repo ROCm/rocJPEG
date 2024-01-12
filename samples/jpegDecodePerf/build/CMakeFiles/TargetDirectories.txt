@@ -1,0 +1,3 @@
+/home/user1/Github/rocJPEG/samples/jpegDecodePerf/build/CMakeFiles/jpegdecodeperf.dir
+/home/user1/Github/rocJPEG/samples/jpegDecodePerf/build/CMakeFiles/edit_cache.dir
+/home/user1/Github/rocJPEG/samples/jpegDecodePerf/build/CMakeFiles/rebuild_cache.dir

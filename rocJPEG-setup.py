@@ -27,9 +27,41 @@ if sys.version_info[0] < 3:
 else:
     import subprocess
 
-__license__ = "MIT"
+__copyright__ = "Copyright (c) 2023 - 2024, AMD ROCm rocJPEG"
 __version__ = "1.0"
+__email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
+
+# Arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('--rocm_path', 	type=str, default='/opt/rocm',
+                    help='ROCm Installation Path - optional (default:/opt/rocm) - ROCm Installation Required')
+parser.add_argument('--developer', 	type=str, default='ON',
+                    help='Setup Developer Options - optional (default:ON) [options:ON/OFF]')
+
+args = parser.parse_args()
+developerInstall = args.developer.upper()
+
+ROCM_PATH = args.rocm_path
+
+if "ROCM_PATH" in os.environ:
+    ROCM_PATH = os.environ.get('ROCM_PATH')
+print("\nROCm PATH set to -- "+ROCM_PATH+"\n")
+
+# check ROCm installation
+if os.path.exists(ROCM_PATH):
+    print("\nROCm Installation Found -- "+ROCM_PATH+"\n")
+    os.system('echo ROCm Info -- && '+ROCM_PATH+'/bin/rocminfo')
+else:
+    print(
+        "WARNING: If ROCm installed, set ROCm Path with \"--rocm_path\" option for full installation [Default:/opt/rocm]\n")
+    print("ERROR: rocJPEG Setup requires ROCm install\n")
+    exit(-1)
+
+if developerInstall not in ('OFF', 'ON'):
+    print(
+        "ERROR: Developer Option Not Supported - [Supported Options: OFF or ON]\n")
+    exit()
 
 # get platfrom info
 platfromInfo = platform.platform()
@@ -51,12 +83,14 @@ linuxSystemInstall = ''
 linuxCMake = 'cmake'
 linuxSystemInstall_check = ''
 linuxFlag = ''
-if "centos" in platfromInfo or "redhat" in platfromInfo:
+if "centos" in platfromInfo or "redhat" in platfromInfo or os.path.exists('/usr/bin/yum'):
     linuxSystemInstall = 'yum -y'
     linuxSystemInstall_check = '--nogpgcheck'
     if "centos-7" in platfromInfo or "redhat-7" in platfromInfo:
         linuxCMake = 'cmake3'
         os.system(linuxSystemInstall+' install cmake3')
+    if not "centos" in platfromInfo or not "redhat" in platfromInfo:
+        platfromInfo = platfromInfo+'-redhat'
 elif "Ubuntu" in platfromInfo or os.path.exists('/usr/bin/apt-get'):
     linuxSystemInstall = 'apt-get -y'
     linuxSystemInstall_check = '--allow-unauthenticated'
@@ -69,32 +103,31 @@ elif os.path.exists('/usr/bin/zypper'):
     platfromInfo = platfromInfo+'-SLES'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-    print("\nrocJPEG Setup Supported on: Ubuntu 20/22; CentOS 7/8; RedHat 7/8; & SLES 15-SP2\n")
-    exit()
+    print("\nrocJPEG Setup Supported on: Ubuntu 20/22; CentOS 7/8; RedHat 8/9; & SLES 15 SP4\n")
+    exit(-1)
 
 # rocJPEG Setup
 print("\nrocJPEG Setup on: "+platfromInfo+"\n")
+print("\nrocJPEG Dependencies Installation with rocJPEG-setup.py V-"+__version__+"\n")
 
 if userName == 'root':
     os.system(linuxSystemInstall+' update')
     os.system(linuxSystemInstall+' install sudo')
 
-
-# Clean Install
-print("\nrocJPEG Dependencies Installation with rocJPEG-setup.py V-"+__version__+"\n")
-
 # install pre-reqs
 os.system('sudo -v')
+os.system(linuxSystemInstall+' update')
 os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' ' +
-    linuxSystemInstall_check+' install gcc cmake git wget unzip pkg-config inxi vainfo')
+          linuxSystemInstall_check+' install gcc cmake git wget unzip pkg-config inxi')
 
+# rocJPEG Core - VA/DRM Requirements
 if "Ubuntu" in platfromInfo:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-        ' install autoconf automake build-essential g++-12 git-core libass-dev libfreetype6-dev')
+              ' install vainfo mesa-amdgpu-multimedia-devel libstdc++-12-dev')
+else:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-        ' install libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev')
-    os.system('sudo -v')
+              ' install mesa-amdgpu-multimedia-devel')
 
 print("\nrocJPEG Dependencies Installed with rocJPEG-setup.py V-"+__version__+"\n")

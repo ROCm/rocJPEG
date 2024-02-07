@@ -1,4 +1,4 @@
-# vcnDECODE Docker
+# rocJEPG Docker
 
 ## Build - dockerfiles
 

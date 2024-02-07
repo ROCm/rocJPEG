@@ -1,7 +1,4 @@
-################################################################################
-#
-# MIT License
-#
+# ##############################################################################
 # Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,47 +19,304 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-################################################################################
+# ##############################################################################
 
-cmake_minimum_required (VERSION 3.0)
-project(rocjpeg)
+cmake_minimum_required (VERSION 3.5)
+
 set(VERSION "0.1.0")
+set(CMAKE_CXX_STANDARD 17)
+
+# Set Project Version and Language
+project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
 
 set(CMAKE_INSTALL_LIBDIR "lib" CACHE STRING "Library install directory")
 set(CMAKE_INSTALL_INCLUDEDIR "include" CACHE STRING "Include install directory")
-set(CMAKE_CXX_STANDARD 17)
-set(ROCM_PATH /opt/rocm CACHE PATH "Default ROCm installation path")
+include(GNUInstallDirs)
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+
+find_program(MAKE_NSIS_EXE makensis)
+find_program(RPMBUILD_EXE rpmbuild)
+find_program(DPKG_EXE dpkg)
+
+# ROCM Path
+if(DEFINED ENV{ROCM_PATH})
+  set(ROCM_PATH $ENV{ROCM_PATH} CACHE PATH "Default ROCm installation path")
+elseif(ROCM_PATH)
+  message("-- INFO:ROCM_PATH Set -- ${ROCM_PATH}")
+else()
+  set(ROCM_PATH /opt/rocm CACHE PATH "Default ROCm installation path")
+endif()
 # avoid setting the default installation path to /usr/local
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX ${ROCM_PATH} CACHE PATH "rocJPEG default installation path" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+set(DEFAULT_BUILD_TYPE "Release")
+set(ENHANCED_MESSAGE ON)
+
+if(ENHANCED_MESSAGE)
+  string(ASCII 27 Esc)
+  set(ColourReset "${Esc}[m")
+  set(Red "${Esc}[31m")
+  set(Green "${Esc}[32m")
+  set(Yellow "${Esc}[33m")
+  set(Blue "${Esc}[34m")
+  set(BoldBlue "${Esc}[1;34m")
+  set(Magenta "${Esc}[35m")
+  set(Cyan "${Esc}[36m")
+  set(White "${Esc}[37m")
+endif()
+message("-- ${BoldBlue}rocJPEG Version -- ${VERSION}${ColourReset}")
+message("-- ${BoldBlue}rocJPEG Install Path -- ${CMAKE_INSTALL_PREFIX}${ColourReset}")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/hip ${ROCM_PATH})
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH} ${ROCM_PATH}/hip)
 set(CMAKE_CXX_COMPILER ${ROCM_PATH}/llvm/bin/clang++)
 
-set(DEFAULT_AMDGPU_TARGETS "gfx908;gfx90a;gfx940;gfx1030;gfx1031;gfx1032")
+# rocJPEG Default Options
+option(BUILD_WITH_AMD_ADVANCE "Build rocJPEG for advanced AMD GPU Architecture" OFF)
+
+# rocJPEG Build Type
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "rocJPEG Default Build Type" FORCE)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
+endif()
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+  # -O0 -- Don't Optimize output file 
+  # -g  -- generate debugging information, generate debugging information, dwarf-4 for making valgrind work
+  # -Og -- Optimize for debugging experience rather than speed or size
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -gdwarf-4 -Og")
+else()
+  # -O3       -- Optimize output file 
+  # -DNDEBUG  -- turn off asserts 
+  # -fPIC     -- Generate position-independent code if possible
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fPIC")
+endif()
+message("-- ${BoldBlue}rocJPEG Build Type -- ${CMAKE_BUILD_TYPE}${ColourReset}")
+
+
+set(DEFAULT_AMDGPU_TARGETS "gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102")
 set(AMDGPU_TARGETS "${DEFAULT_AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
 
 find_package(HIP QUIET)
+find_package(Libdrm QUIET)
 find_package(Libva QUIET)
 
-if(HIP_FOUND AND Libva_FOUND)
-    #list(APPEND SOURCES ${PROJECT_SOURCE_DIR} src/rocjpeg_decoder.cpp utils/hip_kernel.cpp src/rocjpeg_parser.cpp src/rocjpeg_api.cpp)
-    file(GLOB_RECURSE SOURCES "./src/*.cpp" "./utils/*.cpp")
-    add_library(${PROJECT_NAME} SHARED ${SOURCES})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
-    target_link_libraries(${PROJECT_NAME} Libva::va Libva::va_drm hip::device)
-    install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR})
-    install(FILES api/rocjpeg.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+if(HIP_FOUND AND Libva_FOUND AND Libdrm_FOUND)
+
+  # HIP
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::device)
+  # LibDRM
+  include_directories(${LIBDRM_INCLUDE_DIR})
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBDRM_LIBRARY})
+  # LibVA
+  include_directories(${LIBVA_INCLUDE_DIR})
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_LIBRARY})
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_DRM_LIBRARY})
+
+  # local include files
+  include_directories(api src)
+  # source files
+  file(GLOB_RECURSE SOURCES "./src/*.cpp")
+  # rocJPEG.so
+  add_library(${PROJECT_NAME} SHARED ${SOURCES})
+
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
+  target_link_libraries(${PROJECT_NAME} ${LINK_LIBRARY_LIST})
+
+  set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+  set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+  set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+
+  # install rocJPEG libs -- {ROCM_PATH}/lib
+  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime NAMELINK_SKIP)
+  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
+  install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT asan)
+  # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
+  install(FILES api/rocjpeg.h
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
+  # install rocJPEG samples -- {ROCM_PATH}/share/rocJPEG
+  install(DIRECTORY cmake DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME} COMPONENT dev)
+
+  install(DIRECTORY samples/jpegDecode DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/samples COMPONENT dev)
+  install(FILES data/images/mug.jpg DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/image COMPONENT dev)
+  # install license information - {ROCM_PATH}/share/doc/rocJPEG
+  set(CPACK_RESOURCE_FILE_LICENSE  "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT runtime)
+  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-asan COMPONENT asan)
+  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-dev COMPONENT dev)
+  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-test COMPONENT test)
+  # install test cmake
+  install(FILES test/CMakeLists.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/test COMPONENT test)
+
+  message("-- ${White}AMD ROCm rocJPEG -- CMAKE_CXX_FLAGS:${CMAKE_CXX_FLAGS}${ColourReset}")
+  message("-- ${White}AMD ROCm rocJPEG -- Link Libraries: ${LINK_LIBRARY_LIST}${ColourReset}")
+
+  # make test with CTest
+  enable_testing()
+  include(CTest)
+  add_subdirectory(samples)
+
+  # set package information
+  set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+  set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+  set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+  set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+  set(CPACK_PACKAGE_LICENSE "MIT")
+  set(CPACK_PACKAGE_CONTACT "rocJPEG Support <mivisionx.support@amd.com>")
+  set(CPACK_PACKAGE_VENDOR "AMD ROCm")
+  set(CPACK_PACKAGE_GROUP "Development/Tools")
+  set(CPACK_PACKAGE_HOMEPAGE "https://github.com/ROCm/rocJPEG")
+
+  if(ENABLE_ASAN_PACKAGING)
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "AMD rocJPEG address sanitizer libraries")
+    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocJPEG address sanitizer libraries")
+  else()
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs")
+    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs")
+  endif()
+
+  if(DEFINED ENV{ROCM_LIBPATCH_VERSION})
+    set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.$ENV{ROCM_LIBPATCH_VERSION}")
+  endif()
+
+  # Set the dependent packages
+  set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, mesa-amdgpu-multimedia")
+  set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, mesa-amdgpu-multimedia")
+  # Set the dev dependent packages - TBD: mesa-amdgpu-multimedia-devel name will be changed to -dev
+  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, mesa-amdgpu-multimedia-devel, pkg-config")
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, mesa-amdgpu-multimedia-devel, pkg-config")
+
+  # '%{?dist}' breaks manual builds on debian systems due to empty Provides
+  execute_process(
+    COMMAND rpm --eval %{?dist}
+    RESULT_VARIABLE PROC_RESULT
+    OUTPUT_VARIABLE EVAL_RESULT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if(PROC_RESULT EQUAL "0" AND NOT EVAL_RESULT STREQUAL "")
+    string(APPEND CPACK_RPM_PACKAGE_RELEASE "%{?dist}")
+  endif()
+
+  # set package 
+  set(CPACK_PACKAGING_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE ${CPACK_PACKAGE_HOMEPAGE})
+  set(CPACK_RPM_PACKAGE_URL ${CPACK_PACKAGE_HOMEPAGE})
+  set(CPACK_RPM_PACKAGE_AUTOREQPROV "no")
+  # Debian package
+  set(CPACK_DEB_COMPONENT_INSTALL ON)
+  set(CPACK_DEBIAN_RUNTIME_PACKAGE_NAME "${PROJECT_NAME}")
+  set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "rocm-core, ${rocJPEG_DEBIAN_PACKAGE_LIST}")
+  set(CPACK_DEBIAN_DEV_PACKAGE_NAME "${PROJECT_NAME}-dev")
+  set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS 
+  "rocm-core, ${PROJECT_NAME}, ${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}")
+  # Debian package - specific variable for ASAN
+  set(CPACK_DEBIAN_ASAN_PACKAGE_NAME "${PROJECT_NAME}-asan" )
+  set(CPACK_DEBIAN_ASAN_PACKAGE_DEPENDS "rocm-core-asan, ${rocJPEG_DEBIAN_PACKAGE_LIST}" )
+  # Debian package - Test
+  set(CPACK_DEBIAN_TEST_PACKAGE_NAME "${PROJECT_NAME}-test" )
+  set(CPACK_DEBIAN_TEST_PACKAGE_DEPENDS "rocm-core, ${CPACK_DEBIAN_DEV_PACKAGE_NAME}" )
+  # RPM package
+  set(CPACK_RPM_COMPONENT_INSTALL ON)
+  set(CPACK_RPM_RUNTIME_PACKAGE_NAME "${PROJECT_NAME}")
+  set(CPACK_RPM_RUNTIME_PACKAGE_REQUIRES "rocm-core, ${rocJPEG_RPM_PACKAGE_LIST}")
+  set(CPACK_RPM_RUNTIME_PACKAGE_PROVIDES "${PROJECT_NAME}")
+  set(CPACK_RPM_RUNTIME_PACKAGE_OBSOLETES "${PROJECT_NAME}")
+  set(CPACK_RPM_DEV_PACKAGE_NAME "${PROJECT_NAME}-devel")
+  set(CPACK_RPM_DEV_PACKAGE_REQUIRES "rocm-core, ${PROJECT_NAME}, ${rocJPEG_RPM_DEV_PACKAGE_LIST}")
+  set(CPACK_RPM_DEV_PACKAGE_PROVIDES "${PROJECT_NAME}-devel")
+  set(CPACK_RPM_DEV_PACKAGE_OBSOLETES "${PROJECT_NAME}-devel")
+  set(CPACK_RPM_PACKAGE_LICENSE "MIT" )
+  # RPM package specific variable for ASAN
+  set(CPACK_RPM_ASAN_PACKAGE_NAME "${PROJECT_NAME}-asan" )
+  set(CPACK_RPM_ASAN_PACKAGE_REQUIRES "rocm-core-asan, ${rocJPEG_RPM_PACKAGE_LIST}" )
+  set(CPACK_RPM_ASAN_PACKAGE_PROVIDES "${PROJECT_NAME}-asan")
+  set(CPACK_RPM_ASAN_PACKAGE_OBSOLETES "${PROJECT_NAME}-asan")
+  # RPM package specific variable for Test
+  set(CPACK_RPM_TEST_PACKAGE_NAME "${PROJECT_NAME}-test" )
+  set(CPACK_RPM_TEST_PACKAGE_REQUIRES "rocm-core, ${CPACK_RPM_DEV_PACKAGE_NAME}" )
+  set(CPACK_RPM_TEST_PACKAGE_PROVIDES "${PROJECT_NAME}-test")
+  set(CPACK_RPM_TEST_PACKAGE_OBSOLETES "${PROJECT_NAME}-test")
+
+  if(NOT ROCM_DEP_ROCMCORE)
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_RPM_RUNTIME_PACKAGE_REQUIRES ${CPACK_RPM_RUNTIME_PACKAGE_REQUIRES})
+   string(REGEX REPLACE ",? ?rocm-core-asan," "" CPACK_RPM_ASAN_PACKAGE_REQUIRES ${CPACK_RPM_ASAN_PACKAGE_REQUIRES})
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_RPM_DEV_PACKAGE_REQUIRES ${CPACK_RPM_DEV_PACKAGE_REQUIRES})
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_RPM_TEST_PACKAGE_REQUIRES ${CPACK_RPM_TEST_PACKAGE_REQUIRES})
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS ${CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS})
+   string(REGEX REPLACE ",? ?rocm-core-asan," "" CPACK_DEBIAN_ASAN_PACKAGE_DEPENDS ${CPACK_DEBIAN_ASAN_PACKAGE_DEPENDS})
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_DEBIAN_DEV_PACKAGE_DEPENDS ${CPACK_DEBIAN_DEV_PACKAGE_DEPENDS})
+   string(REGEX REPLACE ",? ?rocm-core," "" CPACK_DEBIAN_TEST_PACKAGE_DEPENDS ${CPACK_DEBIAN_TEST_PACKAGE_DEPENDS})
+  endif()
+
+  if(ENABLE_ASAN_PACKAGING)
+   # ASAN Package requires asan component with only libraries and license file
+   set(CPACK_COMPONENTS_ALL asan)
+  else()
+   set(CPACK_COMPONENTS_ALL runtime dev test)
+  endif()
+
+  set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
+  set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+  set(CPACK_DEBIAN_PACKAGE_RELEASE "local")
+  set(CPACK_RPM_PACKAGE_RELEASE "local")
+
+  if(DEFINED ENV{CPACK_DEBIAN_PACKAGE_RELEASE})
+    set(CPACK_DEBIAN_PACKAGE_RELEASE $ENV{CPACK_DEBIAN_PACKAGE_RELEASE})
+  endif()
+  if(DEFINED ENV{CPACK_RPM_PACKAGE_RELEASE})
+    set(CPACK_RPM_PACKAGE_RELEASE $ENV{CPACK_RPM_PACKAGE_RELEASE})
+  endif()
+
+  set(CPACK_GENERATOR "TGZ;ZIP")
+  if(EXISTS ${MAKE_NSIS_EXE})
+    list(APPEND CPACK_GENERATOR "NSIS")
+  endif()
+  if(EXISTS ${RPMBUILD_EXE})
+    list(APPEND CPACK_GENERATOR "RPM")
+    message("-- ${White}AMD ROCm rocJPEG RunTime Package -- ${CPACK_RPM_RUNTIME_PACKAGE_REQUIRES}${ColourReset}")
+    message("-- ${White}AMD ROCm rocJPEG Dev Package -- ${CPACK_RPM_DEV_PACKAGE_REQUIRES}${ColourReset}")
+  endif()
+  if(EXISTS ${DPKG_EXE})
+    list(APPEND CPACK_GENERATOR "DEB")
+    message("-- ${White}AMD ROCm rocJPEG RunTime Package -- ${CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS}${ColourReset}")
+    message("-- ${White}AMD ROCm rocJPEG Dev Package -- ${CPACK_DEBIAN_DEV_PACKAGE_DEPENDS}${ColourReset}")
+  endif()
+
+  include(CPack)
+
+  cpack_add_component(runtime
+                    DISPLAY_NAME "rocJPEG Runtime Package"
+                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
+rocJPEG runtime package provides rocJPEG library and license.txt")
+
+  cpack_add_component(dev
+                    DISPLAY_NAME "rocJPEG Develop Package"
+                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
+rocJPEG develop package provides rocJPEG library, header files, samples, and license.txt")
+
+  cpack_add_component(asan
+                    DISPLAY_NAME "rocJPEG ASAN Package"
+                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
+rocJPEG ASAN package provides rocJPEG ASAN libraries")
+
+  cpack_add_component(test
+                  DISPLAY_NAME "rocJPEG Test Package"
+                  DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
+rocJPEG Test package provides rocJPEG Test Components")
+
 else()
-    if (NOT HIP_FOUND)
-        message(FATAL_ERROR "-- ERROR!: HIP Not Found! - please install ROCm and HIP!")
-    endif()
-    if (NOT Libva_FOUND)
-        message(FATAL_ERROR "-- ERROR!: libva-dev Not Found - please install libva-dev!")
-    endif()
-    message("-- ERROR!: ${PROJECT_NAME} excluded! please install all the dependencies and try again!")
+  message("-- ${Red}AMD ROCm rocJPEG -- unmet dependencies${ColourReset}")
+  if(NOT HIP_FOUND)
+    message(FATAL_ERROR "-- ERROR!: HIP Not Found! - please install rocm-hip-runtime-dev!")
+  endif()
+  if(NOT Libva_FOUND)
+    message(FATAL_ERROR "-- ERROR!: libva Not Found - please install mesa-amdgpu-multimedia-devel!")
+  endif()
+  if(NOT Libdrm_FOUND)
+    message(FATAL_ERROR "-- ERROR!: libdrm Not Found - please install mesa-amdgpu-multimedia-devel!")
+  endif()
 endif()

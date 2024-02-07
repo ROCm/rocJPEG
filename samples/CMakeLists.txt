@@ -1,4 +1,4 @@
-################################################################################
+# ##############################################################################
 # Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,24 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-################################################################################
+# ##############################################################################
+cmake_minimum_required(VERSION 3.5)
 
-find_library(LIBDRM_LIBRARY NAMES drm HINTS /opt/amdgpu/lib/x86_64-linux-gnu /opt/amdgpu/lib64 /usr/lib64)
-find_path(LIBDRM_INCLUDE_DIR NAMES drm.h PATHS /opt/amdgpu/include/libdrm /usr/include/libdrm)
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Libdrm DEFAULT_MSG LIBDRM_INCLUDE_DIR LIBDRM_LIBRARY)
-mark_as_advanced(LIBDRM_INCLUDE_DIR LIBDRM_LIBRARY)
-
-if(Libdrm_FOUND)
-  if(NOT TARGET Libdrm::drm)
-    add_library(Libdrm::drm UNKNOWN IMPORTED)
-    set_target_properties(Libdrm::drm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBDRM_INCLUDE_DIR}"
-        IMPORTED_LOCATION "${LIBDRM_LIBRARY}")
-  endif()
-  message("-- ${White}Using Libdrm -- \n\tLibraries:${LIBDRM_LIBRARY} \n\tIncludes:${LIBDRM_INCLUDE_DIR}${ColourReset}")
-else()
-  if(Libdrm_FIND_REQUIRED)
-    message(FATAL_ERROR "{Red}FindLibdrm -- Libdrm NOT FOUND${ColourReset}")
-  endif()
-endif()
+add_test(
+  NAME
+    jpeg_decode-YUV420
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/mug.jpg
+)

@@ -148,7 +148,7 @@ RocJpegStatus ROCJpegDecode::GetImageInfo(const uint8_t *data, size_t length, ui
             *subsampling = ROCJPEG_CSS_411;
             break;
         case CSS_400:
-            *subsampling = ROCJPEG_CSS_GRAY;
+            *subsampling = ROCJPEG_CSS_400;
             break;
         default:
             *subsampling = ROCJPEG_CSS_UNKNOWN;

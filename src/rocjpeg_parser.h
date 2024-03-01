@@ -127,16 +127,14 @@ typedef struct SliceParameterBufferType {
 
 /***************************************************************/
 //! \struct Enum identifies image chroma subsampling values stored inside JPEG input stream
-//! In the case of ROCJPEG_CSS_GRAY only 1 luminance channel is encoded in JPEG input stream
-//! Otherwise both chroma planes are present
 /***************************************************************/
 typedef enum {
     CSS_444 = 0,
-    CSS_422 = 1,
-    CSS_420 = 2,
-    CSS_411 = 3,
-    CSS_400 = 4,
-    CSS_440 = 5,
+    CSS_440 = 1,
+    CSS_422 = 2,
+    CSS_420 = 3,
+    CSS_411 = 4,
+    CSS_400 = 5,
     CSS_UNKNOWN = -1
 } ChromaSubsampling;
 

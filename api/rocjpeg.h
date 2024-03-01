@@ -1,4 +1,4 @@
-/* Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc. All rights reserved.
+/* Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,97 +27,115 @@ THE SOFTWARE.
 #pragma once
 #include "hip/hip_runtime.h"
 
-/*****************************************************************************************************/
+/*****************************************************************************************************************/
 //! \file rocjpeg.h
-//! rocJPEG API provides jpeg decoding interface to AMD GPU devices.
-//! This file contains constants, structure definitions and function prototypes used for JPEG decoding.
-/*****************************************************************************************************/
+//! \brief The AMD rocJPEG Library.
+//! \defgroup group_amd_rocjepg rocJPEG: AMD ROCm JPEG Decode API
+//! \brief  rocJPEG API is a toolkit to decode JPEG images using a hardware-accelerated JPEG decoder on AMD’s GPUs.
+/******************************************************************************************************************/
 
 #if defined(__cplusplus)
 extern "C" {
 #endif // __cplusplus
 
-// Maximum number of channels ROCJPEG decoder supports
+//! \def
+//! \ingroup group_amd_rocjpeg
+//! Maximum number of channels rocJPEG supports
 #define ROCJPEG_MAX_COMPONENT 4
 
-// ROCJPEG version information
-#define ROCJPEG_VER_MAJOR 0
-#define ROCJPEG_VER_MINOR 0
-#define ROCJPEG_VER_PATCH 0
-#define ROCJPEG_VER_BUILD 0
-
-/* rocJPEG status enums, returned by rocJPEG API */
+/*****************************************************/
+//! \enum RocJpegStatus
+//! \ingroup group_amd_rocjpeg
+//! rocJPEG return status enums
+//! These enums are used in all API calls to rocJPEG
+/*****************************************************/
 typedef enum {
-    ROCJPEG_STATUS_SUCCESS                       = 0,
-    ROCJPEG_STATUS_NOT_INITIALIZED               = -1,
-    ROCJPEG_STATUS_INVALID_PARAMETER             = -2,
-    ROCJPEG_STATUS_BAD_JPEG                      = -3,
-    ROCJPEG_STATUS_JPEG_NOT_SUPPORTED            = -4,
-    ROCJPEG_STATUS_ALLOCATOR_FAILURE             = -5,
-    ROCJPEG_STATUS_EXECUTION_FAILED              = -6,
-    ROCJPEG_STATUS_ARCH_MISMATCH                 = -7,
-    ROCJPEG_STATUS_INTERNAL_ERROR                = -8,
-    ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED  = -9,
+    ROCJPEG_STATUS_SUCCESS = 0,
+    ROCJPEG_STATUS_NOT_INITIALIZED = -1,
+    ROCJPEG_STATUS_INVALID_PARAMETER = -2,
+    ROCJPEG_STATUS_BAD_JPEG = -3,
+    ROCJPEG_STATUS_JPEG_NOT_SUPPORTED = -4,
+    ROCJPEG_STATUS_ALLOCATOR_FAILURE = -5,
+    ROCJPEG_STATUS_EXECUTION_FAILED = -6,
+    ROCJPEG_STATUS_ARCH_MISMATCH = -7,
+    ROCJPEG_STATUS_INTERNAL_ERROR = -8,
+    ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED = -9,
     ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED = -10,
+    ROCJPEG_STATUS_RUNTIME_ERROR = -11,
+    ROCJPEG_STATUS_OUTOF_MEMORY = -12,
 } RocJpegStatus;
 
-// Enum identifies image chroma subsampling values stored inside JPEG input stream
-// In the case of ROCJPEG_CSS_GRAY only 1 luminance channel is encoded in JPEG input stream
-// Otherwise both chroma planes are present
+/*****************************************************/
+//! \enum RocJpegChromaSubsampling
+//! \ingroup group_amd_rocjpeg
+//! RocJpegChromaSubsampling enum identifies image chroma subsampling values stored inside JPEG input stream
+/*****************************************************/
 typedef enum {
     ROCJPEG_CSS_444 = 0,
-    ROCJPEG_CSS_422 = 1,
-    ROCJPEG_CSS_420 = 2,
-    ROCJPEG_CSS_411 = 3,
-    ROCJPEG_CSS_GRAY = 4,
+    ROCJPEG_CSS_440 = 1,
+    ROCJPEG_CSS_422 = 2,
+    ROCJPEG_CSS_420 = 3,
+    ROCJPEG_CSS_411 = 4,
+    ROCJPEG_CSS_400 = 5,
     ROCJPEG_CSS_UNKNOWN = -1
 } RocJpegChromaSubsampling;
 
-// Parameter of this type specifies what type of output user wants for image decoding
-typedef enum {
-    // return decompressed image as it is - write planar output
-    ROCJPEG_OUTPUT_UNCHANGED   = 0,
-    // return planar luma and chroma, assuming YCbCr colorspace
-    ROCJPEG_OUTPUT_YUV         = 1, 
-    // return luma component only, if YCbCr colorspace, 
-    // or try to convert to grayscale,
-    // writes to 1-st channel of RocJpegImage
-    ROCJPEG_OUTPUT_Y           = 2,
-    // convert to planar RGB 
-    ROCJPEG_OUTPUT_RGB         = 3,
-    // convert to planar BGR
-    ROCJPEG_OUTPUT_BGR         = 4, 
-    // convert to interleaved RGB and write to 1-st channel of RocJpegImage
-    ROCJPEG_OUTPUT_RGBI        = 5, 
-    // convert to interleaved BGR and write to 1-st channel of RocJpegImage
-    ROCJPEG_OUTPUT_BGRI        = 6,
-    // maximum allowed value
-    ROCJPEG_OUTPUT_FORMAT_MAX  = 6  
-} RocJpegOutputFormat;
-
-// Implementation
-// ROCJPEG_BACKEND_DEFAULT    : default value
-// ROCJPEG_BACKEND_HYBRID     : uses CPU for Huffman decode
-// ROCJPEG_BACKEND_GPU_HYBRID : uses GPU assisted Huffman decode. rocjpegDecodeBatched will use GPU decoding for baseline JPEG bitstreams with
-//                             interleaved scan when batch size is bigger than 100
-// ROCJPEG_BACKEND_HARDWARE   : supports baseline JPEG bitstream with single scan. 410 and 411 sub-samplings are not supported
-typedef enum {
-    ROCJPEG_BACKEND_DEFAULT = 0,
-    ROCJPEG_BACKEND_HYBRID  = 1,
-    ROCJPEG_BACKEND_GPU_HYBRID = 2,
-    ROCJPEG_BACKEND_HARDWARE = 3
-} RocJpegBackend;
-
-// Output descriptor.
-// Data that is written to planes depends on output format
+/*****************************************************/
+//! \struct RocJpegImage
+//! \ingroup group_amd_rocjpeg
+//! this structure is jpeg image descriptor used to return the decoded output image. User must allocate device
+//! memories for each channel for this structure and pass it to the decoder API.
+//! the decoder APIs then copies the decode image to this struct based on the requested output format (see below).
+/*****************************************************/
 typedef struct {
+    // number of channels in the decoded output image
+    // For ROCJPEG_CSS_444(YUV:444) the decoded output image has three channels (Y, U, and V)
+    // For ROCJPEG_CSS_420(YUV:420) the decoded output image has two channels (Y, and UV(interleaved))
+    // For ROCJPEG_CSS_400(YUV:400) the decoded output image has one channel (Y only)
     uint8_t* channel[ROCJPEG_MAX_COMPONENT];
-    size_t pitch[ROCJPEG_MAX_COMPONENT];
+    uint32_t pitch[ROCJPEG_MAX_COMPONENT]; // pitch of each channel
+    uint32_t width[ROCJPEG_MAX_COMPONENT]; // width of each channel
+    uint32_t height[ROCJPEG_MAX_COMPONENT]; // height of each channel
+    uint32_t num_layes; // total number of channles returned
 } RocJpegImage;
 
+/*****************************************************/
+//! \enum RocJpegOutputFormat
+//! \ingroup group_amd_rocjpeg
+//! RocJpegOutputFormat enum specifies what type of output user wants for image decoding
+/*****************************************************/
+typedef enum {
+    // return decoded YUV image from the VCN JPEG deocder.
+    // For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
+    // For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
+    // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
+    ROCJPEG_OUTPUT_YUV = 0,
+    // return luma component (Y) and write to first channel of RocJpegImage
+    ROCJPEG_OUTPUT_Y = 1,
+    // convert to interleaved RGB using HIP kernels and write to first channel of RocJpegImage
+    ROCJPEG_OUTPUT_RGBI = 2,
+    // maximum allowed value
+    ROCJPEG_OUTPUT_FORMAT_MAX = 3
+} RocJpegOutputFormat;
+
+/*****************************************************/
+//! \enum RocJpegBackend
+//! \ingroup group_amd_rocjpeg
+//! RocJpegBackend enum specifies what type of backend to use for JPEG decoding
+//! ROCJPEG_BACKEND_HARDWARE : supports baseline JPEG bitstream using VCN hardware-accelarted JPEG decoder
+//! ROCJPEG_BACKEND_HYBRID : uses CPU for Huffman decode and GPU for IDCT using HIP kernesl. This mode doesn't use VCN JPEG hardware decoder
+/*****************************************************/
+typedef enum {
+    ROCJPEG_BACKEND_HARDWARE = 0,
+    ROCJPEG_BACKEND_HYBRID  = 1
+} RocJpegBackend;
+
+/*****************************************************/
 // Opaque library handle identifier.
 //struct RocJpegDecoderHandle;
 //typedef struct RocJpegDecoderHandle* RocJpegHandle;
+//! Used in subsequent API calls after rocJpegCreate
+/*****************************************************/
 typedef void *RocJpegHandle;
 
 // Initalization of rocjpeg handle. This handle is used for all consecutive calls

@@ -72,7 +72,7 @@ void SaveImage(std::string output_file_name, void* dev_mem, size_t output_image_
     CHECK_HIP(hipMemcpyDtoH((void *)hst_ptr, dev_mem, output_image_size));
 
     // no RGB dump if the surface type is YUV400
-    if (subsampling == ROCJPEG_CSS_GRAY && is_output_rgb) {
+    if (subsampling == ROCJPEG_CSS_400 && is_output_rgb) {
         return;
     }
     uint8_t *tmp_hst_ptr = hst_ptr;
@@ -254,7 +254,7 @@ int main(int argc, char **argv) {
             case ROCJPEG_CSS_411:
                 chroma_sub_sampling = "YUV 4:1:1";
                 break;
-            case ROCJPEG_CSS_GRAY:
+            case ROCJPEG_CSS_400:
                 chroma_sub_sampling = "YUV 4:0:0";
                 break;
             case ROCJPEG_CSS_UNKNOWN:
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
         if (is_output_rgb == 0) {
             std::cout << "info: output image format: " << chroma_sub_sampling << std::endl;
         } else {
-            if (subsampling != ROCJPEG_CSS_GRAY)
+            if (subsampling != ROCJPEG_CSS_400)
                 std::cout << "info: output frame format: " << "RGB" << std::endl;
             else
                 std::cout << "info: output frame format: " << chroma_sub_sampling << std::endl;

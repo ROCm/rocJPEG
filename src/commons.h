@@ -40,7 +40,7 @@ THE SOFTWARE.
 #define CHECK_VAAPI(call) {                                               \
     VAStatus va_status = (call);                                          \
     if (va_status != VA_STATUS_SUCCESS) {                                 \
-        std::cout << "VAAPI failure: 'status: " << vaErrorStr(va_status) << "' at " << __FILE__ << ":" << __LINE__ << std::endl;\
+        std::cerr << "VAAPI failure: 'status: " << vaErrorStr(va_status) << "' at " << __FILE__ << ":" << __LINE__ << std::endl;\
         return ROCJPEG_STATUS_EXECUTION_FAILED;                           \
     }                                                                     \
 }
@@ -48,7 +48,7 @@ THE SOFTWARE.
 #define CHECK_HIP(call) {                                             \
     hipError_t hip_status = (call);                                   \
     if (hip_status != hipSuccess) {                                   \
-        std::cout << "HIP failure: 'status: " << hipGetErrorName(hip_status) << "' at " << __FILE__ << ":" << __LINE__ << std::endl;\
+        std::cerr << "HIP failure: 'status: " << hipGetErrorName(hip_status) << "' at " << __FILE__ << ":" << __LINE__ << std::endl;\
         return ROCJPEG_STATUS_EXECUTION_FAILED;                       \
     }                                                                 \
 }

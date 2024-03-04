@@ -575,7 +575,7 @@ int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dstWidth, uint32
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ScaleImage_NV12_Nearest(uint scaledYWidth, uint scaledYHeight, uchar *pScaledYImage, uint scaledYImageStrideInBytes,
+HipScaleImageNV12Nearest(uint scaledYWidth, uint scaledYHeight, uchar *pScaledYImage, uint scaledYImageStrideInBytes,
     const uchar *pSrcYImage, uint srcYImageStrideInBytes, float xscaleY, float yscaleY, float xoffsetY, float yoffsetY,
     uint scaledUVWidth, uint scaledUVHeight, uchar *pScaledUImage, uchar *pScaledVImage, uint scaledUVImageStrideInBytes,
     const uchar *pSrcUImage, const uchar *pSrcVImage, uint srcUVImageStrideInBytes,
@@ -689,7 +689,7 @@ int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaledYWidth, uint
     float xoffsetUV = (float)((double)srcUVWidth / (double)scaledUVWidth * 0.5);
     float yoffsetUV = (float)((double)srcUVHeight / (double)scaledUVHeight * 0.5);
 
-    hipLaunchKernelGGL(Hip_ScaleImage_NV12_Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
+    hipLaunchKernelGGL(HipScaleImageNV12Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, scaledYWidth, scaledYHeight, (uchar *)pHipScaledYImage , scaledYImageStrideInBytes,
                         (const uchar *)pHipSrcYImage, srcYImageStrideInBytes, xscaleY, yscaleY, xoffsetY, yoffsetY,
                         scaledUVWidth, scaledUVHeight, (uchar *)pHipScaledUImage, (uchar *)pHipScaledVImage, scaledUVImageStrideInBytes,
@@ -699,7 +699,7 @@ int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaledYWidth, uint
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ChannelExtract_U8U8_U16(uint dstWidth, uint dstHeight,
+HipChannelExtractU8U8U16(uint dstWidth, uint dstHeight,
     uchar *pDstImage1, uchar *pDstImage2, uint dstImageStrideInBytes,
     const uchar *pSrcImage, uint srcImageStrideInBytes) {
 
@@ -732,7 +732,7 @@ int HipExecChannelExtractU8U8U16(hipStream_t stream, uint32_t dstWidth, uint32_t
     int globalThreads_x = (dstWidth + 7) >> 3;
     int globalThreads_y = dstHeight;
 
-    hipLaunchKernelGGL(Hip_ChannelExtract_U8U8_U16, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+    hipLaunchKernelGGL(HipChannelExtractU8U8U16, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight, (uchar *)pHipDstImage1, (uchar *)pHipDstImage2, dstImageStrideInBytes,
                         (const uchar *)pHipSrcImage1, srcImage1StrideInBytes);
 
@@ -740,7 +740,7 @@ int HipExecChannelExtractU8U8U16(hipStream_t stream, uint32_t dstWidth, uint32_t
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ChannelCombine_U16_U8U8(uint dstWidth, uint dstHeight,
+HipChannelCombineU16U8U8(uint dstWidth, uint dstHeight,
     uchar *pDstImage, uint dstImageStrideInBytes,
     const uchar *pSrcImage1, uint srcImage1StrideInBytes,
     const uchar *pSrcImage2, uint srcImage2StrideInBytes) {
@@ -776,7 +776,7 @@ int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dstWidth, uint32_t
     int globalThreads_x = (dstWidth + 7) >> 3;
     int globalThreads_y = dstHeight;
 
-    hipLaunchKernelGGL(Hip_ChannelCombine_U16_U8U8, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
+    hipLaunchKernelGGL(HipChannelCombineU16U8U8, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight, (uchar *)pHipDstImage , dstImageStrideInBytes,
                         (const uchar *)pHipSrcImage1, srcImage1StrideInBytes, (const uchar *)pHipSrcImage2, srcImage2StrideInBytes);
 
@@ -784,7 +784,7 @@ int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dstWidth, uint32_t
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ScaleImage_U8_U8_Nearest(uint dstWidth, uint dstHeight,
+HipScaleImageU8U8Nearest(uint dstWidth, uint dstHeight,
     uchar *pDstImage, uint dstImageStrideInBytes,
     const uchar *pSrcImage, uint srcImageStrideInBytes,
     float xscale, float yscale, float xoffset, float yoffset) {
@@ -839,7 +839,7 @@ int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dstWidth, uint32_t
     float xoffset = (float)((double)srcWidth / (double)dstWidth * 0.5);
     float yoffset = (float)((double)srcHeight / (double)dstHeight * 0.5);
 
-    hipLaunchKernelGGL(Hip_ScaleImage_U8_U8_Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
+    hipLaunchKernelGGL(HipScaleImageU8U8Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight, (uchar *)pHipDstImage , dstImageStrideInBytes,
                         (const uchar *)pHipSrcImage, srcImageStrideInBytes,
                         xscale, yscale, xoffset, yoffset);
@@ -848,7 +848,7 @@ int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dstWidth, uint32_t
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ScaleImage_YUV444_Nearest(uint dstWidth, uint dstHeight, uchar *pDstYImage, uchar *pDstUImage, uchar *pDstVImage, uint dstImageStrideInBytes,
+HipScaleImageYUV444Nearest(uint dstWidth, uint dstHeight, uchar *pDstYImage, uchar *pDstUImage, uchar *pDstVImage, uint dstImageStrideInBytes,
     const uchar *pSrcYImage, const uchar *pSrcUImage, const uchar *pSrcVImage, uint srcImageStrideInBytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
@@ -922,7 +922,7 @@ int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dstWidth, uint32
     float xoffset = (float)((double)srcWidth / (double)dstWidth * 0.5);
     float yoffset = (float)((double)srcHeight / (double)dstHeight * 0.5);
 
-    hipLaunchKernelGGL(Hip_ScaleImage_YUV444_Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
+    hipLaunchKernelGGL(HipScaleImageYUV444Nearest, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight,
                         (uchar *)pHipDstYUVImage,
                         (uchar *)pHipDstYUVImage + dstUImageOffset,

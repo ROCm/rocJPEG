@@ -141,7 +141,7 @@ typedef void *RocJpegHandle;
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
 //! \ingroup group_amd_rocjpeg
-//! Create the decoder object based on decoder_create_info. A handle to the created decoder is returned
+//! Create the decoder object based on backend and device_id. A handle to the created decoder is returned
 //! Initalization of rocjpeg handle. This handle is used for all consecutive calls
 //! IN backend : Backend to use.
 //! IN device_id : the GPU device id for which a decoder should be created. For example, use 0 for the first GPU device,

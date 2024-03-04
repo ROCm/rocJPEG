@@ -28,12 +28,15 @@ THE SOFTWARE.
 //! Create the decoder object based on backend and device_id. A handle to the created decoder is returned
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle) {
+    if (handle == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
     RocJpegHandle rocjpeg_handle = nullptr;
     try {
         rocjpeg_handle = new RocJpegDecoderHandle(backend, device_id);
     } catch(const std::exception& e) {
         ERR(STR("Failed to init the rocDecode handle, ") + STR(e.what()));
-        return ROCJPEG_STATUS_INTERNAL_ERROR;
+        return ROCJPEG_STATUS_NOT_INITIALIZED;
     }
     *handle = rocjpeg_handle;
     return static_cast<RocJpegDecoderHandle *>(rocjpeg_handle)->rocjpeg_decoder->InitializeDecoder();
@@ -41,9 +44,12 @@ RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, Ro
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle)
-//! Destroy the decoder object
+//! Release the decoder object and resources.
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle) {
+    if (handle == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     delete rocjpeg_handle;
     return ROCJPEG_STATUS_SUCCESS;
@@ -56,7 +62,9 @@ RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle) {
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length, uint8_t *num_components,
     RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights) {
-
+    if (handle == nullptr || data == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
@@ -64,7 +72,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());
-        return ROCJPEG_STATUS_INTERNAL_ERROR;
+        return ROCJPEG_STATUS_RUNTIME_ERROR;
     }
 
     return rocjpeg_status;
@@ -78,6 +86,9 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format,
     RocJpegImage *destination, hipStream_t stream) {
 
+    if (handle == nullptr || data == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
@@ -85,7 +96,7 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());
-        return ROCJPEG_STATUS_INTERNAL_ERROR;
+        return ROCJPEG_STATUS_RUNTIME_ERROR;
     }
 
     return rocjpeg_status;

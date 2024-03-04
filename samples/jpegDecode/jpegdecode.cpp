@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -244,6 +244,9 @@ int main(int argc, char **argv) {
         switch (subsampling) {
             case ROCJPEG_CSS_444:
                 chroma_sub_sampling = "YUV 4:4:4";
+                break;
+            case ROCJPEG_CSS_440:
+                chroma_sub_sampling = "YUV 4:4:0";
                 break;
             case ROCJPEG_CSS_422:
                 chroma_sub_sampling = "YUV 4:2:2";

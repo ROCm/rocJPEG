@@ -88,7 +88,7 @@ __device__ __forceinline__ float4 hip_unpack(uint src) {
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ColorConvert_NV12_to_RGB(uint dstWidth, uint dstHeight,
+HipColorConvertNV12ToRGB(uint dstWidth, uint dstHeight,
     uchar *pDstImage, uint dstImageStrideInBytes, uint dstImageStrideInBytesComp,
     const uchar *pSrcLumaImage, uint srcLumaImageStrideInBytes,
     const uchar *pSrcChromaImage, uint srcChromaImageStrideInBytes,
@@ -335,7 +335,7 @@ int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dstWidth, uint32_t
     uint32_t dstImageStrideInBytesComp = dstImageStrideInBytes * 2;
     uint32_t srcLumaImageStrideInBytesComp = srcLumaImageStrideInBytes * 2;
 
-    hipLaunchKernelGGL(Hip_ColorConvert_NV12_to_RGB, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+    hipLaunchKernelGGL(HipColorConvertNV12ToRGB, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight, (uchar *)pHipDstImage, dstImageStrideInBytes, dstImageStrideInBytesComp,
                         (const uchar *)pHipSrcLumaImage, srcLumaImageStrideInBytes, (const uchar *)pHipSrcChromaImage, srcChromaImageStrideInBytes,
                         dstWidthComp, dstHeightComp, srcLumaImageStrideInBytesComp);
@@ -344,7 +344,7 @@ int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dstWidth, uint32_t
 }
 
 __global__ void __attribute__((visibility("default")))
-Hip_ColorConvert_YUV444_to_RGB(uint dstWidth, uint dstHeight,
+HipColorConvertYUV444ToRGB(uint dstWidth, uint dstHeight,
     uchar *pDstImage, uint dstImageStrideInBytes, uint dstImageStrideInBytesComp,
     const uchar *pSrcYImage, const uchar *pSrcUImage, const uchar *pSrcVImage, uint srcYUVImageStrideInBytes,
     uint dstWidthComp, uint dstHeightComp, uint srcYUVImageStrideInBytesComp) {
@@ -563,7 +563,7 @@ int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dstWidth, uint32
     uint32_t dstImageStrideInBytesComp = dstImageStrideInBytes * 2;
     uint32_t srcYUVImageStrideInBytesComp = srcYUVImageStrideInBytes * 2;
 
-    hipLaunchKernelGGL(Hip_ColorConvert_YUV444_to_RGB, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+    hipLaunchKernelGGL(HipColorConvertYUV444ToRGB, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
                         dim3(localThreads_x, localThreads_y), 0, stream, dstWidth, dstHeight, (uchar *)pHipDstImage, dstImageStrideInBytes, dstImageStrideInBytesComp,
                         (const uchar *)pHipSrcYUVImage,
                         (const uchar *)pHipSrcYUVImage + srcUImageOffset,

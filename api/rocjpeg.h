@@ -63,6 +63,7 @@ typedef enum {
     ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED = -10,
     ROCJPEG_STATUS_RUNTIME_ERROR = -11,
     ROCJPEG_STATUS_OUTOF_MEMORY = -12,
+    ROCJPEG_STATUS_NOT_IMPLEMENTED = -13,
 } RocJpegStatus;
 
 /*****************************************************/
@@ -237,6 +238,13 @@ RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_
 //! \return NVJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedPreAllocate(RocJpegHandle handle, int batch_size, int width, int height, RocJpegChromaSubsampling chroma_subsampling, RocJpegOutputFormat output_format);
+
+/*****************************************************************************************************/
+//! \fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
+//! \ingroup group_amd_rocjpeg
+//! Return name of the specified error code in text form.
+/*****************************************************************************************************/
+extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
 
 #if defined(__cplusplus)
   }

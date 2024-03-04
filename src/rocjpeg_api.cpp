@@ -101,3 +101,43 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data
 
     return rocjpeg_status;
 }
+
+/*****************************************************************************************************/
+//! \fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
+//! \ingroup group_amd_rocjpeg
+//! Return name of the specified error code in text form.
+/*****************************************************************************************************/
+extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status) {
+    switch (rocjpeg_status) {
+        case ROCJPEG_STATUS_SUCCESS:
+            return "ROCJPEG_STATUS_SUCCESS";
+        case ROCJPEG_STATUS_NOT_INITIALIZED:
+            return "ROCJPEG_STATUS_NOT_INITIALIZED";
+        case ROCJPEG_STATUS_INVALID_PARAMETER:
+            return "ROCJPEG_STATUS_INVALID_PARAMETER";
+        case ROCJPEG_STATUS_BAD_JPEG:
+            return "ROCJPEG_STATUS_BAD_JPEG";
+        case ROCJPEG_STATUS_JPEG_NOT_SUPPORTED:
+            return "ROCJPEG_STATUS_JPEG_NOT_SUPPORTED";
+        case ROCJPEG_STATUS_ALLOCATOR_FAILURE:
+            return "ROCJPEG_STATUS_ALLOCATOR_FAILURE";
+        case ROCJPEG_STATUS_EXECUTION_FAILED:
+            return "ROCJPEG_STATUS_EXECUTION_FAILED";
+        case ROCJPEG_STATUS_ARCH_MISMATCH:
+            return "ROCJPEG_STATUS_ARCH_MISMATCH";
+        case ROCJPEG_STATUS_INTERNAL_ERROR:
+            return "ROCJPEG_STATUS_INTERNAL_ERROR";
+        case ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED:
+            return "ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED";
+        case ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED:
+            return "ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED";
+        case ROCJPEG_STATUS_RUNTIME_ERROR:
+            return "ROCJPEG_STATUS_RUNTIME_ERROR";
+        case ROCJPEG_STATUS_OUTOF_MEMORY:
+            return "ROCJPEG_STATUS_OUTOF_MEMORY";
+        case ROCJPEG_STATUS_NOT_IMPLEMENTED:
+            return "ROCJPEG_STATUS_NOT_IMPLEMENTED";
+        default:
+            return "UNKNOWN_ERROR";
+    }
+}

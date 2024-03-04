@@ -34,7 +34,7 @@ THE SOFTWARE.
 #define CHECK_ROCJPEG(call) {                                             \
     RocJpegStatus rocjpeg_status = (call);                                \
     if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {                       \
-        std::cout << "rocJPEG failure: '#" << rocjpeg_status << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
+        std::cerr << #call << " returned " << rocJpegGetErrorName(rocjpeg_status) << " at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
         exit(1);                                                          \
     }                                                                     \
 }
@@ -50,6 +50,7 @@ THE SOFTWARE.
 void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Input File Path - required" << std::endl
+    << "-b select backend (0 for VCN HARDWARE mode using JPEG HW-accelarated decoder, 1 for HYBRID mode using CPU and GPU HIP kernles); optional default: 0" << std::endl
     << "-o Output File Path - dumps output if requested; optional" << std::endl
     << "-d GPU device ID (0 for the first device, 1 for the second, etc.); optional; default: 0" << std::endl;
     exit(0);
@@ -123,7 +124,7 @@ int main(int argc, char **argv) {
     double image_per_sec_all = 0;
     std::string chroma_sub_sampling = "";
     std::string path, output_file_path;
-
+    RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     // Parse command-line arguments
     if(argc < 1) {
         ShowHelpAndExit();
@@ -159,6 +160,13 @@ int main(int argc, char **argv) {
                 ShowHelpAndExit("-c");
             }
             is_output_rgb = std::stoi(argv[i]);
+            continue;
+        }
+        if (!strcmp(argv[i], "-b")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-b");
+            }
+            rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
             continue;
         }
         ShowHelpAndExit(argv[i]);
@@ -205,7 +213,7 @@ int main(int argc, char **argv) {
     std::right << std::hex << hip_dev_prop.pciDomainID << "." << hip_dev_prop.pciDeviceID << std::dec << std::endl;
 
     RocJpegHandle rocjpeg_handle;
-    CHECK_ROCJPEG(rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, 0, &rocjpeg_handle));
+    CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, 0, &rocjpeg_handle));
 
     int counter = 0;
     std::vector<std::vector<char>> file_data(file_paths.size());

@@ -166,11 +166,11 @@ bool ROCJpegDecode::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_im
 
     switch (subsampling) {
         case ROCJPEG_CSS_420:
-            HipExec_ColorConvert_NV12_to_RGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
+            HipExecColorConvertNV12ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
                 (const uint8_t *)yuv_dev_mem, yuv_image_stride, (const uint8_t *)yuv_dev_mem + luma_size, yuv_image_stride);
             break;
         case ROCJPEG_CSS_444:
-            HipExec_ColorConvert_YUV444_to_RGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
+            HipExecColorConvertYUV444ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
                 (const uint8_t *)yuv_dev_mem, yuv_image_stride, luma_size);
             break;
         default:

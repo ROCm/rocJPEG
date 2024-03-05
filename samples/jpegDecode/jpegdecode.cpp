@@ -56,7 +56,7 @@ void ShowHelpAndExit(const char *option = NULL) {
     exit(0);
 }
 
-void ParseCommandLine(std::string &path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, int argc, char *argv[]) {
+void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit();
     }
@@ -68,7 +68,7 @@ void ParseCommandLine(std::string &path, std::string &output_file_path, int &dum
             if (++i == argc) {
                 ShowHelpAndExit("-i");
             }
-            path = argv[i];
+            input_path = argv[i];
             continue;
         }
         if (!strcmp(argv[i], "-o")) {
@@ -154,6 +154,41 @@ void SaveImage(std::string output_file_name, void* dev_mem, size_t output_image_
     }
 }
 
+bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &isFile) {
+    is_dir = std::filesystem::is_directory(input_path);
+    isFile = std::filesystem::is_regular_file(input_path);
+    if (is_dir) {
+        for (const auto &entry : std::filesystem::directory_iterator(input_path))
+            file_paths.push_back(entry.path());
+    } else if (isFile) {
+        file_paths.push_back(input_path);
+    } else {
+        std::cerr << "ERROR: the input path is not valid!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_prop, hipStream_t &hip_stream) {
+    CHECK_HIP(hipGetDeviceCount(&num_devices));
+    if (num_devices < 1) {
+        std::cerr << "ERROR: didn't find any GPU!" << std::endl;
+        return false;
+    }
+    if (device_id >= num_devices) {
+        std::cerr << "ERROR: the requested device_id is not found!" << std::endl;
+        return false;
+    }
+    CHECK_HIP(hipSetDevice(device_id));
+    CHECK_HIP(hipGetDeviceProperties(&hip_dev_prop, device_id));
+    CHECK_HIP(hipStreamCreate(&hip_stream));
+
+    std::cout << "info: Using GPU device " << device_id << ": " << hip_dev_prop.name << "[" << hip_dev_prop.gcnArchName << "] on PCI bus " <<
+    std::setfill('0') << std::setw(2) << std::right << std::hex << hip_dev_prop.pciBusID << ":" << std::setfill('0') << std::setw(2) <<
+    std::right << std::hex << hip_dev_prop.pciDomainID << "." << hip_dev_prop.pciDeviceID << std::dec << std::endl;
+
+    return true;
+}
 int main(int argc, char **argv) {
     int device_id = 0;
     int is_output_rgb = 0; // 0 for YUV, 1 for RGB
@@ -169,58 +204,35 @@ int main(int argc, char **argv) {
     double m_pixels_all = 0;
     double image_per_sec_all = 0;
     std::string chroma_sub_sampling = "";
-    std::string path, output_file_path;
+    std::string input_path, output_file_path;
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
-
-    ParseCommandLine(path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, argc, argv);
-
     std::vector<std::string> file_paths = {};
-    bool is_dir = std::filesystem::is_directory(path);
-    bool isFile = std::filesystem::is_regular_file(path);
-
-    if (is_dir) {
-        for (const auto &entry : std::filesystem::directory_iterator(path))
-            file_paths.push_back(entry.path());
-    } else if (isFile) {
-        file_paths.push_back(path);
-    } else {
-        std::cout << "ERROR: the input path is not valid !" << std::endl;
-        return -1;
-    }
-
+    bool is_dir = false;
+    bool isFile = false;
     std::string deviceName, gcnArchName, drmNode;
-    int pciBusID, pciDomainID, pciDeviceID;
     int num_devices;
     hipDeviceProp_t hip_dev_prop;
     hipStream_t hip_stream;
-
-    CHECK_HIP(hipGetDeviceCount(&num_devices));
-    if (num_devices < 1) {
-        std::cout << "ERROR: didn't find any GPU!" << std::endl;
-        return -1;
-    }
-    if (device_id >= num_devices) {
-        std::cout << "ERROR: the requested device_id is not found! " << std::endl;
-        return -1;
-    }
-    CHECK_HIP(hipSetDevice(device_id));
-    CHECK_HIP(hipGetDeviceProperties(&hip_dev_prop, device_id));
-    CHECK_HIP(hipStreamCreate(&hip_stream));
-
-    std::cout << "info: Using GPU device " << device_id << ": " << hip_dev_prop.name << "[" << hip_dev_prop.gcnArchName << "] on PCI bus " <<
-    std::setfill('0') << std::setw(2) << std::right << std::hex << hip_dev_prop.pciBusID << ":" << std::setfill('0') << std::setw(2) <<
-    std::right << std::hex << hip_dev_prop.pciDomainID << "." << hip_dev_prop.pciDeviceID << std::dec << std::endl;
-
     RocJpegHandle rocjpeg_handle;
-    CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, 0, &rocjpeg_handle));
+    RocJpegImage output_image = {};
+    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_YUV;
+
+    ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, argc, argv);
+    if (!GetFilePaths(input_path, file_paths, is_dir, isFile)) {
+        std::cerr << "Failed to get input file paths!" << std::endl;
+        return -1;
+    }
+    if (!InitHipDevice(device_id, num_devices, hip_dev_prop, hip_stream)) {
+        std::cerr << "Failed to initialize HIP!" << std::endl;
+        return -1;
+    }
+
+    CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, device_id, &rocjpeg_handle));
 
     int counter = 0;
     std::vector<std::vector<char>> file_data(file_paths.size());
     std::vector<size_t> file_sizes(file_paths.size());
 
-
-    RocJpegImage output_image = {};
-    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_YUV;
     for (auto file_path : file_paths) {
         std::string base_file_name = file_path.substr(file_path.find_last_of("/\\") + 1);
         int image_count = 0;

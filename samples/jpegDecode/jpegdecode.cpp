@@ -50,10 +50,58 @@ THE SOFTWARE.
 void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Input File Path - required" << std::endl
-    << "-b select backend (0 for VCN HARDWARE mode using JPEG HW-accelarated decoder, 1 for HYBRID mode using CPU and GPU HIP kernles); optional default: 0" << std::endl
-    << "-o Output File Path - dumps output if requested; optional" << std::endl
+    << "-b Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles); optional; default: 0" << std::endl
+    << "-o Output File Path - dumps output if requested; optional; default: 0" << std::endl
     << "-d GPU device ID (0 for the first device, 1 for the second, etc.); optional; default: 0" << std::endl;
     exit(0);
+}
+
+void ParseCommandLine(std::string &path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, int argc, char *argv[]) {
+    if(argc <= 1) {
+        ShowHelpAndExit();
+    }
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "-h")) {
+            ShowHelpAndExit();
+        }
+        if (!strcmp(argv[i], "-i")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-i");
+            }
+            path = argv[i];
+            continue;
+        }
+        if (!strcmp(argv[i], "-o")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-o");
+            }
+            output_file_path = argv[i];
+            dump_output_frames = 1;
+            continue;
+        }
+        if (!strcmp(argv[i], "-d")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-d");
+            }
+            device_id = atoi(argv[i]);
+            continue;
+        }
+        if (!strcmp(argv[i], "-c")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-c");
+            }
+            is_output_rgb = std::stoi(argv[i]);
+            continue;
+        }
+        if (!strcmp(argv[i], "-b")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-b");
+            }
+            rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
+            continue;
+        }
+        ShowHelpAndExit(argv[i]);
+    }
 }
 
 static inline int align(int value, int alignment) {
@@ -110,8 +158,6 @@ int main(int argc, char **argv) {
     int device_id = 0;
     int is_output_rgb = 0; // 0 for YUV, 1 for RGB
     int dump_output_frames = 0; // 0 no frame dumps, 1 dumps all the frames
-    int scaling_width = 0;
-    int scaling_height = 0;
     uint8_t num_components;
     uint32_t widths, heights;
     RocJpegChromaSubsampling subsampling;
@@ -125,57 +171,10 @@ int main(int argc, char **argv) {
     std::string chroma_sub_sampling = "";
     std::string path, output_file_path;
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
-    // Parse command-line arguments
-    if(argc < 1) {
-        ShowHelpAndExit();
-    }
-    for (int i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "-h")) {
-            ShowHelpAndExit();
-        }
-        if (!strcmp(argv[i], "-i")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-i");
-            }
-            path = argv[i];
-            continue;
-        }
-        if (!strcmp(argv[i], "-o")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-o");
-            }
-            output_file_path = argv[i];
-            dump_output_frames = 1;
-            continue;
-        }
-        if (!strcmp(argv[i], "-d")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-d");
-            }
-            device_id = atoi(argv[i]);
-            continue;
-        }
-        if (!strcmp(argv[i], "-c")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-c");
-            }
-            is_output_rgb = std::stoi(argv[i]);
-            continue;
-        }
-        if (!strcmp(argv[i], "-b")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-b");
-            }
-            rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
-            continue;
-        }
-        ShowHelpAndExit(argv[i]);
-    }
 
-    bool isScaling = (scaling_width > 0 && scaling_height > 0) ? true : false;
+    ParseCommandLine(path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, argc, argv);
 
     std::vector<std::string> file_paths = {};
-
     bool is_dir = std::filesystem::is_directory(path);
     bool isFile = std::filesystem::is_regular_file(path);
 

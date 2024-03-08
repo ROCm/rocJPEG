@@ -183,12 +183,20 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_FOUND)
     set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.$ENV{ROCM_LIBPATCH_VERSION}")
   endif()
 
+  # Find Ubuntu 22.04 - Add libstdc++-12-dev package deps for Dev Package
+  file(READ "/etc/os-release" OS_RELEASE)
+  string(REGEX MATCH "22.04" UBUNTU_22_FOUND ${OS_RELEASE})
+
   # Set the dependent packages
-  set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, mesa-amdgpu-multimedia")
-  set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, mesa-amdgpu-multimedia")
-  # Set the dev dependent packages - TBD: mesa-amdgpu-multimedia-devel name will be changed to -dev
-  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, mesa-amdgpu-multimedia-devel, pkg-config")
-  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, mesa-amdgpu-multimedia-devel, pkg-config")
+  set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, libdrm-amdgpu1, libva-amdgpu-drm2, mesa-amdgpu-va-drivers")
+  set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, libdrm-amdgpu, libva-amdgpu, mesa-amdgpu-dri-drivers")
+
+  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-amdgpu-dev, pkg-config")
+  if(UBUNTU_22_FOUND)
+    set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")
+  endif()
+
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, libva-amdgpu-devel, pkg-config")
 
   # '%{?dist}' breaks manual builds on debian systems due to empty Provides
   execute_process(
@@ -314,9 +322,9 @@ else()
     message(FATAL_ERROR "-- ERROR!: HIP Not Found! - please install rocm-hip-runtime-dev!")
   endif()
   if(NOT Libva_FOUND)
-    message(FATAL_ERROR "-- ERROR!: libva Not Found - please install mesa-amdgpu-multimedia-devel!")
+    message(FATAL_ERROR "-- ERROR!: libva Not Found - please install libva-amdgpu-dev(DBEAIN)/libva-amdgpu-devel(RPM) package!")
   endif()
   if(NOT Libdrm_FOUND)
-    message(FATAL_ERROR "-- ERROR!: libdrm Not Found - please install mesa-amdgpu-multimedia-devel!")
+    message(FATAL_ERROR "-- ERROR!: libdrm Not Found - please install libdrm-amdgpu1 (DBEAIN)/libdrm-amdgpu(RPM) package!")
   endif()
 endif()

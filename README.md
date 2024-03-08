@@ -20,38 +20,45 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. rocJPEG API lets dev
     * SLES - `15-SP4`
 
 * [ROCm supported hardware](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html)
-    * **NOTE:** `gfx908` or higher required
+> [!IMPORTANT] 
+> `gfx908` or higher GPU required
 
-* Install ROCm `6.1.0` or later with [amdgpu-install](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html) with `--usecase=multimediasdk,rocm --no-32`
-    * **NOTE:** To install rocjpeg with minimum requirements follow instructions [here](https://github.com/ROCm/rocJPEG/wiki#how-can-i-install-rocjpeg-runtime-with-minimum-requirements)
+* Install ROCm `6.1.0` or later with [amdgpu-install](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html): Required usecase - rocm
+> [!IMPORTANT]
+> `sudo amdgpu-install --usecase=rocm`
 
-### To build from source
+* AMD Mesa Drivers
+  ```shell
+  sudo apt install libva-amdgpu-dev mesa-amdgpu-va-drivers
+  ```
 
 * CMake `3.5` or later
 
-```shell
-sudo apt install cmake
-```
+  ```shell
+  sudo apt install cmake
+  ```
 
 * [pkg-config](https://en.wikipedia.org/wiki/Pkg-config)
 
-```shell
-sudo apt install pkg-config
-```
+  ```shell
+  sudo apt install pkg-config
+  ```
 
-**NOTE:**
+> [!IMPORTANT] 
+> * If using Ubuntu 22.04, you must install `libstdc++-12-dev`
+>
+>  ```shell
+>  sudo apt install libstdc++-12-dev
+>  ```
 
-* All package install shown with `apt` package manager, use appropriate package manager depending on the OS.
+>[!NOTE]
+> * All package installs are shown with the `apt` package manager. Use the appropriate package manager for your operating system.
+> * To install rocDecode with minimum requirements, follow the [quick-start](./docs/install/quick-start.rst) instructions
 
-* Ubuntu 22.04 - Install `libstdc++-12-dev`
-
-```shell
-sudo apt install libstdc++-12-dev
-```
 
 #### Prerequisites setup script for Linux
-
-For the convenience of the developer, we provide the setup script [rocJPEG-setup.py](rocJPEG-setup.py) which will install all the dependencies required by this project.
+For your convenience, we provide the setup script,
+[rocJPEG-setup.py](rocJPEG-setup.py) which installs all required dependencies. Run this script only once.
 
 **Usage:**
 
@@ -62,7 +69,15 @@ For the convenience of the developer, we provide the setup script [rocJPEG-setup
 
 **NOTE:** This script only needs to be executed once.
 
-## Build and install instructions
+## Installation instructions
+
+The installation process uses the following steps:
+
+* [ROCm-supported hardware](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html) install verification
+
+* Install ROCm `6.1.0` or later with [amdgpu-install](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html) with `--usecase=rocm`
+
+* Use either [Package install](#package-install) or [Source install](#source-install) as described below.
 
 ### Package install
 
@@ -71,8 +86,6 @@ Install rocJPEG runtime, development, and test packages.
 * Runtime package - `rocjpeg` only provides the rocjpeg library `librocjpeg.so`
 * Development package - `rocjpeg-dev`/`rocjpeg-devel` provides the library, header files, and samples
 * Test package - `rocjpeg-test` provides ctest to verify installation
-
-**NOTE:** Package install will auto install all dependencies.
 
 #### Ubuntu
 
@@ -91,8 +104,10 @@ sudo yum install rocjpeg rocjpeg-devel rocjpeg-test
 ```shell
 sudo zypper install rocjpeg rocjpeg-devel rocjpeg-test
 ```
+>[!NOTE]
+> Package install auto installs all dependencies.
 
-### Source build and install
+### Source install
 
 ```shell
 git clone https://github.com/ROCm/rocJPEG.git
@@ -103,7 +118,7 @@ make -j8
 sudo make install
 ```
 
-* run tests
+#### Run tests
 
   ```shell
   make test
@@ -111,8 +126,8 @@ sudo make install
 
   **NOTE:** run tests with verbose option `make test ARGS="-VV"`
 
-* make package
-  
+#### Make package
+
   ```shell
   sudo make package
   ```
@@ -126,7 +141,9 @@ The installer will copy
 * Samples folder into `/opt/rocm/share/rocjpeg`
 * Documents folder into `/opt/rocm/share/doc/rocjpeg`
 
-### Verify with sample application
+### Using sample application
+
+To verify your installation using a sample application, run:
 
 ```shell
 mkdir rocjpeg-sample && cd rocjpeg-sample
@@ -135,9 +152,9 @@ make -j8
 ./videodecode -i /opt/rocm/share/rocjpeg/image/mug.jpg
 ```
 
-### Verify with rocjpeg-test package
+### Using test package
 
-Test package will install ctest module to test rocjpeg. Follow below steps to test packge install
+To verify your installation using the `rocjpeg-test` package, run:
 
 ```shell
 mkdir rocjpeg-test && cd rocjpeg-test
@@ -148,16 +165,18 @@ ctest -VV
 ## Samples
 
 The tool provides a few samples to decode JPEG images [here](samples/). Please refer to the individual folders to build and run the samples.
+You can access samples to decode your images in our
+[GitHub repository](https://github.com/ROCm/rocJPEG/tree/develop/samples). Refer to the
+individual folders to build and run the samples.
 
 ## Docker
 
-Docker files to build rocJPEG containers are available [here](docker/)
+You can find rocDecode Docker containers in our
+[GitHub repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).
 
 ## Documentation
 
-Run the steps below to build documentation locally.
-
-* Sphinx
+Run the following code to build our documentation locally.
 
 ```shell
 cd docs
@@ -165,19 +184,17 @@ pip3 install -r sphinx/requirements.txt
 python3 -m sphinx -T -E -b html -d _build/doctrees -D language=en . _build/html
 ```
 
-* Doxygen
-
-```shell
-doxygen .Doxyfile
-```
+For more information on documentation builds, refer to the
+[Building documentation](https://rocm.docs.amd.com/en/latest/contribute/building.html)
+page.
 
 ## Tested configurations
 
-* Linux distribution
-    * Ubuntu - `20.04` / `22.04`
-    * RHEL - `8` / `9`
-    * SLES - `15-SP4`
+* Linux
+  * Ubuntu - `20.04` / `22.04`
+  * RHEL - `8` / `9`
+  * SLES - `15-SP4`
 * ROCm:
-    * rocm-core - `6.1.0.60100-crdnnh.13370`
-    * amdgpu-core - `1:6.1.60100-1717660`
-* rocJPEG Setup Script - `V1.0`
+  * rocm-core - `6.1.0.60100-28`
+  * amdgpu-core - `1:6.1.60100-1731559`
+* rocJPEG Setup Script - `V1.4`

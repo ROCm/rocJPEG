@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (c) 2023 - 2024 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -124,10 +124,13 @@ os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' ' +
 if "Ubuntu" in platfromInfo:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-              ' install vainfo mesa-amdgpu-multimedia-devel libstdc++-12-dev')
+              ' install vainfo libva-amdgpu-dev mesa-amdgpu-va-drivers')
+    if "22.04" in platform.version():
+        os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
+              ' install libstdc++-12-dev')
 else:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-              ' install mesa-amdgpu-multimedia-devel')
+              ' install libva-amdgpu-devel mesa-amdgpu-dri-drivers')
 
 print("\nrocJPEG Dependencies Installed with rocJPEG-setup.py V-"+__version__+"\n")

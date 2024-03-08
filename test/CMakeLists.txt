@@ -60,5 +60,5 @@ add_test(
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/image/mug.jpg
+            -i ${ROCM_PATH}/share/rocjpeg/images/mug.jpg
 )

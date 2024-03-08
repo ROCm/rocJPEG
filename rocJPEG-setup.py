@@ -118,7 +118,7 @@ if userName == 'root':
 os.system('sudo -v')
 os.system(linuxSystemInstall+' update')
 os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' ' +
-          linuxSystemInstall_check+' install gcc cmake git wget unzip pkg-config inxi')
+          linuxSystemInstall_check+' install gcc cmake pkg-config')
 
 # rocJPEG Core - VA/DRM Requirements
 if "Ubuntu" in platfromInfo:

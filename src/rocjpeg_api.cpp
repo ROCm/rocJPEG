@@ -87,7 +87,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format,
     RocJpegImage *destination) {
 
-    if (handle == nullptr || data == nullptr || destination == nullptr) {
+    if (handle == nullptr || data == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;

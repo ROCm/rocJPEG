@@ -124,13 +124,13 @@ os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' ' +
 if "Ubuntu" in platfromInfo:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-              ' install vainfo libva-amdgpu-dev mesa-amdgpu-va-drivers')
+              ' install vainfo libdrm-amdgpu1 libva-amdgpu-dev mesa-amdgpu-va-drivers')
     if "22.04" in platform.version():
         os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
               ' install libstdc++-12-dev')
 else:
     os.system('sudo -v')
     os.system('sudo '+linuxFlag+' '+linuxSystemInstall+' '+linuxSystemInstall_check +
-              ' install libva-amdgpu-devel mesa-amdgpu-dri-drivers')
+              ' install libdrm-amdgpu libva-amdgpu-devel mesa-amdgpu-dri-drivers')
 
 print("\nrocJPEG Dependencies Installed with rocJPEG-setup.py V-"+__version__+"\n")

@@ -102,15 +102,12 @@ set(DEFAULT_AMDGPU_TARGETS "gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1030;gfx1031;g
 set(AMDGPU_TARGETS "${DEFAULT_AMDGPU_TARGETS}" CACHE STRING "List of specific machine types for library to target")
 
 find_package(HIP QUIET)
-find_package(Libdrm QUIET)
 find_package(Libva QUIET)
 
-if(HIP_FOUND AND Libva_FOUND AND Libdrm_FOUND)
+if(HIP_FOUND AND Libva_FOUND)
 
   # HIP
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::device)
-  # LibDRM
-  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBDRM_LIBRARY})
   # LibVA
   include_directories(${LIBVA_INCLUDE_DIR})
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_LIBRARY})
@@ -322,8 +319,5 @@ else()
   endif()
   if(NOT Libva_FOUND)
     message(FATAL_ERROR "-- ERROR!: libva Not Found - please install libva-amdgpu-dev(DBEAIN)/libva-amdgpu-devel(RPM) package!")
-  endif()
-  if(NOT Libdrm_FOUND)
-    message(FATAL_ERROR "-- ERROR!: libdrm Not Found - please install libdrm-amdgpu1 (DBEAIN)/libdrm-amdgpu(RPM) package!")
   endif()
 endif()

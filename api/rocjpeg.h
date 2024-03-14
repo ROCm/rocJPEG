@@ -193,10 +193,9 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 //! IN length : Length of the jpeg image buffer.
 //! IN output_format : Output data format. See RocJpegOutputFormat for description
 //! IN/OUT destination : Pointer to structure with information about output buffers. See RocJpegImage description.
-//! IN stream : HIP stream where to submit all GPU work
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
+RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);

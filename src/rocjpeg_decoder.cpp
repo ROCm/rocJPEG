@@ -68,7 +68,7 @@ RocJpegStatus ROCJpegDecode::InitializeDecoder() {
     return rocjpeg_status;
 }
 
-RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream) {
+RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
 
@@ -144,34 +144,34 @@ RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegO
         // copy Y (luma) channel
         if (destination->pitch[0] == va_drm_prime_surface_desc.layers[0].pitch[0]) {
             uint32_t luma_size = destination->pitch[0] * jpeg_stream_params->picture_parameter_buffer.picture_height;
-            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], yuv_dev_mem_, luma_size, (stream != nullptr) ? stream : hip_stream_));
+            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], yuv_dev_mem_, luma_size, hip_stream_));
         } else {
             CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], yuv_dev_mem_, va_drm_prime_surface_desc.layers[0].pitch[0],
-                destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, (stream != nullptr) ? stream : hip_stream_));
+                destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, hip_stream_));
         }
         // copy chroma(U, V) channels
         if (va_drm_prime_surface_desc.layers[1].pitch[0] != 0) {
             uint32_t chroma_size = destination->pitch[1] * chroma_height;
             uint8_t *layer1_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[1].offset[0];
             if (destination->pitch[1] == va_drm_prime_surface_desc.layers[1].pitch[0]) {
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[1], layer1_mem, chroma_size, (stream != nullptr) ? stream : hip_stream_));
+                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[1], layer1_mem, chroma_size, hip_stream_));
             } else {
                 CHECK_HIP(hipMemcpy2DAsync(destination->channel[1], destination->pitch[1], layer1_mem, va_drm_prime_surface_desc.layers[1].pitch[0],
-                    destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, (stream != nullptr) ? stream : hip_stream_));
+                    destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
         if (va_drm_prime_surface_desc.layers[2].pitch[0] != 0) {
             uint32_t chroma_size = destination->pitch[2] * chroma_height;
             uint8_t *layer2_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[2].offset[0];
             if (destination->pitch[2] == va_drm_prime_surface_desc.layers[2].pitch[0]) {
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[2], layer2_mem, chroma_size, (stream != nullptr) ? stream : hip_stream_));
+                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[2], layer2_mem, chroma_size, hip_stream_));
             } else {
                 CHECK_HIP(hipMemcpy2DAsync(destination->channel[2], destination->pitch[2], layer2_mem, va_drm_prime_surface_desc.layers[2].pitch[0],
-                    destination->pitch[2], chroma_height, hipMemcpyDeviceToDevice, (stream != nullptr) ? stream : hip_stream_));
+                    destination->pitch[2], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
 
-        CHECK_HIP(hipStreamSynchronize((stream != nullptr) ? stream : hip_stream_));
+        CHECK_HIP(hipStreamSynchronize(hip_stream_));
 
         CHECK_HIP(hipFree(yuv_dev_mem_));
         CHECK_HIP(hipDestroyExternalMemory(hip_ext_mem_));

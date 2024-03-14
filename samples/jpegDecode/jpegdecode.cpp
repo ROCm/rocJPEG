@@ -207,7 +207,7 @@ bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths,
     return true;
 }
 
-bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_prop, hipStream_t &hip_stream) {
+bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_prop) {
     CHECK_HIP(hipGetDeviceCount(&num_devices));
     if (num_devices < 1) {
         std::cerr << "ERROR: didn't find any GPU!" << std::endl;
@@ -219,7 +219,6 @@ bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_pro
     }
     CHECK_HIP(hipSetDevice(device_id));
     CHECK_HIP(hipGetDeviceProperties(&hip_dev_prop, device_id));
-    CHECK_HIP(hipStreamCreate(&hip_stream));
 
     std::cout << "info: Using GPU device " << device_id << ": " << hip_dev_prop.name << "[" << hip_dev_prop.gcnArchName << "] on PCI bus " <<
     std::setfill('0') << std::setw(2) << std::right << std::hex << hip_dev_prop.pciBusID << ":" << std::setfill('0') << std::setw(2) <<
@@ -251,7 +250,6 @@ int main(int argc, char **argv) {
     std::string deviceName, gcnArchName, drmNode;
     int num_devices;
     hipDeviceProp_t hip_dev_prop;
-    hipStream_t hip_stream;
     RocJpegHandle rocjpeg_handle;
     RocJpegImage output_image = {};
     RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_UNCHANGED;
@@ -261,7 +259,7 @@ int main(int argc, char **argv) {
         std::cerr << "Failed to get input file paths!" << std::endl;
         return -1;
     }
-    if (!InitHipDevice(device_id, num_devices, hip_dev_prop, hip_stream)) {
+    if (!InitHipDevice(device_id, num_devices, hip_dev_prop)) {
         std::cerr << "Failed to initialize HIP!" << std::endl;
         return -1;
     }
@@ -370,7 +368,7 @@ int main(int argc, char **argv) {
 
         std::cout << "info: decoding started, please wait! ... " << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, output_format, &output_image, hip_stream));
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, output_format, &output_image));
         auto end_time = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> decoder_time = end_time - start_time;
         double time_per_image = decoder_time.count() * 1000;

@@ -85,7 +85,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 //! Retrieve the image info, including channel, width and height of each component, and chroma subsampling.
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format,
-    RocJpegImage *destination, hipStream_t stream) {
+    RocJpegImage *destination) {
 
     if (handle == nullptr || data == nullptr || destination == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
@@ -93,7 +93,7 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
-        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(data, length, output_format, destination, stream);
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(data, length, output_format, destination);
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());

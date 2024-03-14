@@ -108,52 +108,6 @@ static inline int align(int value, int alignment) {
    return (value + alignment - 1) & ~(alignment - 1);
 }
 
-// TODO - change the output_image type from void* to RocJpegImage
-/*void SaveImage(std::string output_file_name, void* output_image, size_t output_image_size, uint32_t *img_width, uint32_t *img_height, uint32_t output_image_stride,
-    RocJpegChromaSubsampling subsampling, bool is_output_rgb) {
-
-    uint8_t *hst_ptr = nullptr;
-    FILE *fp;
-    if (hst_ptr == nullptr) {
-        hst_ptr = new uint8_t [output_image_size];
-    }
-    hipError_t hip_status = hipSuccess;
-    CHECK_HIP(hipMemcpyDtoH((void *)hst_ptr, output_image, output_image_size));
-
-    // no RGB dump if the surface type is YUV400
-    if (subsampling == ROCJPEG_CSS_400 && is_output_rgb) {
-        return;
-    }
-    uint8_t *tmp_hst_ptr = hst_ptr;
-    fp = fopen(output_file_name.c_str(), "wb");
-    if (fp) {
-        if (img_width[0] == output_image_stride && img_height[0] == align(img_height[0], 16)) {
-            fwrite(hst_ptr, 1, output_image_size, fp);
-        } else {
-            uint32_t width = is_output_rgb ? img_width[0] * 3 : img_width[0];
-            for (int i = 0; i < img_height[0]; i++) {
-                fwrite(tmp_hst_ptr, 1, width, fp);
-                tmp_hst_ptr += output_image_stride;
-            }
-            if (!is_output_rgb) {
-                // dump chroma
-                uint8_t *uv_hst_ptr = hst_ptr + output_image_stride * align(img_height[0], 16);
-                for (int i = 0; i < img_height[0] >> 1; i++) {
-                    fwrite(uv_hst_ptr, 1, width, fp);
-                    uv_hst_ptr += output_image_stride;
-                }
-            }
-        }
-        fclose(fp);
-    }
-
-    if (hst_ptr != nullptr) {
-        delete [] hst_ptr;
-        hst_ptr = nullptr;
-        tmp_hst_ptr = nullptr;
-    }
-}*/
-
 void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t *img_width, uint32_t *img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
 
     uint8_t *hst_ptr = nullptr;

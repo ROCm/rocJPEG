@@ -106,17 +106,21 @@ typedef struct {
 //! RocJpegOutputFormat enum specifies what type of output user wants for image decoding
 /*****************************************************/
 typedef enum {
-    // return decoded YUV image from the VCN JPEG deocder.
+    // return decoded YUV image from the VCN JPEG deocder unchanged.
     // For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
+    // For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
     // For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
     // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_YUV = 0,
+    ROCJPEG_OUTPUT_UNCHANGED = 0,
+    // extract Y, U, and V channels from the decoded YUV image from the VCN JPEG deocder and write into first, second, and thrid channel of RocJpegImage.
+    // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
+    ROCJPEG_OUTPUT_YUV = 1,
     // return luma component (Y) and write to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_Y = 1,
+    ROCJPEG_OUTPUT_Y = 2,
     // convert to interleaved RGB using HIP kernels and write to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_RGBI = 2,
+    ROCJPEG_OUTPUT_RGBI = 3,
     // maximum allowed value
-    ROCJPEG_OUTPUT_FORMAT_MAX = 3
+    ROCJPEG_OUTPUT_FORMAT_MAX = 4
 } RocJpegOutputFormat;
 
 /*****************************************************/
@@ -170,8 +174,8 @@ RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle);
 //! IN length : Length of the jpeg image buffer.
 //! OUT num_component : Number of channels in the decoded output image
 //! OUT subsampling : Chroma subsampling used in this JPEG, see RocJpegChromaSubsampling.
-//! OUT widths : pointer to ROCJPEG_MAX_COMPONENT of ints, returns width of each channel.
-//! OUT heights : pointer to ROCJPEG_MAX_COMPONENT of ints, returns height of each channel.
+//! OUT widths : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns width of each channel.
+//! OUT heights : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns height of each channel.
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);

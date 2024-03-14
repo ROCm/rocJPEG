@@ -108,8 +108,8 @@ static inline int align(int value, int alignment) {
    return (value + alignment - 1) & ~(alignment - 1);
 }
 
-// TODO - change the dev_mem type from void* to RocJpegImage
-void SaveImage(std::string output_file_name, void* dev_mem, size_t output_image_size, uint32_t img_width, uint32_t img_height, uint32_t output_image_stride,
+// TODO - change the output_image type from void* to RocJpegImage
+/*void SaveImage(std::string output_file_name, void* output_image, size_t output_image_size, uint32_t *img_width, uint32_t *img_height, uint32_t output_image_stride,
     RocJpegChromaSubsampling subsampling, bool is_output_rgb) {
 
     uint8_t *hst_ptr = nullptr;
@@ -118,7 +118,7 @@ void SaveImage(std::string output_file_name, void* dev_mem, size_t output_image_
         hst_ptr = new uint8_t [output_image_size];
     }
     hipError_t hip_status = hipSuccess;
-    CHECK_HIP(hipMemcpyDtoH((void *)hst_ptr, dev_mem, output_image_size));
+    CHECK_HIP(hipMemcpyDtoH((void *)hst_ptr, output_image, output_image_size));
 
     // no RGB dump if the surface type is YUV400
     if (subsampling == ROCJPEG_CSS_400 && is_output_rgb) {
@@ -127,20 +127,104 @@ void SaveImage(std::string output_file_name, void* dev_mem, size_t output_image_
     uint8_t *tmp_hst_ptr = hst_ptr;
     fp = fopen(output_file_name.c_str(), "wb");
     if (fp) {
-        if (img_width == output_image_stride && img_height == align(img_height, 16)) {
+        if (img_width[0] == output_image_stride && img_height[0] == align(img_height[0], 16)) {
             fwrite(hst_ptr, 1, output_image_size, fp);
         } else {
-            uint32_t width = is_output_rgb ? img_width * 3 : img_width;
-            for (int i = 0; i < img_height; i++) {
+            uint32_t width = is_output_rgb ? img_width[0] * 3 : img_width[0];
+            for (int i = 0; i < img_height[0]; i++) {
                 fwrite(tmp_hst_ptr, 1, width, fp);
                 tmp_hst_ptr += output_image_stride;
             }
             if (!is_output_rgb) {
                 // dump chroma
-                uint8_t *uv_hst_ptr = hst_ptr + output_image_stride * align(img_height, 16);
-                for (int i = 0; i < img_height >> 1; i++) {
+                uint8_t *uv_hst_ptr = hst_ptr + output_image_stride * align(img_height[0], 16);
+                for (int i = 0; i < img_height[0] >> 1; i++) {
                     fwrite(uv_hst_ptr, 1, width, fp);
                     uv_hst_ptr += output_image_stride;
+                }
+            }
+        }
+        fclose(fp);
+    }
+
+    if (hst_ptr != nullptr) {
+        delete [] hst_ptr;
+        hst_ptr = nullptr;
+        tmp_hst_ptr = nullptr;
+    }
+}*/
+
+void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t *img_width, uint32_t *img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
+
+    uint8_t *hst_ptr = nullptr;
+    FILE *fp;
+    hipError_t hip_status = hipSuccess;
+
+    if (output_image == nullptr || img_width == nullptr || img_height == nullptr || output_image->channel[0] == nullptr ||
+        output_image->pitch[0] == 0 || img_height[0] == 0) {
+        return;
+    }
+
+    uint32_t channel0_size = output_image->pitch[0] * img_height[0];
+    uint32_t channel1_size = output_image->pitch[1] * img_height[1];
+    uint32_t channel2_size = output_image->pitch[2] * img_height[2];
+    uint32_t output_image_size = channel0_size + channel1_size + channel2_size;
+
+    if (hst_ptr == nullptr) {
+        hst_ptr = new uint8_t [output_image_size];
+    }
+
+    CHECK_HIP(hipMemcpyDtoH((void *)hst_ptr, output_image->channel[0], channel0_size));
+
+    uint8_t *tmp_hst_ptr = hst_ptr;
+    fp = fopen(output_file_name.c_str(), "wb");
+    if (fp) {
+        // write channel0
+        if (img_width[0] == output_image->pitch[0]) {
+            fwrite(hst_ptr, 1, channel0_size, fp);
+        } else {
+            uint32_t width = 0;
+            switch (output_format) {
+                case ROCJPEG_OUTPUT_UNCHANGED:
+                    if (subsampling == ROCJPEG_CSS_422) {
+                        width = img_width[0] * 2;
+                    }
+                    break;
+                case ROCJPEG_OUTPUT_RGBI:
+                    width = img_width[0] * 3;
+                    break;
+                default:
+                    width = img_width[0];
+                    break;
+            }
+            for (int i = 0; i < img_height[0]; i++) {
+                fwrite(tmp_hst_ptr, 1, width, fp);
+                tmp_hst_ptr += output_image->pitch[0];
+            }
+        }
+        // write channel1
+        if (channel1_size != 0) {
+            uint8_t *channel1_hst_ptr = hst_ptr + channel0_size;
+            CHECK_HIP(hipMemcpyDtoH((void *)channel1_hst_ptr, output_image->channel[1], channel1_size));
+            if (img_width[1] == output_image->pitch[1]) {
+                fwrite(channel1_hst_ptr, 1, channel1_size, fp);
+            } else {
+                for (int i = 0; i < img_height[1]; i++) {
+                    fwrite(channel1_hst_ptr, 1, img_width[1], fp);
+                    channel1_hst_ptr += output_image->pitch[1];
+                }
+            }
+        }
+        // write channel2
+        if (channel2_size != 0) {
+            uint8_t *channel2_hst_ptr = hst_ptr + channel0_size + channel1_size;
+            CHECK_HIP(hipMemcpyDtoH((void *)channel2_hst_ptr, output_image->channel[2], channel2_size));
+            if (img_width[2] == output_image->pitch[2]) {
+                fwrite(channel2_hst_ptr, 1, channel2_size, fp);
+            } else {
+                for (int i = 0; i < img_height[2]; i++) {
+                    fwrite(channel2_hst_ptr, 1, img_width[2], fp);
+                    channel2_hst_ptr += output_image->pitch[2];
                 }
             }
         }
@@ -194,11 +278,12 @@ int main(int argc, char **argv) {
     int is_output_rgb = 0; // 0 for YUV, 1 for RGB
     int dump_output_frames = 0; // 0 no frame dumps, 1 dumps all the frames
     uint8_t num_components;
-    uint32_t widths, heights;
+    uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
+    uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
+    uint32_t channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
+    uint32_t num_channels = 0;
     RocJpegChromaSubsampling subsampling;
     hipError_t hip_status = hipSuccess;
-    size_t yuv_image_size, rgb_image_size;
-    uint32_t yuv_image_stride, rgb_image_stride;
     int total_images_all = 0;
     double time_per_image_all = 0;
     double m_pixels_all = 0;
@@ -215,7 +300,7 @@ int main(int argc, char **argv) {
     hipStream_t hip_stream;
     RocJpegHandle rocjpeg_handle;
     RocJpegImage output_image = {};
-    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_YUV;
+    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_UNCHANGED;
 
     ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, argc, argv);
     if (!GetFilePaths(input_path, file_paths, is_dir, isFile)) {
@@ -256,10 +341,10 @@ int main(int argc, char **argv) {
         }
         file_sizes[counter] = file_size;
 
-        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, &num_components, &subsampling, &widths, &heights));
+        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, &num_components, &subsampling, widths, heights));
 
         std::cout << "info: input file name: " << base_file_name << std::endl;
-        std::cout << "info: input image resolution: " << widths << "x" << heights << std::endl;
+        std::cout << "info: input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
         switch (subsampling) {
             case ROCJPEG_CSS_444:
                 chroma_sub_sampling = "YUV 4:4:4";
@@ -284,14 +369,49 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
         }
         std::cout << "info: "+ chroma_sub_sampling + " chroma subsampling" << std::endl;
-        // fix the yuv_image_size calculation
-        yuv_image_size = align(widths, 256) * (align(heights, 16) + (align(heights, 16) >> 1));
-        output_image.pitch[0] = align(widths, 256);
 
-        hip_status = hipMalloc(&output_image.channel[0], yuv_image_size);
-        if (hip_status != hipSuccess) {
-            std::cerr << "ERROR: hipMalloc failed to allocate the device memory for the output!" << hip_status << std::endl;
-            return 0;
+        switch (output_format) {
+            case ROCJPEG_OUTPUT_UNCHANGED:
+                switch (subsampling) {
+                    case ROCJPEG_CSS_444:
+                        num_channels = 3;
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                        channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        break;
+                    case ROCJPEG_CSS_422:
+                        num_channels = 1;
+                        output_image.pitch[0] = widths[0] * 2;
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        break;
+                    case ROCJPEG_CSS_420:
+                        num_channels = 2;
+                        output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        channel_sizes[1] = output_image.pitch[1] * (heights[0] >> 1);
+                        break;
+                    case ROCJPEG_CSS_400:
+                        num_channels = 1;
+                        output_image.pitch[0] = widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        break;
+                    default:
+                        std::cout << "The chroma sub-sampling is nor supported by VCN Hardware" << std::endl;
+                        return EXIT_FAILURE;
+                }
+                break;
+            case ROCJPEG_OUTPUT_YUV:
+                break;
+            case ROCJPEG_OUTPUT_Y:
+                break;
+            case ROCJPEG_OUTPUT_RGBI:
+                break;
+            default:
+                std::cout << "Unknown output format!" << std::endl;
+                return EXIT_FAILURE;
+        }
+        // allocate memory for each layer
+        for (int i = 0; i < num_channels; i++) {
+            CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
         }
 
         std::cout << "info: decoding started, please wait! ... " << std::endl;
@@ -301,25 +421,20 @@ int main(int argc, char **argv) {
         std::chrono::duration<double> decoder_time = end_time - start_time;
         double time_per_image = decoder_time.count() * 1000;
         double ips = (1 / time_per_image) * 1000;
-        double mpixels = ((double)widths * (double)heights / 1000000) * ips;
+        double mpixels = ((double)widths[0] * (double)heights[0] / 1000000) * ips;
         image_count++;
 
         if (dump_output_frames) {
             std::string::size_type const p(base_file_name.find_last_of('.'));
             std::string file_name_no_ext = base_file_name.substr(0, p);
-            std::string fileName = output_file_path + "//" + file_name_no_ext + "_" + std::to_string(widths) + "x"
-                + std::to_string(heights) + "." + (is_output_rgb ? "RGB" : "YUV");
-
-            SaveImage(output_file_path, output_image.channel[0], is_output_rgb ? rgb_image_size : yuv_image_size, widths, heights,
-                output_image.pitch[0] , subsampling, is_output_rgb);
+            std::string file_name_for_saving = output_file_path + "//" + file_name_no_ext + "_" + std::to_string(widths[0]) + "x"
+                + std::to_string(heights[0]) + "." + (is_output_rgb ? "rgbi" : "yuv");
+            std::string image_save_path = is_dir ? file_name_for_saving : output_file_path;
+            SaveImage(image_save_path, &output_image, widths, heights, subsampling, output_format);
         }
 
-        if (output_image.channel[0] != nullptr) {
-            hip_status = hipFree((void *)output_image.channel[0]);
-            if (hip_status != hipSuccess) {
-                std::cout << "ERROR: hipFree failed! (" << hip_status << ")" << std::endl;
-                return -1;
-            }
+        for (int i = 0; i < num_channels; i++) {
+            CHECK_HIP(hipFree((void*)output_image.channel[i]));
         }
 
         std::cout << "info: total decoded images: " << image_count << std::endl;

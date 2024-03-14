@@ -231,16 +231,52 @@ RocJpegStatus RocJpegVappiDecoder::ExportSurface(uint32_t surface_id, VADRMPRIME
             break;
         }
     }
-    if (is_surface_id_found) {
-        CHECK_VAAPI(vaSyncSurface(va_display_, surface_id));
-        CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id,
+    if (!is_surface_id_found) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id,
                     VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
                     VA_EXPORT_SURFACE_READ_ONLY |
                     VA_EXPORT_SURFACE_SEPARATE_LAYERS,
                     &va_drm_prime_surface_desc));
 
-        return ROCJPEG_STATUS_SUCCESS;
-    } else {
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus RocJpegVappiDecoder::SyncSurface(uint32_t surface_id) {
+    VASurfaceStatus surface_status;
+    bool is_surface_id_found = false;
+    int idx = 0;
+
+    for (idx = 0; idx < va_surface_ids_.size(); idx++) {
+        if (va_surface_ids_[idx] == surface_id) {
+            is_surface_id_found = true;
+            break;
+        }
+    }
+
+    if (!is_surface_id_found) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
+
+    CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));
+    while (surface_status != VASurfaceReady) {
+        VAStatus va_status = vaSyncSurface(va_display_, surface_id);
+        /* Current implementation of vaSyncSurface() does not block indefinitely (contrary to VA-API spec), it returns
+         * VA_STATUS_ERROR_TIMEDOUT error when it blocks for a certain amount of time. Although time out can come from
+         * various reasons, we treat it as non-fatal and contiue waiting.
+         */
+        if (va_status != VA_STATUS_SUCCESS) {
+            if (va_status == 0x26 /*VA_STATUS_ERROR_TIMEDOUT*/) {
+                CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));
+            } else {
+                std::cout << "vaSyncSurface() failed with error code: 0x" << std::hex << va_status <<
+                    std::dec << "', status: " << vaErrorStr(va_status) << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;
+                return ROCJPEG_STATUS_RUNTIME_ERROR;
+            }
+        } else {
+            break;
+        }
+    }
+    return ROCJPEG_STATUS_SUCCESS;
 }

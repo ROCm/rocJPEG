@@ -62,7 +62,8 @@ RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle) {
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length, uint8_t *num_components,
     RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights) {
-    if (handle == nullptr || data == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
+    if (handle == nullptr || data == nullptr || num_components == nullptr ||
+        subsampling == nullptr || widths == nullptr || heights == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;

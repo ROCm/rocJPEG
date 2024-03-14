@@ -71,7 +71,7 @@ class ROCJpegDecode {
        ROCJpegDecode(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
        ~ROCJpegDecode();
        RocJpegStatus InitializeDecoder();
-       RocJpegStatus GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *width, uint32_t *height);
+       RocJpegStatus GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
     private:
        RocJpegStatus InitHIP(int device_id);
@@ -84,7 +84,7 @@ class ROCJpegDecode {
        hipExternalMemory_t hip_ext_mem_;
        hipExternalMemoryHandleDesc external_mem_handle_desc_;
        hipExternalMemoryBufferDesc external_mem_buffer_desc_;
-       void *yuv_dev_mem_;
+       uint8_t *yuv_dev_mem_;
        std::mutex mutex_;
        JpegParser jpeg_parser_;
        RocJpegBackend backend_;

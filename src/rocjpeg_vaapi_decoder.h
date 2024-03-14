@@ -41,6 +41,7 @@ public:
     RocJpegStatus InitializeDecoder(std::string gcn_arch_name);
     RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id);
     RocJpegStatus ExportSurface(uint32_t surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
+    RocJpegStatus SyncSurface(uint32_t surface_id);
 
 private:
     int device_id_;

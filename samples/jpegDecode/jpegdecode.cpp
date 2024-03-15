@@ -49,14 +49,15 @@ THE SOFTWARE.
 
 void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
-    << "-i Input File Path - required" << std::endl
-    << "-b Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles); optional; default: 0" << std::endl
-    << "-o Output File Path - dumps output if requested; optional; default: 0" << std::endl
-    << "-d GPU device ID (0 for the first device, 1 for the second, etc.); optional; default: 0" << std::endl;
+    << "-i Path to single image or directory of images - required" << std::endl
+    << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
+    << "-fmt Select rocJPEG output format for decoding, one of the [unchanged, yuv, y, rgbi]; optional; default: unchanged" << std::endl
+    << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
+    << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl;
     exit(0);
 }
 
-void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, int argc, char *argv[]) {
+void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit();
     }
@@ -93,11 +94,29 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
             is_output_rgb = std::stoi(argv[i]);
             continue;
         }
-        if (!strcmp(argv[i], "-b")) {
+        if (!strcmp(argv[i], "-be")) {
             if (++i == argc) {
-                ShowHelpAndExit("-b");
+                ShowHelpAndExit("-be");
             }
             rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
+            continue;
+        }
+        if (!strcmp(argv[i], "-fmt")) {
+            if (++i == argc) {
+                ShowHelpAndExit("-fmt");
+            }
+            std::string selected_output_format = argv[i];
+            if (selected_output_format == "unchanged") {
+                output_format = ROCJPEG_OUTPUT_UNCHANGED;
+            } else if (selected_output_format == "yuv") {
+                output_format = ROCJPEG_OUTPUT_YUV;
+            } else if (selected_output_format == "y") {
+                output_format = ROCJPEG_OUTPUT_Y;
+            } else if (selected_output_format == "rgbi") {
+                output_format = ROCJPEG_OUTPUT_RGBI;
+            } else {
+                ShowHelpAndExit(argv[i]);
+            }
             continue;
         }
         ShowHelpAndExit(argv[i]);
@@ -254,7 +273,7 @@ int main(int argc, char **argv) {
     RocJpegImage output_image = {};
     RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_UNCHANGED;
 
-    ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, argc, argv);
+    ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, output_format, argc, argv);
     if (!GetFilePaths(input_path, file_paths, is_dir, isFile)) {
         std::cerr << "Failed to get input file paths!" << std::endl;
         return -1;
@@ -347,13 +366,16 @@ int main(int argc, char **argv) {
                         channel_sizes[0] = output_image.pitch[0] * heights[0];
                         break;
                     default:
-                        std::cout << "The chroma sub-sampling is nor supported by VCN Hardware" << std::endl;
+                        std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
                         return EXIT_FAILURE;
                 }
                 break;
             case ROCJPEG_OUTPUT_YUV:
                 break;
             case ROCJPEG_OUTPUT_Y:
+                num_channels = 1;
+                output_image.pitch[0] = widths[0];
+                channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
             case ROCJPEG_OUTPUT_RGBI:
                 break;
@@ -361,7 +383,7 @@ int main(int argc, char **argv) {
                 std::cout << "Unknown output format!" << std::endl;
                 return EXIT_FAILURE;
         }
-        // allocate memory for each layer
+        // allocate memory for each channel
         for (int i = 0; i < num_channels; i++) {
             CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
         }

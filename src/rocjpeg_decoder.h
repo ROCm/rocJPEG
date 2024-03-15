@@ -66,10 +66,10 @@ int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint3
 }
 
 /// @brief
-class ROCJpegDecode {
+class ROCJpegDecoder {
     public:
-       ROCJpegDecode(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
-       ~ROCJpegDecode();
+       ROCJpegDecoder(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
+       ~ROCJpegDecoder();
        RocJpegStatus InitializeDecoder();
        RocJpegStatus GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);

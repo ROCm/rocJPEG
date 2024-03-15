@@ -36,9 +36,9 @@ THE SOFTWARE.
  */
 class RocJpegDecoderHandle {
     public:
-        explicit RocJpegDecoderHandle(RocJpegBackend backend, int device_id) : rocjpeg_decoder(std::make_shared<ROCJpegDecode>(backend, device_id)) {};
+        explicit RocJpegDecoderHandle(RocJpegBackend backend, int device_id) : rocjpeg_decoder(std::make_shared<ROCJpegDecoder>(backend, device_id)) {};
         ~RocJpegDecoderHandle() { ClearErrors(); }
-        std::shared_ptr<ROCJpegDecode> rocjpeg_decoder;
+        std::shared_ptr<ROCJpegDecoder> rocjpeg_decoder;
         bool NoError() { return error_.empty(); }
         const char* ErrorMsg() { return error_.c_str(); }
         void CaptureError(const std::string& err_msg) { error_ = err_msg; }

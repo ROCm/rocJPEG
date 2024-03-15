@@ -22,17 +22,17 @@ THE SOFTWARE.
 
 #include "rocjpeg_decoder.h"
 
-ROCJpegDecode::ROCJpegDecode(RocJpegBackend backend, int device_id) :
+ROCJpegDecoder::ROCJpegDecoder(RocJpegBackend backend, int device_id) :
     num_devices_{0}, device_id_ {device_id}, hip_stream_ {0}, external_mem_handle_desc_{{}}, external_mem_buffer_desc_{{}},
     yuv_dev_mem_{nullptr}, backend_{backend} {}
 
-ROCJpegDecode::~ROCJpegDecode() {
+ROCJpegDecoder::~ROCJpegDecoder() {
     if (hip_stream_) {
         hipError_t hip_status = hipStreamDestroy(hip_stream_);
     }
 }
 
-RocJpegStatus ROCJpegDecode::InitHIP(int device_id) {
+RocJpegStatus ROCJpegDecoder::InitHIP(int device_id) {
     hipError_t hip_status = hipSuccess;
     CHECK_HIP(hipGetDeviceCount(&num_devices_));
     if (num_devices_ < 1) {
@@ -49,7 +49,7 @@ RocJpegStatus ROCJpegDecode::InitHIP(int device_id) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus ROCJpegDecode::InitializeDecoder() {
+RocJpegStatus ROCJpegDecoder::InitializeDecoder() {
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     rocjpeg_status = InitHIP(device_id_);
     if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
@@ -68,7 +68,7 @@ RocJpegStatus ROCJpegDecode::InitializeDecoder() {
     return rocjpeg_status;
 }
 
-RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination) {
+RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
 
@@ -141,16 +141,18 @@ RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegO
                 break;
         }*/
         // this is for ROCJPEG_OUTPUT_UNCHANGED
-        // copy Y (luma) channel
-        if (destination->pitch[0] == va_drm_prime_surface_desc.layers[0].pitch[0]) {
-            uint32_t luma_size = destination->pitch[0] * jpeg_stream_params->picture_parameter_buffer.picture_height;
-            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], yuv_dev_mem_, luma_size, hip_stream_));
-        } else {
-            CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], yuv_dev_mem_, va_drm_prime_surface_desc.layers[0].pitch[0],
-                destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, hip_stream_));
+        // copy Y (luma) channel0
+        if (va_drm_prime_surface_desc.layers[0].pitch[0] != 0 && destination->pitch[0] != 0 && destination->channel[0] != nullptr) {
+            if (destination->pitch[0] == va_drm_prime_surface_desc.layers[0].pitch[0]) {
+                uint32_t luma_size = destination->pitch[0] * jpeg_stream_params->picture_parameter_buffer.picture_height;
+                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], yuv_dev_mem_, luma_size, hip_stream_));
+            } else {
+                CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], yuv_dev_mem_, va_drm_prime_surface_desc.layers[0].pitch[0],
+                    destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, hip_stream_));
+            }
         }
-        // copy chroma(U, V) channels
-        if (va_drm_prime_surface_desc.layers[1].pitch[0] != 0) {
+        // copy channel1
+        if (va_drm_prime_surface_desc.layers[1].pitch[0] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
             uint32_t chroma_size = destination->pitch[1] * chroma_height;
             uint8_t *layer1_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[1].offset[0];
             if (destination->pitch[1] == va_drm_prime_surface_desc.layers[1].pitch[0]) {
@@ -160,7 +162,8 @@ RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegO
                     destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
-        if (va_drm_prime_surface_desc.layers[2].pitch[0] != 0) {
+        // copy channel2
+        if (va_drm_prime_surface_desc.layers[2].pitch[0] != 0 && destination->pitch[2] != 0 && destination->channel[2] != nullptr) {
             uint32_t chroma_size = destination->pitch[2] * chroma_height;
             uint8_t *layer2_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[2].offset[0];
             if (destination->pitch[2] == va_drm_prime_surface_desc.layers[2].pitch[0]) {
@@ -184,7 +187,7 @@ RocJpegStatus ROCJpegDecode::Decode(const uint8_t *data, size_t length, RocJpegO
 
 }
 
-RocJpegStatus ROCJpegDecode::GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
+RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
     std::lock_guard<std::mutex> lock(mutex_);
     if (widths == nullptr || heights == nullptr || num_components == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
@@ -235,7 +238,7 @@ RocJpegStatus ROCJpegDecode::GetImageInfo(const uint8_t *data, size_t length, ui
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-bool ROCJpegDecode::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
+bool ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
     void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride) {
 
     hipError_t hip_status = hipSuccess;

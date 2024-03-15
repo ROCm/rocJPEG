@@ -175,14 +175,11 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         case CSS_420:
             surface_format = VA_RT_FORMAT_YUV420;
             break;
-        case CSS_411:
-            surface_format = VA_RT_FORMAT_YUV411;
-            break;
         case CSS_400:
             surface_format = VA_RT_FORMAT_YUV400;
             break;
         default:
-            ERR("ERROR: unsuported surface format " + TOSTR(jpeg_stream_params->chroma_subsampling));
+            ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
             break;
     }

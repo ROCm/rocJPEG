@@ -367,7 +367,11 @@ int main(int argc, char **argv) {
                         break;
                     default:
                         std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
-                        return EXIT_FAILURE;
+                        if (is_dir) {
+                            std::cout << std::endl;
+                            continue;
+                        } else
+                            return EXIT_FAILURE;
                 }
                 break;
             case ROCJPEG_OUTPUT_YUV:
@@ -436,9 +440,11 @@ int main(int argc, char **argv) {
 
     if (is_dir) {
         std::cout << "info: total decoded images: " << total_images_all << std::endl;
-        std::cout << "info: average processing time per image (ms): " << time_per_image_all / total_images_all << std::endl;
-        std::cout << "info: average decoded images per sec: " << image_per_sec_all / total_images_all << std::endl;
-        std::cout << "info: average decoded mpixels per sec: " << m_pixels_all / total_images_all << std::endl;
+        if (total_images_all) {
+            std::cout << "info: average processing time per image (ms): " << time_per_image_all / total_images_all << std::endl;
+            std::cout << "info: average decoded images per sec: " << image_per_sec_all / total_images_all << std::endl;
+            std::cout << "info: average decoded mpixels per sec: " << m_pixels_all / total_images_all << std::endl;
+        }
         std::cout << std::endl;
     }
 

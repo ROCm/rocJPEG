@@ -212,23 +212,36 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
             break;
         case CSS_422:
             *subsampling = ROCJPEG_CSS_422;
+            widths[2] = widths[1] = widths[0] >> 1;
+            heights[2] = heights[1] = heights[0];
+            widths[3] = 0;
+            heights[3] = 0;
             break;
         case CSS_420:
             *subsampling = ROCJPEG_CSS_420;
-            widths[1] = widths[0];
-            heights[1] = heights[0] >> 1;
-            widths[3] = widths[2] = 0;
-            heights[3] = heights[2] = 0;
-             // the output of the YUV420 chroma subsampling is NV12
-            *num_components -= 1;
-            break;
-        case CSS_411:
-            *subsampling = ROCJPEG_CSS_411;
+            widths[2] = widths[1] = widths[0] >> 1;
+            heights[2] = heights[1] = heights[0] >> 1;
+            widths[3] = 0;
+            heights[3] = 0;
             break;
         case CSS_400:
             *subsampling = ROCJPEG_CSS_400;
             widths[3] = widths[2] = widths[1] = 0;
             heights[3] = heights[2] = heights[1] = 0;
+            break;
+        case CSS_411:
+            *subsampling = ROCJPEG_CSS_411;
+            widths[2] = widths[1] = widths[0] >> 2;
+            heights[2] = heights[1] = heights[0];
+            widths[3] = 0;
+            heights[3] = 0;
+            break;
+        case CSS_440:
+            *subsampling = ROCJPEG_CSS_440;
+            widths[2] = widths[1] = widths[0] >> 1;
+            heights[2] = heights[1] = heights[0] >> 1;
+            widths[3] = 0;
+            heights[3] = 0;
             break;
         default:
             *subsampling = ROCJPEG_CSS_UNKNOWN;

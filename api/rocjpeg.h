@@ -86,18 +86,11 @@ typedef enum {
 //! \ingroup group_amd_rocjpeg
 //! this structure is jpeg image descriptor used to return the decoded output image. User must allocate device
 //! memories for each channel for this structure and pass it to the decoder API.
-//! the decoder APIs then copies the decode image to this struct based on the requested output format (see below).
+//! the decoder APIs then copies the decode image to this struct based on the requested output format (see RocJpegOutputFormat).
 /*****************************************************/
 typedef struct {
-    // number of channels in the decoded output image
-    // For ROCJPEG_CSS_444(YUV:444) the decoded output image has three channels (Y, U, and V)
-    // For ROCJPEG_CSS_420(YUV:420) the decoded output image has two channels (Y, and UV(interleaved))
-    // For ROCJPEG_CSS_400(YUV:400) the decoded output image has one channel (Y only)
     uint8_t* channel[ROCJPEG_MAX_COMPONENT];
     uint32_t pitch[ROCJPEG_MAX_COMPONENT]; // pitch of each channel
-    uint32_t width[ROCJPEG_MAX_COMPONENT]; // width of each channel
-    uint32_t height[ROCJPEG_MAX_COMPONENT]; // height of each channel
-    uint32_t num_layes; // total number of channles returned
 } RocJpegImage;
 
 /*****************************************************/
@@ -106,7 +99,7 @@ typedef struct {
 //! RocJpegOutputFormat enum specifies what type of output user wants for image decoding
 /*****************************************************/
 typedef enum {
-    // return decoded YUV image from the VCN JPEG deocder unchanged.
+    // return native unchanged decoded YUV image from the VCN JPEG deocder.
     // For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
     // For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
     // For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage

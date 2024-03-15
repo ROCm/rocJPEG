@@ -23,8 +23,7 @@ THE SOFTWARE.
 #include "rocjpeg_decoder.h"
 
 ROCJpegDecoder::ROCJpegDecoder(RocJpegBackend backend, int device_id) :
-    num_devices_{0}, device_id_ {device_id}, hip_stream_ {0}, external_mem_handle_desc_{{}}, external_mem_buffer_desc_{{}},
-    yuv_dev_mem_{nullptr}, backend_{backend} {}
+    num_devices_{0}, device_id_ {device_id}, hip_stream_ {0}, backend_{backend}, hip_interop_{} {}
 
 ROCJpegDecoder::~ROCJpegDecoder() {
     if (hip_stream_) {
@@ -86,6 +85,9 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
     if (destination != nullptr) {
         VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
+        hipExternalMemoryHandleDesc external_mem_handle_desc = {};
+        hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
+
         rocjpeg_status = jpeg_vaapi_decoder_.SyncSurface(current_surface_id);
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
             return rocjpeg_status;
@@ -97,14 +99,31 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
         }
 
         // import the decoded surface (DRM-PRIME FDs) into the HIP
-        external_mem_handle_desc_.type = hipExternalMemoryHandleTypeOpaqueFd;
-        external_mem_handle_desc_.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
-        external_mem_handle_desc_.size = va_drm_prime_surface_desc.objects[0].size;
+        external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
+        external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
+        external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
 
-        CHECK_HIP(hipImportExternalMemory(&hip_ext_mem_, &external_mem_handle_desc_));
+        CHECK_HIP(hipImportExternalMemory(&hip_interop_.hip_ext_mem, &external_mem_handle_desc));
 
-        external_mem_buffer_desc_.size = va_drm_prime_surface_desc.objects[0].size;
-        CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&yuv_dev_mem_, hip_ext_mem_, &external_mem_buffer_desc_));
+        external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
+        CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&hip_interop_.hip_mapped_device_mem, hip_interop_.hip_ext_mem, &external_mem_buffer_desc));
+
+        hip_interop_.width = va_drm_prime_surface_desc.width;
+        hip_interop_.height = va_drm_prime_surface_desc.height;
+
+        hip_interop_.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+        hip_interop_.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+        hip_interop_.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+
+        hip_interop_.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+        hip_interop_.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+        hip_interop_.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+
+        hip_interop_.num_layers = va_drm_prime_surface_desc.num_layers;
+
+        for (int i = 0; i < (int)va_drm_prime_surface_desc.num_objects; ++i) {
+            close(va_drm_prime_surface_desc.objects[i].fd);
+        }
 
         uint32_t chroma_height = 0;
         switch (va_drm_prime_surface_desc.fourcc) {
@@ -142,45 +161,42 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
         }*/
         // this is for ROCJPEG_OUTPUT_UNCHANGED
         // copy Y (luma) channel0
-        if (va_drm_prime_surface_desc.layers[0].pitch[0] != 0 && destination->pitch[0] != 0 && destination->channel[0] != nullptr) {
-            if (destination->pitch[0] == va_drm_prime_surface_desc.layers[0].pitch[0]) {
+        if (hip_interop_.pitch[0] != 0 && destination->pitch[0] != 0 && destination->channel[0] != nullptr) {
+            if (destination->pitch[0] == hip_interop_.pitch[0]) {
                 uint32_t luma_size = destination->pitch[0] * jpeg_stream_params->picture_parameter_buffer.picture_height;
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], yuv_dev_mem_, luma_size, hip_stream_));
+                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], hip_interop_.hip_mapped_device_mem, luma_size, hip_stream_));
             } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], yuv_dev_mem_, va_drm_prime_surface_desc.layers[0].pitch[0],
+                CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
                     destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
         // copy channel1
-        if (va_drm_prime_surface_desc.layers[1].pitch[0] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
+        if (hip_interop_.pitch[1] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
             uint32_t chroma_size = destination->pitch[1] * chroma_height;
-            uint8_t *layer1_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[1].offset[0];
-            if (destination->pitch[1] == va_drm_prime_surface_desc.layers[1].pitch[0]) {
+            uint8_t *layer1_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1];
+            if (destination->pitch[1] == hip_interop_.pitch[1]) {
                 CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[1], layer1_mem, chroma_size, hip_stream_));
             } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[1], destination->pitch[1], layer1_mem, va_drm_prime_surface_desc.layers[1].pitch[0],
+                CHECK_HIP(hipMemcpy2DAsync(destination->channel[1], destination->pitch[1], layer1_mem, hip_interop_.pitch[1],
                     destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
         // copy channel2
-        if (va_drm_prime_surface_desc.layers[2].pitch[0] != 0 && destination->pitch[2] != 0 && destination->channel[2] != nullptr) {
+        if (hip_interop_.pitch[2] != 0 && destination->pitch[2] != 0 && destination->channel[2] != nullptr) {
             uint32_t chroma_size = destination->pitch[2] * chroma_height;
-            uint8_t *layer2_mem = yuv_dev_mem_ + va_drm_prime_surface_desc.layers[2].offset[0];
-            if (destination->pitch[2] == va_drm_prime_surface_desc.layers[2].pitch[0]) {
+            uint8_t *layer2_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[2];
+            if (destination->pitch[2] == hip_interop_.pitch[2]) {
                 CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[2], layer2_mem, chroma_size, hip_stream_));
             } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[2], destination->pitch[2], layer2_mem, va_drm_prime_surface_desc.layers[2].pitch[0],
+                CHECK_HIP(hipMemcpy2DAsync(destination->channel[2], destination->pitch[2], layer2_mem, hip_interop_.pitch[2],
                     destination->pitch[2], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
             }
         }
 
         CHECK_HIP(hipStreamSynchronize(hip_stream_));
 
-        CHECK_HIP(hipFree(yuv_dev_mem_));
-        CHECK_HIP(hipDestroyExternalMemory(hip_ext_mem_));
-        for (int i = 0; i < (int)va_drm_prime_surface_desc.num_objects; ++i) {
-            close(va_drm_prime_surface_desc.objects[i].fd);
-        }
+        CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
+        CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
     }
 
     return ROCJPEG_STATUS_SUCCESS;

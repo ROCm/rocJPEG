@@ -127,20 +127,87 @@ static inline int align(int value, int alignment) {
    return (value + alignment - 1) & ~(alignment - 1);
 }
 
-void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t *img_width, uint32_t *img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
+void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
 
     uint8_t *hst_ptr = nullptr;
     FILE *fp;
     hipError_t hip_status = hipSuccess;
 
-    if (output_image == nullptr || img_width == nullptr || img_height == nullptr || output_image->channel[0] == nullptr ||
-        output_image->pitch[0] == 0 || img_height[0] == 0) {
+    if (output_image == nullptr || output_image->channel[0] == nullptr || output_image->pitch[0] == 0) {
         return;
     }
 
-    uint32_t channel0_size = output_image->pitch[0] * img_height[0];
-    uint32_t channel1_size = output_image->pitch[1] * img_height[1];
-    uint32_t channel2_size = output_image->pitch[2] * img_height[2];
+    uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
+    uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
+
+    switch (output_format) {
+        case ROCJPEG_OUTPUT_UNCHANGED:
+            switch (subsampling) {
+                case ROCJPEG_CSS_444:
+                    widths[2] = widths[1] = widths[0] = img_width;
+                    heights[2] = heights[1] = heights[0] = img_height;
+                    break;
+                case ROCJPEG_CSS_422:
+                    widths[0] = img_width * 2;
+                    heights[0] = img_height;
+                    break;
+                case ROCJPEG_CSS_420:
+                    widths[1] = widths[0] = img_width;
+                    heights[0] = img_height;
+                    heights[1] = img_height >> 1;
+                    break;
+                case ROCJPEG_CSS_400:
+                    widths[0] = img_width;
+                    heights[0] = img_height;
+                    break;
+                default:
+                    std::cout << "Unknown chroma subsampling!" << std::endl;
+                    return;
+            }
+            break;
+        case ROCJPEG_OUTPUT_YUV:
+            switch (subsampling) {
+                case ROCJPEG_CSS_444:
+                    widths[2] = widths[1] = widths[0] = img_width;
+                    heights[2] = heights[1] = heights[0] = img_height;
+                    break;
+                case ROCJPEG_CSS_422:
+                    widths[0] = img_width;
+                    widths[2] = widths[1] = widths[0] >> 1;
+                    heights[2] = heights[1] = heights[0] = img_height;
+                    break;
+                case ROCJPEG_CSS_420:
+                    widths[0] = img_width;
+                    widths[2] = widths[1] = widths[0] >> 1;
+                    heights[0] = img_height;
+                    heights[2] = heights[1] = img_height >> 1;
+                    break;
+                case ROCJPEG_CSS_400:
+                    widths[0] = img_width;
+                    heights[0] = img_height;
+                    break;
+                default:
+                    std::cout << "Unknown chroma subsampling!" << std::endl;
+                    return;
+            }
+            break;
+        case ROCJPEG_OUTPUT_Y:
+            widths[0] = img_width;
+            heights[0] = img_height;
+            break;
+        case ROCJPEG_OUTPUT_RGBI:
+            widths[0] = img_width * 3;
+            heights[0] = img_height;
+            break;
+        default:
+            std::cout << "Unknown output format!" << std::endl;
+            return;
+    }
+
+    uint32_t channel0_size = output_image->pitch[0] * heights[0];
+    uint32_t channel1_size = output_image->pitch[1] * heights[1];
+    uint32_t channel2_size = output_image->pitch[2] * heights[2];
+
     uint32_t output_image_size = channel0_size + channel1_size + channel2_size;
 
     if (hst_ptr == nullptr) {
@@ -153,50 +220,36 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
     fp = fopen(output_file_name.c_str(), "wb");
     if (fp) {
         // write channel0
-        if (img_width[0] == output_image->pitch[0]) {
+        if (widths[0] == output_image->pitch[0]) {
             fwrite(hst_ptr, 1, channel0_size, fp);
         } else {
-            uint32_t width = 0;
-            switch (output_format) {
-                case ROCJPEG_OUTPUT_UNCHANGED:
-                    if (subsampling == ROCJPEG_CSS_422) {
-                        width = img_width[0] * 2;
-                    }
-                    break;
-                case ROCJPEG_OUTPUT_RGBI:
-                    width = img_width[0] * 3;
-                    break;
-                default:
-                    width = img_width[0];
-                    break;
-            }
-            for (int i = 0; i < img_height[0]; i++) {
-                fwrite(tmp_hst_ptr, 1, width, fp);
+            for (int i = 0; i < heights[0]; i++) {
+                fwrite(tmp_hst_ptr, 1, widths[0], fp);
                 tmp_hst_ptr += output_image->pitch[0];
             }
         }
         // write channel1
-        if (channel1_size != 0) {
+        if (channel1_size != 0 && output_image->channel[1] != nullptr) {
             uint8_t *channel1_hst_ptr = hst_ptr + channel0_size;
             CHECK_HIP(hipMemcpyDtoH((void *)channel1_hst_ptr, output_image->channel[1], channel1_size));
-            if (img_width[1] == output_image->pitch[1]) {
+            if (widths[1] == output_image->pitch[1]) {
                 fwrite(channel1_hst_ptr, 1, channel1_size, fp);
             } else {
-                for (int i = 0; i < img_height[1]; i++) {
-                    fwrite(channel1_hst_ptr, 1, img_width[1], fp);
+                for (int i = 0; i < heights[1]; i++) {
+                    fwrite(channel1_hst_ptr, 1, widths[1], fp);
                     channel1_hst_ptr += output_image->pitch[1];
                 }
             }
         }
         // write channel2
-        if (channel2_size != 0) {
+        if (channel2_size != 0 && output_image->channel[2] != nullptr) {
             uint8_t *channel2_hst_ptr = hst_ptr + channel0_size + channel1_size;
             CHECK_HIP(hipMemcpyDtoH((void *)channel2_hst_ptr, output_image->channel[2], channel2_size));
-            if (img_width[2] == output_image->pitch[2]) {
+            if (widths[2] == output_image->pitch[2]) {
                 fwrite(channel2_hst_ptr, 1, channel2_size, fp);
             } else {
-                for (int i = 0; i < img_height[2]; i++) {
-                    fwrite(channel2_hst_ptr, 1, img_width[2], fp);
+                for (int i = 0; i < heights[2]; i++) {
+                    fwrite(channel2_hst_ptr, 1, widths[2], fp);
                     channel2_hst_ptr += output_image->pitch[2];
                 }
             }
@@ -430,7 +483,7 @@ int main(int argc, char **argv) {
             std::string file_name_for_saving = output_file_path + "//" + file_name_no_ext + "_" + std::to_string(widths[0]) + "x"
                 + std::to_string(heights[0]) + "." + (is_output_rgb ? "rgbi" : "yuv");
             std::string image_save_path = is_dir ? file_name_for_saving : output_file_path;
-            SaveImage(image_save_path, &output_image, widths, heights, subsampling, output_format);
+            SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
         }
 
         for (int i = 0; i < num_channels; i++) {

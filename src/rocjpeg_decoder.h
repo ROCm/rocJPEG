@@ -65,6 +65,16 @@ int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint3
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 }
 
+struct HipInteropDeviceMem {
+    hipExternalMemory_t hip_ext_mem; // Interface to the vaapi-hip interop
+    uint8_t* hip_mapped_device_mem; // Mapped device memory for the YUV plane
+    uint32_t width; // Width of the surface in pixels.
+    uint32_t height; // Height of the surface in pixels.
+    uint32_t offset[3]; // Offset of each plane
+    uint32_t pitch[3]; // Pitch of each plane
+    uint32_t num_layers; // Number of layers making up the surface
+};
+
 /// @brief
 class ROCJpegDecoder {
     public:
@@ -81,12 +91,9 @@ class ROCJpegDecoder {
        int device_id_;
        hipDeviceProp_t hip_dev_prop_;
        hipStream_t hip_stream_;
-       hipExternalMemory_t hip_ext_mem_;
-       hipExternalMemoryHandleDesc external_mem_handle_desc_;
-       hipExternalMemoryBufferDesc external_mem_buffer_desc_;
-       uint8_t *yuv_dev_mem_;
        std::mutex mutex_;
        JpegParser jpeg_parser_;
        RocJpegBackend backend_;
        RocJpegVappiDecoder jpeg_vaapi_decoder_;
+       HipInteropDeviceMem hip_interop_;
 };

@@ -316,6 +316,7 @@ int main(int argc, char **argv) {
 
         std::cout << "info: input file name: " << base_file_name << std::endl;
         std::cout << "info: input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
+
         switch (subsampling) {
             case ROCJPEG_CSS_444:
                 chroma_sub_sampling = "YUV 4:4:4";
@@ -339,7 +340,16 @@ int main(int argc, char **argv) {
                 std::cout << "info: Unknown chroma subsampling" << std::endl;
                 return EXIT_FAILURE;
         }
-        std::cout << "info: "+ chroma_sub_sampling + " chroma subsampling" << std::endl;
+        std::cout << "info: chroma subsampling: " + chroma_sub_sampling  << std::endl;
+
+        if (subsampling == ROCJPEG_CSS_440 || subsampling == ROCJPEG_CSS_411) {
+            std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
+            if (is_dir) {
+                std::cout << std::endl;
+                    continue;
+            } else
+                return EXIT_FAILURE;
+        }
 
         switch (output_format) {
             case ROCJPEG_OUTPUT_UNCHANGED:
@@ -366,15 +376,24 @@ int main(int argc, char **argv) {
                         channel_sizes[0] = output_image.pitch[0] * heights[0];
                         break;
                     default:
-                        std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
-                        if (is_dir) {
-                            std::cout << std::endl;
-                            continue;
-                        } else
-                            return EXIT_FAILURE;
+                        std::cout << "Unknown chroma subsampling!" << std::endl;
+                        return EXIT_FAILURE;
                 }
                 break;
             case ROCJPEG_OUTPUT_YUV:
+                if (subsampling == ROCJPEG_CSS_400) {
+                    num_channels = 1;
+                    output_image.pitch[0] = widths[0];
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                } else {
+                    num_channels = 3;
+                    output_image.pitch[0] = widths[0];
+                    output_image.pitch[1] = widths[1];
+                    output_image.pitch[2] = widths[2];
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    channel_sizes[1] = output_image.pitch[1] * heights[1];
+                    channel_sizes[2] = output_image.pitch[2] * heights[2];
+                }
                 break;
             case ROCJPEG_OUTPUT_Y:
                 num_channels = 1;
@@ -382,6 +401,9 @@ int main(int argc, char **argv) {
                 channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
             case ROCJPEG_OUTPUT_RGBI:
+                num_channels = 1;
+                output_image.pitch[0] = widths[0] * 3;
+                channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
@@ -416,14 +438,6 @@ int main(int argc, char **argv) {
         }
 
         std::cout << "info: total decoded images: " << image_count << std::endl;
-        if (is_output_rgb == 0) {
-            std::cout << "info: output image format: " << chroma_sub_sampling << std::endl;
-        } else {
-            if (subsampling != ROCJPEG_CSS_400)
-                std::cout << "info: output frame format: " << "RGB" << std::endl;
-            else
-                std::cout << "info: output frame format: " << chroma_sub_sampling << std::endl;
-        }
         std::cout << "info: average processing time per image (ms): " << time_per_image << std::endl;
         std::cout << "info: average images per sec: " << (1 / time_per_image) * 1000 << std::endl;
         std::cout << "info: total elapsed time (s): " << decoder_time.count() << std::endl;

@@ -101,72 +101,43 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             return rocjpeg_status;
         }
 
-        uint32_t chroma_height = 0;
-        switch (va_drm_prime_surface_desc.fourcc) {
-            case VA_FOURCC_NV12: /*NV12: two-plane 8-bit YUV 4:2:0*/
-                chroma_height = jpeg_stream_params->picture_parameter_buffer.picture_height >> 1;
-                break;
-            case VA_FOURCC_444P: /*444P: three-plane 8-bit YUV 4:4:4*/
-                chroma_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
-                break;
-            case VA_FOURCC_Y800: /*Y800: one-plane 8-bit greyscale YUV 4:0:0*/
-                chroma_height = 0;
-                break;
-            case 0x56595559: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
-                /*Note: va.h doesn't have VA_FOURCC_YUYV defined but vaExportSurfaceHandle returns 0x56595559 for packed YUYV for YUV 4:2:2*/
-                chroma_height = jpeg_stream_params->picture_parameter_buffer.picture_height >> 1;
-                break;
-            default:
-                return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+        uint16_t chroma_height = 0;
+        rocjpeg_status = GetChromaHeight(jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height);
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            return rocjpeg_status;
         }
-        /*switch (output_format) {
+
+        switch (output_format) {
             case ROCJPEG_OUTPUT_UNCHANGED:
-                // just copy the interop mempry directly to the destination buffrs
+                // copy the native decoded buffers from interop memory directly to the destination buffers
+                rocjpeg_status = CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height);
+                if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                    return rocjpeg_status;
+                }
+                rocjpeg_status = CopyChroma(destination, chroma_height);
+                if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                    return rocjpeg_status;
+                }
                 break;
             case ROCJPEG_OUTPUT_YUV:
                 // Need to separate the UV channels in the case of NV12 or packed YUYV and then copy into three separate channels
                 break;
             case ROCJPEG_OUTPUT_Y:
-                // just copy the Y to the first-channel of the destination, for YUYV first extreact the Y then copy
+                // just copy the Y to the first-channel of the destination,
+                if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
+                    //TODO extract Y channel from the packed YUYV
+                } else {
+                    rocjpeg_status = CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height);
+                    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                        return rocjpeg_status;
+                    }
+                }
                 break;
             case ROCJPEG_OUTPUT_RGBI:
                     // Need to do color conversion and then copy to the first channel of the destination
                 break;
             default:
                 break;
-        }*/
-        // this is for ROCJPEG_OUTPUT_UNCHANGED
-        // copy Y (luma) channel0
-        if (hip_interop_.pitch[0] != 0 && destination->pitch[0] != 0 && destination->channel[0] != nullptr) {
-            if (destination->pitch[0] == hip_interop_.pitch[0]) {
-                uint32_t luma_size = destination->pitch[0] * jpeg_stream_params->picture_parameter_buffer.picture_height;
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], hip_interop_.hip_mapped_device_mem, luma_size, hip_stream_));
-            } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
-                    destination->pitch[0], jpeg_stream_params->picture_parameter_buffer.picture_height, hipMemcpyDeviceToDevice, hip_stream_));
-            }
-        }
-        // copy channel1
-        if (hip_interop_.pitch[1] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
-            uint32_t chroma_size = destination->pitch[1] * chroma_height;
-            uint8_t *layer1_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1];
-            if (destination->pitch[1] == hip_interop_.pitch[1]) {
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[1], layer1_mem, chroma_size, hip_stream_));
-            } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[1], destination->pitch[1], layer1_mem, hip_interop_.pitch[1],
-                    destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
-            }
-        }
-        // copy channel2
-        if (hip_interop_.pitch[2] != 0 && destination->pitch[2] != 0 && destination->channel[2] != nullptr) {
-            uint32_t chroma_size = destination->pitch[2] * chroma_height;
-            uint8_t *layer2_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[2];
-            if (destination->pitch[2] == hip_interop_.pitch[2]) {
-                CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[2], layer2_mem, chroma_size, hip_stream_));
-            } else {
-                CHECK_HIP(hipMemcpy2DAsync(destination->channel[2], destination->pitch[2], layer2_mem, hip_interop_.pitch[2],
-                    destination->pitch[2], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
-            }
         }
 
         CHECK_HIP(hipStreamSynchronize(hip_stream_));
@@ -245,33 +216,33 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-bool ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
+RocJpegStatus ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
     void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride) {
 
     hipError_t hip_status = hipSuccess;
     size_t luma_size = (yuv_image_stride * align(height, 16));
 
     switch (subsampling) {
-        case ROCJPEG_CSS_420:
-            HipExecColorConvertNV12ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
-                (const uint8_t *)yuv_dev_mem, yuv_image_stride, (const uint8_t *)yuv_dev_mem + luma_size, yuv_image_stride);
-            break;
         case ROCJPEG_CSS_444:
             HipExecColorConvertYUV444ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
                 (const uint8_t *)yuv_dev_mem, yuv_image_stride, luma_size);
             break;
+        case ROCJPEG_CSS_422:
+            //TODO add support
+            break;
+        case ROCJPEG_CSS_420:
+            HipExecColorConvertNV12ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
+                (const uint8_t *)yuv_dev_mem, yuv_image_stride, (const uint8_t *)yuv_dev_mem + luma_size, yuv_image_stride);
+            break;
+        case ROCJPEG_CSS_400:
+            //TODO add support
+            break;
         default:
             std::cout << "Error! surface format is not supported!" << std::endl;
-            return false;
+            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
     }
 
-    hip_status = hipStreamSynchronize(hip_stream_);
-    if (hip_status != hipSuccess) {
-        std::cout << "ERROR: hipStreamSynchronize failed! (" << hip_status << ")" << std::endl;
-        return false;
-    }
-
-    return true;
+    return ROCJPEG_STATUS_SUCCESS;
     }
 
 RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
@@ -287,6 +258,7 @@ RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_d
     external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
     CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&hip_interop_.hip_mapped_device_mem, hip_interop_.hip_ext_mem, &external_mem_buffer_desc));
 
+    hip_interop_.surface_format = va_drm_prime_surface_desc.fourcc;
     hip_interop_.width = va_drm_prime_surface_desc.width;
     hip_interop_.height = va_drm_prime_surface_desc.height;
 
@@ -309,5 +281,65 @@ RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_d
 RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem() {
     CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
     CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::CopyLuma(RocJpegImage *destination, uint16_t picture_height) {
+    if (hip_interop_.pitch[0] != 0 && destination->pitch[0] != 0 && destination->channel[0] != nullptr) {
+        if (destination->pitch[0] == hip_interop_.pitch[0]) {
+            uint32_t luma_size = destination->pitch[0] * picture_height;
+            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[0], hip_interop_.hip_mapped_device_mem, luma_size, hip_stream_));
+        } else {
+            CHECK_HIP(hipMemcpy2DAsync(destination->channel[0], destination->pitch[0], hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
+            destination->pitch[0], picture_height, hipMemcpyDeviceToDevice, hip_stream_));
+        }
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::CopyChroma(RocJpegImage *destination, uint16_t chroma_height) {
+    // copy channel2
+    if (hip_interop_.pitch[1] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
+        uint32_t chroma_size = destination->pitch[1] * chroma_height;
+        uint8_t *layer1_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1];
+        if (destination->pitch[1] == hip_interop_.pitch[1]) {
+            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[1], layer1_mem, chroma_size, hip_stream_));
+        } else {
+            CHECK_HIP(hipMemcpy2DAsync(destination->channel[1], destination->pitch[1], layer1_mem, hip_interop_.pitch[1],
+                destination->pitch[1], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
+        }
+    }
+    // copy channel2
+    if (hip_interop_.pitch[2] != 0 && destination->pitch[2] != 0 && destination->channel[2] != nullptr) {
+        uint32_t chroma_size = destination->pitch[2] * chroma_height;
+        uint8_t *layer2_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[2];
+        if (destination->pitch[2] == hip_interop_.pitch[2]) {
+            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[2], layer2_mem, chroma_size, hip_stream_));
+        } else {
+            CHECK_HIP(hipMemcpy2DAsync(destination->channel[2], destination->pitch[2], layer2_mem, hip_interop_.pitch[2],
+                destination->pitch[2], chroma_height, hipMemcpyDeviceToDevice, hip_stream_));
+        }
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height) {
+    switch (hip_interop_.surface_format) {
+        case VA_FOURCC_NV12: /*NV12: two-plane 8-bit YUV 4:2:0*/
+            chroma_height = picture_height >> 1;
+            break;
+        case VA_FOURCC_444P: /*444P: three-plane 8-bit YUV 4:4:4*/
+            chroma_height = picture_height;
+            break;
+        case VA_FOURCC_Y800: /*Y800: one-plane 8-bit greyscale YUV 4:0:0*/
+            chroma_height = 0;
+            break;
+        case 0x56595559: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
+                         /*Note: va.h doesn't have VA_FOURCC_YUYV defined but vaExportSurfaceHandle returns 0x56595559 for packed YUYV for YUV 4:2:2*/
+            chroma_height = picture_height;
+            break;
+        default:
+            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+    }
     return ROCJPEG_STATUS_SUCCESS;
 }

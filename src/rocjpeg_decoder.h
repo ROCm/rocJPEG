@@ -68,6 +68,7 @@ int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint3
 struct HipInteropDeviceMem {
     hipExternalMemory_t hip_ext_mem; // Interface to the vaapi-hip interop
     uint8_t* hip_mapped_device_mem; // Mapped device memory for the YUV plane
+    uint32_t surface_format; // Pixel format fourcc of the whole surface
     uint32_t width; // Width of the surface in pixels.
     uint32_t height; // Height of the surface in pixels.
     uint32_t offset[3]; // Offset of each plane
@@ -85,10 +86,13 @@ class ROCJpegDecoder {
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
-       bool ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
+       RocJpegStatus ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
             void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride);
        RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
        RocJpegStatus ReleaseHipInteropMem();
+       RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
+       RocJpegStatus CopyLuma(RocJpegImage *destination, uint16_t picture_height);
+       RocJpegStatus CopyChroma(RocJpegImage *destination, uint16_t chroma_height);
        int num_devices_;
        int device_id_;
        hipDeviceProp_t hip_dev_prop_;

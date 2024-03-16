@@ -149,7 +149,7 @@ To verify your installation using a sample application, run:
 mkdir rocjpeg-sample && cd rocjpeg-sample
 cmake /opt/rocm/share/rocjpeg/samples/jpegDecode/
 make -j8
-./videodecode -i /opt/rocm/share/rocjpeg/image/mug.jpg
+./videodecode -i /opt/rocm/share/rocjpeg/image/mug_420.jpg
 ```
 
 ### Using test package

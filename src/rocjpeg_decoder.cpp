@@ -85,8 +85,6 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
     if (destination != nullptr) {
         VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
-        hipExternalMemoryHandleDesc external_mem_handle_desc = {};
-        hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
 
         rocjpeg_status = jpeg_vaapi_decoder_.SyncSurface(current_surface_id);
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
@@ -98,31 +96,9 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             return rocjpeg_status;
         }
 
-        // import the decoded surface (DRM-PRIME FDs) into the HIP
-        external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
-        external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
-        external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
-
-        CHECK_HIP(hipImportExternalMemory(&hip_interop_.hip_ext_mem, &external_mem_handle_desc));
-
-        external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
-        CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&hip_interop_.hip_mapped_device_mem, hip_interop_.hip_ext_mem, &external_mem_buffer_desc));
-
-        hip_interop_.width = va_drm_prime_surface_desc.width;
-        hip_interop_.height = va_drm_prime_surface_desc.height;
-
-        hip_interop_.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
-        hip_interop_.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
-        hip_interop_.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
-
-        hip_interop_.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
-        hip_interop_.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
-        hip_interop_.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
-
-        hip_interop_.num_layers = va_drm_prime_surface_desc.num_layers;
-
-        for (int i = 0; i < (int)va_drm_prime_surface_desc.num_objects; ++i) {
-            close(va_drm_prime_surface_desc.objects[i].fd);
+        rocjpeg_status = GetHipInteropMem(va_drm_prime_surface_desc);
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            return rocjpeg_status;
         }
 
         uint32_t chroma_height = 0;
@@ -195,8 +171,10 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
         CHECK_HIP(hipStreamSynchronize(hip_stream_));
 
-        CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
-        CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
+        rocjpeg_status = ReleaseHipInteropMem();
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            return rocjpeg_status;
+        }
     }
 
     return ROCJPEG_STATUS_SUCCESS;
@@ -295,3 +273,41 @@ bool ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_i
 
     return true;
     }
+
+RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
+    hipExternalMemoryHandleDesc external_mem_handle_desc = {};
+    hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
+
+    external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
+    external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
+    external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
+
+    CHECK_HIP(hipImportExternalMemory(&hip_interop_.hip_ext_mem, &external_mem_handle_desc));
+
+    external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
+    CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&hip_interop_.hip_mapped_device_mem, hip_interop_.hip_ext_mem, &external_mem_buffer_desc));
+
+    hip_interop_.width = va_drm_prime_surface_desc.width;
+    hip_interop_.height = va_drm_prime_surface_desc.height;
+
+    hip_interop_.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+    hip_interop_.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+    hip_interop_.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+
+    hip_interop_.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+    hip_interop_.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+    hip_interop_.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+
+    hip_interop_.num_layers = va_drm_prime_surface_desc.num_layers;
+
+    for (int i = 0; i < (int)va_drm_prime_surface_desc.num_objects; ++i) {
+        close(va_drm_prime_surface_desc.objects[i].fd);
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem() {
+    CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
+    CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
+    return ROCJPEG_STATUS_SUCCESS;
+}

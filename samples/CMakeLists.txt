@@ -31,5 +31,5 @@ add_test(
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${CMAKE_SOURCE_DIR}/data/images/mug.jpg
+            -i ${CMAKE_SOURCE_DIR}/data/images/mug_420.jpg
 )

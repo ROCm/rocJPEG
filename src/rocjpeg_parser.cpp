@@ -42,6 +42,7 @@ bool JpegParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t jpeg_strea
     stream_length_ = jpeg_stream_size;
     stream_end_ = stream_ + stream_length_;
 
+    jpeg_stream_parameters_ = {};
     bool soi_marker_found = false;
     bool sos_marker_found = false;
     bool dht_marker_found = false;

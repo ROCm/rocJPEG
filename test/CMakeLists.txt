@@ -53,12 +53,12 @@ endif()
 # jpegDecode
 add_test(
   NAME
-    video_decode-H265
+    jpeg_decode-fmt-unchanged
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/mug.jpg
+            -i ${ROCM_PATH}/share/rocjpeg/images/mug_420.jpg
 )

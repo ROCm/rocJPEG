@@ -170,7 +170,7 @@ class JpegParser {
         const uint8_t *stream_;
         const uint8_t *stream_end_;
         uint32_t stream_length_;
-        JpegStreamParameters jpeg_stream_parameters_; 
+        JpegStreamParameters jpeg_stream_parameters_;
 };
 
 #endif  // JPEG_PARSER_H_

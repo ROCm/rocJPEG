@@ -86,7 +86,9 @@ class ROCJpegDecoder {
     private:
        RocJpegStatus InitHIP(int device_id);
        bool ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
-        void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride);
+            void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride);
+       RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
+       RocJpegStatus ReleaseHipInteropMem();
        int num_devices_;
        int device_id_;
        hipDeviceProp_t hip_dev_prop_;

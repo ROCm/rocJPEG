@@ -57,7 +57,7 @@ void ShowHelpAndExit(const char *option = NULL) {
     exit(0);
 }
 
-void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, int &is_output_rgb, RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int argc, char *argv[]) {
+void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit();
     }
@@ -85,13 +85,6 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
                 ShowHelpAndExit("-d");
             }
             device_id = atoi(argv[i]);
-            continue;
-        }
-        if (!strcmp(argv[i], "-c")) {
-            if (++i == argc) {
-                ShowHelpAndExit("-c");
-            }
-            is_output_rgb = std::stoi(argv[i]);
             continue;
         }
         if (!strcmp(argv[i], "-be")) {
@@ -264,13 +257,13 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
     }
 }
 
-bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &isFile) {
+bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file) {
     is_dir = std::filesystem::is_directory(input_path);
-    isFile = std::filesystem::is_regular_file(input_path);
+    is_file = std::filesystem::is_regular_file(input_path);
     if (is_dir) {
         for (const auto &entry : std::filesystem::directory_iterator(input_path))
             file_paths.push_back(entry.path());
-    } else if (isFile) {
+    } else if (is_file) {
         file_paths.push_back(input_path);
     } else {
         std::cerr << "ERROR: the input path is not valid!" << std::endl;
@@ -279,7 +272,9 @@ bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths,
     return true;
 }
 
-bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_prop) {
+bool InitHipDevice(int device_id) {
+    int num_devices;
+    hipDeviceProp_t hip_dev_prop;
     CHECK_HIP(hipGetDeviceCount(&num_devices));
     if (num_devices < 1) {
         std::cerr << "ERROR: didn't find any GPU!" << std::endl;
@@ -300,38 +295,33 @@ bool InitHipDevice(int device_id, int &num_devices, hipDeviceProp_t &hip_dev_pro
 }
 int main(int argc, char **argv) {
     int device_id = 0;
-    int is_output_rgb = 0; // 0 for YUV, 1 for RGB
-    int dump_output_frames = 0; // 0 no frame dumps, 1 dumps all the frames
+    int dump_output_frames = 0;
     uint8_t num_components;
     uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t num_channels = 0;
-    RocJpegChromaSubsampling subsampling;
-    hipError_t hip_status = hipSuccess;
     int total_images_all = 0;
     double time_per_image_all = 0;
     double m_pixels_all = 0;
     double image_per_sec_all = 0;
     std::string chroma_sub_sampling = "";
     std::string input_path, output_file_path;
-    RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     std::vector<std::string> file_paths = {};
     bool is_dir = false;
-    bool isFile = false;
-    std::string deviceName, gcnArchName, drmNode;
-    int num_devices;
-    hipDeviceProp_t hip_dev_prop;
-    RocJpegHandle rocjpeg_handle;
+    bool is_file = false;
+    RocJpegChromaSubsampling subsampling;
+    RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
+    RocJpegHandle rocjpeg_handle = nullptr;
     RocJpegImage output_image = {};
     RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_UNCHANGED;
 
-    ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, is_output_rgb, rocjpeg_backend, output_format, argc, argv);
-    if (!GetFilePaths(input_path, file_paths, is_dir, isFile)) {
+    ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, rocjpeg_backend, output_format, argc, argv);
+    if (!GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "Failed to get input file paths!" << std::endl;
         return -1;
     }
-    if (!InitHipDevice(device_id, num_devices, hip_dev_prop)) {
+    if (!InitHipDevice(device_id)) {
         std::cerr << "Failed to initialize HIP!" << std::endl;
         return -1;
     }
@@ -480,8 +470,27 @@ int main(int argc, char **argv) {
         if (dump_output_frames) {
             std::string::size_type const p(base_file_name.find_last_of('.'));
             std::string file_name_no_ext = base_file_name.substr(0, p);
+            std::string file_extension;
+            switch (output_format) {
+                case ROCJPEG_OUTPUT_UNCHANGED:
+                    file_extension = "native";
+                    break;
+                case ROCJPEG_OUTPUT_YUV:
+                    file_extension = "yuv";
+                    break;
+                case ROCJPEG_OUTPUT_Y:
+                    file_extension = "y";
+                    break;
+                case ROCJPEG_OUTPUT_RGBI:
+                    file_extension = "rgbi";
+                    break;
+                default:
+                    file_extension = "";
+                    break;
+            }
+
             std::string file_name_for_saving = output_file_path + "//" + file_name_no_ext + "_" + std::to_string(widths[0]) + "x"
-                + std::to_string(heights[0]) + "." + (is_output_rgb ? "rgbi" : "yuv");
+                + std::to_string(heights[0]) + "." + file_extension;
             std::string image_save_path = is_dir ? file_name_for_saving : output_file_path;
             SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
         }

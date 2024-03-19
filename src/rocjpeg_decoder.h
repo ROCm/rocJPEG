@@ -30,7 +30,6 @@ THE SOFTWARE.
 #include "commons.h"
 #include "rocjpeg_vaapi_decoder.h"
 
-
 extern "C" {
 void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
@@ -68,7 +67,15 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 
+void HipExexChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
+void HipExecChannelExtractYUYVtoUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_chroma_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
 }
+
 
 struct HipInteropDeviceMem {
     hipExternalMemory_t hip_ext_mem; // Interface to the vaapi-hip interop

@@ -59,11 +59,22 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 
+void HipExexChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
+void HipExecChannelExtractYUYVtoUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_chroma_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
 }
 
 typedef struct d_uint6 {
   uint data[6];
 } d_uint6;
+
+typedef struct d_uint8 {
+  uint data[8];
+} d_uint8;
 
 __device__ __forceinline__ uint hipPack(float4 src) {
     return __builtin_amdgcn_cvt_pk_u8_f32(src.w, 3,
@@ -1163,3 +1174,83 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
                         src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 
 }
+
+__global__ void __attribute__((visibility("default")))
+HipChannelExtractUYVYToY(uint dst_width, uint dst_height,
+    uchar *destination_y, uint dst_luma_stride_in_bytes,
+    const uchar *src_image, uint src_image_stride_in_bytes,
+    uint dst_width_comp) {
+
+    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp && y < dst_height)) {
+        uint src_idx = y * src_image_stride_in_bytes + (x << 4);
+        uint dst_idx = y * dst_luma_stride_in_bytes + (x << 2);
+
+        d_uint8 src = *((d_uint8 *)(&src_image[src_idx]));
+        uint4 dst;
+
+        dst.x = hipPack(make_float4(hipUnpack0(src.data[0]), hipUnpack2(src.data[0]), hipUnpack0(src.data[1]), hipUnpack2(src.data[1])));
+        dst.y = hipPack(make_float4(hipUnpack0(src.data[2]), hipUnpack2(src.data[2]), hipUnpack0(src.data[3]), hipUnpack2(src.data[3])));
+        dst.z = hipPack(make_float4(hipUnpack0(src.data[4]), hipUnpack2(src.data[4]), hipUnpack0(src.data[5]), hipUnpack2(src.data[5])));
+        dst.w = hipPack(make_float4(hipUnpack0(src.data[6]), hipUnpack2(src.data[6]), hipUnpack0(src.data[7]), hipUnpack2(src.data[7])));
+
+        *((uint4 *)(&destination_y[dst_idx])) = dst;
+    }
+}
+
+void HipExexChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
+    int localThreads_x = 16;
+    int localThreads_y = 4;
+    int globalThreads_x = (dst_width + 3) >> 2;
+    int globalThreads_y = dst_height;
+
+    uint32_t dst_width_comp = (dst_width + 3) / 4;
+
+    hipLaunchKernelGGL(HipChannelExtractUYVYToY, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                            dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_y, dst_luma_stride_in_bytes,
+                            src_image, src_image_stride_in_bytes, dst_width_comp);
+}
+
+__global__ void __attribute__((visibility("default")))
+HipChannelExtractYUYVtoUV(uint dst_width, uint dst_height,
+    uchar *destination_u, uchar *destination_v, uint dst_chroma_stride_in_bytes,
+    const uchar *src_image, uint src_image_stride_in_bytes,
+    uint dst_width_comp) {
+
+    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp && y < dst_height)) {
+        uint src_idx = y * src_image_stride_in_bytes + (x << 4);
+        uint dst_idx = y * dst_chroma_stride_in_bytes + (x << 2);
+
+        d_uint8 src = *((d_uint8 *)(&src_image[src_idx]));
+        uint2 dst_u, dst_v;
+
+        dst_u.x = hipPack(make_float4(hipUnpack1(src.data[0]), hipUnpack1(src.data[1]), hipUnpack1(src.data[2]), hipUnpack1(src.data[3])));
+        dst_u.y = hipPack(make_float4(hipUnpack1(src.data[4]), hipUnpack1(src.data[5]), hipUnpack1(src.data[6]), hipUnpack1(src.data[7])));
+        dst_v.x = hipPack(make_float4(hipUnpack3(src.data[0]), hipUnpack3(src.data[1]), hipUnpack3(src.data[2]), hipUnpack3(src.data[3])));
+        dst_v.y = hipPack(make_float4(hipUnpack3(src.data[4]), hipUnpack3(src.data[5]), hipUnpack3(src.data[6]), hipUnpack3(src.data[7])));
+
+        *((uint2 *)(&destination_u[dst_idx])) = dst_u;
+        *((uint2 *)(&destination_v[dst_idx])) = dst_v;
+    }
+}
+
+void HipExecChannelExtractYUYVtoUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_chroma_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
+
+    int localThreads_x = 16;
+    int localThreads_y = 4;
+    int globalThreads_x = (dst_width + 3) >> 2;
+    int globalThreads_y = dst_height;
+    uint32_t dst_width_comp = (dst_width + 3) / 4;
+
+    hipLaunchKernelGGL(HipChannelExtractYUYVtoUV, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                            dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_u, destination_v, dst_chroma_stride_in_bytes,
+                            src_image, src_image_stride_in_bytes, dst_width_comp);
+    }

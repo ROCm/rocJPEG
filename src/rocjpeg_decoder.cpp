@@ -238,10 +238,9 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
-    void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride) {
+RocJpegStatus ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
+    void *rgb_dev_mem, const size_t rgb_image_stride) {
 
-    hipError_t hip_status = hipSuccess;
     size_t luma_size = (yuv_image_stride * align(height, 16));
 
     switch (subsampling) {

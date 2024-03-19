@@ -23,34 +23,34 @@ THE SOFTWARE.
 #include <hip/hip_runtime.h>
 
 extern "C" {
-int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes);
 
-int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
 
-int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
+void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
     uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image);
 
-int HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes);
 
-int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes);
 
-int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t src_width, uint32_t src_height,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
-int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
@@ -321,7 +321,7 @@ HipColorConvertNV12ToRGB(uint dst_width, uint dst_height,
     }
 }
 
-int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes) {
@@ -339,8 +339,6 @@ int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_
                         dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image, dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp,
                         (const uchar *)src_luma_image, src_luma_image_stride_in_bytes, (const uchar *)src_chroma_image, src_chroma_image_stride_in_bytes,
                         dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
-
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -549,7 +547,7 @@ HipColorConvertYUV444ToRGB(uint dst_width, uint dst_height,
     }
 }
 
-int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
@@ -571,7 +569,6 @@ int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint3
                         src_yuv_image_stride_in_bytes,
                         dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -661,7 +658,7 @@ HipScaleImageNV12Nearest(uint scaled_y_width, uint scaled_y_height, uchar *scale
 
 }
 
-int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
+void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
     uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image) {
@@ -694,8 +691,6 @@ int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, ui
                         (const uchar *)src_y_image, src_y_image_stride_in_bytes, xscale_y, yscale_y, xoffset_y, yoffset_y,
                         scaled_uv_width, scaled_uv_height, (uchar *)scaled_u_image, (uchar *)scaled_v_image, scaled_uv_image_stride_in_bytes,
                         (const uchar *)src_u_image, (const uchar *)src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
-
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -725,7 +720,7 @@ HipChannelExtractU16ToU8U8(uint dst_width, uint dst_height,
     *((uint2 *)(&dst_image2[dst_idx])) = dst2;
 
 }
-int HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes) {
     int localThreads_x = 16, localThreads_y = 16;
@@ -736,7 +731,6 @@ int HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint3
                         dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image1, (uchar *)dst_image2, dst_image_stride_in_bytes,
                         (const uchar *)src_image1, src_image1_stride_in_bytes);
 
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -767,7 +761,7 @@ HipChannelCombineU8U8ToU16(uint dst_width, uint dst_height,
 
     *((uint4 *)(&dst_image[dst_idx])) = dst;
 }
-int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes) {
@@ -780,7 +774,6 @@ int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_
                         dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image , dst_image_stride_in_bytes,
                         (const uchar *)src_image1, src_image1_stride_in_bytes, (const uchar *)src_image2, src_image2_stride_in_bytes);
 
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -825,7 +818,7 @@ HipScaleImageU8U8Nearest(uint dst_width, uint dst_height,
     *((uint2 *)(&dst_image[dst_idx])) = dst;
 }
 
-int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     uint32_t src_width, uint32_t src_height,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
@@ -844,7 +837,6 @@ int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_
                         (const uchar *)src_image, src_image_stride_in_bytes,
                         xscale, yscale, xoffset, yoffset);
 
-    return 0;
 }
 
 __global__ void __attribute__((visibility("default")))
@@ -908,7 +900,7 @@ HipScaleImageYUV444Nearest(uint dst_width, uint dst_height, uchar *dst_y_image, 
     *((uint2 *)(&dst_v_image[dst_idx])) = v_dst;
 }
 
-int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image, uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
@@ -932,5 +924,4 @@ int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint3
                         (const uchar *)src_yuv_image + (src_u_image_offset * 2),
                         src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 
-    return 0;
 }

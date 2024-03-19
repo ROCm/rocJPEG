@@ -32,34 +32,34 @@ THE SOFTWARE.
 
 
 extern "C" {
-int HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes);
 
-int HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
 
-int HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
+void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
     uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image);
 
-int HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes);
 
-int HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes);
 
-int HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t src_width, uint32_t src_height,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
-int HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
@@ -86,8 +86,8 @@ class ROCJpegDecoder {
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
-       RocJpegStatus ConvertYUVtoRGB(const void *yuv_dev_mem, const size_t yuv_image_size, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
-            void *rgb_dev_mem, const size_t rgb_dev_mem_size, const size_t rgb_image_stride);
+       RocJpegStatus ConvertYUVtoRGB(const void *yuv_dev_mem, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
+            void *rgb_dev_mem, const size_t rgb_image_stride);
        RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
        RocJpegStatus ReleaseHipInteropMem();
        RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);

@@ -109,7 +109,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
         switch (output_format) {
             case ROCJPEG_OUTPUT_UNCHANGED:
-                // copy the native decoded buffers from interop memory directly to the destination buffers
+                // copy the native decoded output buffers from interop memory directly to the destination buffers
                 rocjpeg_status = CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height);
                 if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
                     return rocjpeg_status;
@@ -120,10 +120,32 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 }
                 break;
             case ROCJPEG_OUTPUT_YUV:
-                // Need to separate the UV channels in the case of NV12 or packed YUYV and then copy into three separate channels
+                if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
+                    //TODO extract Y channel from the packed YUYV
+                } else {
+                    rocjpeg_status = CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height);
+                    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                        return rocjpeg_status;
+                    }
+                }
+
+                if (hip_interop_.surface_format == VA_FOURCC_NV12) {
+                    // Extract the interleaved UV channels and copy them into the second and thrid channels of the destination.
+                    HipExecChannelExtractU16ToU8U8(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width >> 1, jpeg_stream_params->picture_parameter_buffer.picture_height >> 1,
+                        destination->channel[1], destination->channel[2], destination->pitch[1],
+                        hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1] , hip_interop_.pitch[1]);
+
+                } else if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
+                    // Extract the U and V channels from the packed YUYV and copy them into the second and thrid channels of the destination.
+                } else {
+                    rocjpeg_status = CopyChroma(destination, chroma_height);
+                    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                        return rocjpeg_status;
+                    }
+                }
                 break;
             case ROCJPEG_OUTPUT_Y:
-                // just copy the Y to the first-channel of the destination,
+                // copy Luma (Y channel) to the first-channel of the destination.
                 if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
                     //TODO extract Y channel from the packed YUYV
                 } else {

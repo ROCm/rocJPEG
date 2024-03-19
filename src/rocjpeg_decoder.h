@@ -32,14 +32,18 @@ THE SOFTWARE.
 
 
 extern "C" {
+void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
+
+void HipExecColorConvertYUYVToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
 void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes);
-
-void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
 
 void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
     uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
@@ -63,6 +67,7 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
+
 }
 
 struct HipInteropDeviceMem {

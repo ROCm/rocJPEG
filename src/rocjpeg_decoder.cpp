@@ -167,7 +167,10 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                                                                     hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0], hip_interop_.offset[1]);
                         break;
                     case 0x56595559:
-                    //TODO add support
+                        HipExecColorConvertYUYVToRGB(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
+                                                                  destination->channel[0], destination->pitch[0],
+                                                                  hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
                         break;
                     case VA_FOURCC_NV12:
                         HipExecColorConvertNV12ToRGB(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,

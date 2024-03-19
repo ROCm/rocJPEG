@@ -23,14 +23,18 @@ THE SOFTWARE.
 #include <hip/hip_runtime.h>
 
 extern "C" {
+void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
+
+void HipExecColorConvertYUYVToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
 void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes);
-
-void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
 
 void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
     uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
@@ -54,6 +58,7 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
+
 }
 
 typedef struct d_uint6 {
@@ -569,6 +574,239 @@ void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint
                         src_yuv_image_stride_in_bytes,
                         dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 
+}
+
+__global__ void __attribute__((visibility("default")))
+HipColorConvertYUYVToRGB(uint dst_width, uint dst_height,
+    uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
+    const uchar *src_image, uint src_image_stride_in_bytes, uint src_image_stride_in_bytes_comp,
+    uint dst_width_comp, uint dst_height_comp) {
+
+    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp) && (y < dst_height_comp)) {
+        uint l0_idx = y * src_image_stride_in_bytes_comp + (x << 4);
+        uint l1_idx = l0_idx + src_image_stride_in_bytes;
+        uint4 l0 = *((uint4 *)(&src_image[l0_idx]));
+        uint4 l1 = *((uint4 *)(&src_image[l1_idx]));
+
+        uint rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+
+        float4 f;
+
+        uint2 py0, py1;
+        uint2 pu0, pu1;
+        uint2 pv0, pv1;
+
+        py0.x = hipPack(make_float4(hipUnpack0(l0.x), hipUnpack2(l0.x), hipUnpack0(l0.y), hipUnpack2(l0.y)));
+        py0.y = hipPack(make_float4(hipUnpack0(l0.z), hipUnpack2(l0.z), hipUnpack0(l0.w), hipUnpack2(l0.w)));
+        py1.x = hipPack(make_float4(hipUnpack0(l1.x), hipUnpack2(l1.x), hipUnpack0(l1.y), hipUnpack2(l1.y)));
+        py1.y = hipPack(make_float4(hipUnpack0(l1.z), hipUnpack2(l1.z), hipUnpack0(l1.w), hipUnpack2(l1.w)));
+        pu0.x = hipPack(make_float4(hipUnpack1(l0.x), hipUnpack1(l0.x), hipUnpack1(l0.y), hipUnpack1(l0.y)));
+        pu0.y = hipPack(make_float4(hipUnpack1(l0.z), hipUnpack1(l0.z), hipUnpack1(l0.w), hipUnpack1(l0.w)));
+        pu1.x = hipPack(make_float4(hipUnpack1(l1.x), hipUnpack1(l1.x), hipUnpack1(l1.y), hipUnpack1(l1.y)));
+        pu1.y = hipPack(make_float4(hipUnpack1(l1.z), hipUnpack1(l1.z), hipUnpack1(l1.w), hipUnpack1(l1.w)));
+        pv0.x = hipPack(make_float4(hipUnpack3(l0.x), hipUnpack3(l0.x), hipUnpack3(l0.y), hipUnpack3(l0.y)));
+        pv0.y = hipPack(make_float4(hipUnpack3(l0.z), hipUnpack3(l0.z), hipUnpack3(l0.w), hipUnpack3(l0.w)));
+        pv1.x = hipPack(make_float4(hipUnpack3(l1.x), hipUnpack3(l1.x), hipUnpack3(l1.y), hipUnpack3(l1.y)));
+        pv1.y = hipPack(make_float4(hipUnpack3(l1.z), hipUnpack3(l1.z), hipUnpack3(l1.w), hipUnpack3(l1.w)));
+
+        float2 cr = make_float2( 0.0000f,  1.5748f);
+        float2 cg = make_float2(-0.1873f, -0.4681f);
+        float2 cb = make_float2( 1.8556f,  0.0000f);
+        float3 yuv;
+        d_uint6 prgb0, prgb1;
+
+        yuv.x = hipUnpack0(py0.x);
+        yuv.y = hipUnpack0(pu0.x);
+        yuv.z = hipUnpack0(pv0.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack1(py0.x);
+        yuv.y = hipUnpack1(pu0.x);
+        yuv.z = hipUnpack1(pv0.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        prgb0.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack2(py0.x);
+        yuv.y = hipUnpack2(pu0.x);
+        yuv.z = hipUnpack2(pv0.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        prgb0.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack3(py0.x);
+        yuv.y = hipUnpack3(pu0.x);
+        yuv.z = hipUnpack3(pv0.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        prgb0.data[2] = hipPack(f);
+
+        yuv.x = hipUnpack0(py0.y);
+        yuv.y = hipUnpack0(pu0.y);
+        yuv.z = hipUnpack0(pv0.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack1(py0.y);
+        yuv.y = hipUnpack1(pu0.y);
+        yuv.z = hipUnpack1(pv0.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        prgb0.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack2(py0.y);
+        yuv.y = hipUnpack2(pu0.y);
+        yuv.z = hipUnpack2(pv0.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        prgb0.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack3(py0.y);
+        yuv.y = hipUnpack3(pu0.y);
+        yuv.z = hipUnpack3(pv0.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        prgb0.data[5] = hipPack(f);
+
+        yuv.x = hipUnpack0(py1.x);
+        yuv.y = hipUnpack0(pu1.x);
+        yuv.z = hipUnpack0(pv1.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack1(py1.x);
+        yuv.y = hipUnpack1(pu1.x);
+        yuv.z = hipUnpack1(pv1.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        prgb1.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack2(py1.x);
+        yuv.y = hipUnpack2(pu1.x);
+        yuv.z = hipUnpack2(pv1.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        prgb1.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack3(py1.x);
+        yuv.y = hipUnpack3(pu1.x);
+        yuv.z = hipUnpack3(pv1.x);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        prgb1.data[2] = hipPack(f);
+
+        yuv.x = hipUnpack0(py1.y);
+        yuv.y = hipUnpack0(pu1.y);
+        yuv.z = hipUnpack0(pv1.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack1(py1.y);
+        yuv.y = hipUnpack1(pu1.y);
+        yuv.z = hipUnpack1(pv1.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        prgb1.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack2(py1.y);
+        yuv.y = hipUnpack2(pu1.y);
+        yuv.z = hipUnpack2(pv1.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        prgb1.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv.x = hipUnpack3(py1.y);
+        yuv.y = hipUnpack3(pu1.y);
+        yuv.z = hipUnpack3(pv1.y);
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        prgb1.data[5] = hipPack(f);
+
+        *((d_uint6 *)(&dst_image[rgb0_idx])) = prgb0;
+        *((d_uint6 *)(&dst_image[rgb1_idx])) = prgb1;
+    }
+}
+void HipExecColorConvertYUYVToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
+    int localThreads_x = 16;
+    int localThreads_y = 4;
+    int globalThreads_x = (dst_width + 7) >> 3;
+    int globalThreads_y = (dst_height + 1) >> 1;
+
+    uint32_t dst_width_comp = (dst_width + 7) / 8;
+    uint32_t dst_height_comp = (dst_height + 1) / 2;
+    uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
+    uint32_t src_image_stride_in_bytes_comp = src_image_stride_in_bytes * 2;
+
+    hipLaunchKernelGGL(HipColorConvertYUYVToRGB, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image, dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp,
+                        (const uchar *)src_image, src_image_stride_in_bytes, src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
 }
 
 __global__ void __attribute__((visibility("default")))

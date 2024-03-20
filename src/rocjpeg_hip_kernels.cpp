@@ -892,8 +892,8 @@ __global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_h
         return;
     }
 
-    unsigned int src_idx = y * src_image_stride_in_bytes + x + x;
-    unsigned int dst_idx = y * dst_image_stride_in_bytes + x;
+    uint32_t src_idx = y * src_image_stride_in_bytes + x + x;
+    uint32_t dst_idx = y * dst_image_stride_in_bytes + x;
 
     uint4 src = *((uint4 *)(&src_image[src_idx]));
     uint2 dst1, dst2;

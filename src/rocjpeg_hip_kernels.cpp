@@ -296,10 +296,10 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_luma_image_stride_in_bytes_comp = src_luma_image_stride_in_bytes * 2;
 
-    hipLaunchKernelGGL(ColorConvertNV12ToRGBIKernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image, dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp,
-                        (const uchar *)src_luma_image, src_luma_image_stride_in_bytes, (const uchar *)src_chroma_image, src_chroma_image_stride_in_bytes,
-                        dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
+    ColorConvertNV12ToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
+                             dst_image_stride_in_bytes_comp, src_luma_image, src_luma_image_stride_in_bytes, src_chroma_image,
+                             src_chroma_image_stride_in_bytes, dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
 }
 
 __global__ void ColorConvertYUV444ToRGBIKernel(uint dst_width, uint dst_height,
@@ -521,14 +521,11 @@ void ColorConvertYUV444ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t d
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_yuv_image_stride_in_bytes_comp = src_yuv_image_stride_in_bytes * 2;
 
-    hipLaunchKernelGGL(ColorConvertYUV444ToRGBIKernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image, dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp,
-                        (const uchar *)src_yuv_image,
-                        (const uchar *)src_yuv_image + src_u_image_offset,
-                        (const uchar *)src_yuv_image + (src_u_image_offset * 2),
-                        src_yuv_image_stride_in_bytes,
-                        dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
-
+    ColorConvertYUV444ToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
+                             dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
+                             src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
+                             dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 }
 
 __global__ void ColorConvertYUYVToRGBIKernel(uint dst_width, uint dst_height,
@@ -758,9 +755,10 @@ void ColorConvertYUYVToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_image_stride_in_bytes_comp = src_image_stride_in_bytes * 2;
 
-    hipLaunchKernelGGL(ColorConvertYUYVToRGBIKernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image, dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp,
-                        (const uchar *)src_image, src_image_stride_in_bytes, src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
+    ColorConvertYUYVToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
+                             dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_image, src_image_stride_in_bytes,
+                             src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
 }
 
 __global__ void ScaleImageNV12NearestKernel(uint scaled_y_width, uint scaled_y_height, uchar *scaled_y_image, uint scaled_y_image_stride_in_bytes,
@@ -877,11 +875,11 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
     float x_offset_uv = (float)((double)src_uv_width / (double)scaled_uv_width * 0.5);
     float y_offset_uv = (float)((double)src_uv_height / (double)scaled_uv_height * 0.5);
 
-    hipLaunchKernelGGL(ScaleImageNV12NearestKernel, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, scaled_y_width, scaled_y_height, (uchar *)scaled_y_image , scaled_y_image_stride_in_bytes,
-                        (const uchar *)src_y_image, src_y_image_stride_in_bytes, xscale_y, yscale_y, xoffset_y, yoffset_y,
-                        scaled_uv_width, scaled_uv_height, (uchar *)scaled_u_image, (uchar *)scaled_v_image, scaled_uv_image_stride_in_bytes,
-                        (const uchar *)src_u_image, (const uchar *)src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
+    ScaleImageNV12NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                  dim3(localThreads_x, localThreads_y), 0, stream>>>(scaled_y_width, scaled_y_height, scaled_y_image,
+                                  scaled_y_image_stride_in_bytes, src_y_image, src_y_image_stride_in_bytes, xscale_y, yscale_y, xoffset_y, yoffset_y,
+                                  scaled_uv_width, scaled_uv_height, scaled_u_image, scaled_v_image, scaled_uv_image_stride_in_bytes,
+                                  src_u_image, src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
 }
 
 __global__ void ChannelExtractU16ToU8U8Kernel(uint dst_width, uint dst_height,
@@ -917,9 +915,9 @@ void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t ds
     int globalThreads_x = (dst_width + 7) >> 3;
     int globalThreads_y = dst_height;
 
-    hipLaunchKernelGGL(ChannelExtractU16ToU8U8Kernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image1, (uchar *)dst_image2, dst_image_stride_in_bytes,
-                        (const uchar *)src_image1, src_image1_stride_in_bytes);
+    ChannelExtractU16ToU8U8Kernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image1, dst_image2,
+                                    dst_image_stride_in_bytes, src_image1, src_image1_stride_in_bytes);
 
 }
 
@@ -959,9 +957,9 @@ void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     int globalThreads_x = (dst_width + 7) >> 3;
     int globalThreads_y = dst_height;
 
-    hipLaunchKernelGGL(ChannelCombineU8U8ToU16Kernel, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image , dst_image_stride_in_bytes,
-                        (const uchar *)src_image1, src_image1_stride_in_bytes, (const uchar *)src_image2, src_image2_stride_in_bytes);
+    ChannelCombineU8U8ToU16Kernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image,
+                                    dst_image_stride_in_bytes, src_image1, src_image1_stride_in_bytes, src_image2, src_image2_stride_in_bytes);
 
 }
 
@@ -1020,10 +1018,9 @@ void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     float xoffset = (float)((double)src_width / (double)dst_width * 0.5);
     float yoffset = (float)((double)src_height / (double)dst_height * 0.5);
 
-    hipLaunchKernelGGL(ScaleImageU8U8NearestKernel, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, (uchar *)dst_image , dst_image_stride_in_bytes,
-                        (const uchar *)src_image, src_image_stride_in_bytes,
-                        xscale, yscale, xoffset, yoffset);
+    ScaleImageU8U8NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image , dst_image_stride_in_bytes,
+                        src_image, src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 
 }
 
@@ -1101,16 +1098,11 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
     float xoffset = (float)((double)src_width / (double)dst_width * 0.5);
     float yoffset = (float)((double)src_height / (double)dst_height * 0.5);
 
-    hipLaunchKernelGGL(ScaleImageYUV444NearestKernel, dim3(ceil((float)globalThreads_x/localThreads_x), ceil((float)globalThreads_y/localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height,
-                        (uchar *)dst_yuv_image,
-                        (uchar *)dst_yuv_image + dst_u_image_offset,
-                        (uchar *)dst_yuv_image + (dst_u_image_offset * 2), dst_image_stride_in_bytes,
-                        (const uchar *)src_yuv_image,
-                        (const uchar *)src_yuv_image + src_u_image_offset,
-                        (const uchar *)src_yuv_image + (src_u_image_offset * 2),
-                        src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
-
+    ScaleImageYUV444NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_yuv_image,
+                                         dst_yuv_image + dst_u_image_offset, dst_yuv_image + (dst_u_image_offset * 2), dst_image_stride_in_bytes,
+                                         src_yuv_image, src_yuv_image + src_u_image_offset, src_yuv_image + (src_u_image_offset * 2),
+                                         src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 }
 
 __global__ void ChannelExtractUYVYToYKernel(uint dst_width, uint dst_height,
@@ -1143,9 +1135,9 @@ void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    hipLaunchKernelGGL(ChannelExtractUYVYToYKernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                            dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_y, dst_luma_stride_in_bytes,
-                            src_image, src_image_stride_in_bytes, dst_width_comp);
+    ChannelExtractUYVYToYKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                  dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, destination_y,
+                                        dst_luma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
 __global__ void ChannelExtractYUYVToYUVKernel(uint dst_width, uint dst_height,
@@ -1186,7 +1178,7 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     int globalThreads_y = dst_height;
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    hipLaunchKernelGGL(ChannelExtractYUYVToYUVKernel, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                            dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_y, destination_u, destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes,
-                            src_image, src_image_stride_in_bytes, dst_width_comp);
+    ChannelExtractYUYVToYUVKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, destination_y, destination_u,
+                                         destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
     }

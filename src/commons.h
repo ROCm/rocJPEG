@@ -56,6 +56,14 @@ THE SOFTWARE.
     }                                                                 \
 }
 
+#define CHECK_ROCJPEG(call) {                                             \
+    RocJpegStatus rocjpeg_status = (call);                                \
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {                       \
+        std::cerr << #call << " returned " << rocJpegGetErrorName(rocjpeg_status) << " at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
+        return rocjpeg_status;                                                          \
+    }                                                                     \
+}
+
 static bool GetEnv(const char *name, char *value, size_t valueSize) {
     const char *v = getenv(name);
     if (v) {

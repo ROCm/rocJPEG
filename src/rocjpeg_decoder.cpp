@@ -334,8 +334,14 @@ RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_d
 }
 
 RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem() {
-    CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
-    CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
+    if (hip_interop_.hip_mapped_device_mem != nullptr) {
+        CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
+    }
+    if (hip_interop_.hip_ext_mem != nullptr) {
+        CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
+    }
+    memset((void*)&hip_interop_, 0, sizeof(hip_interop_));
+
     return ROCJPEG_STATUS_SUCCESS;
 }
 

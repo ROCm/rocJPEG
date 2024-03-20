@@ -496,7 +496,11 @@ int main(int argc, char **argv) {
         }
 
         for (int i = 0; i < num_channels; i++) {
-            CHECK_HIP(hipFree((void*)output_image.channel[i]));
+            if (output_image.channel[i] != nullptr) {
+                CHECK_HIP(hipFree((void*)output_image.channel[i]));
+                output_image.channel[i] = nullptr;
+                output_image.pitch[i] = 0;
+            }
         }
 
         std::cout << "info: total decoded images: " << image_count << std::endl;

@@ -72,10 +72,6 @@ typedef struct d_uint6 {
   uint data[6];
 } d_uint6;
 
-typedef struct d_uint8 {
-  uint data[8];
-} d_uint8;
-
 __device__ __forceinline__ uint hipPack(float4 src) {
     return __builtin_amdgcn_cvt_pk_u8_f32(src.w, 3,
            __builtin_amdgcn_cvt_pk_u8_f32(src.z, 2,
@@ -103,8 +99,7 @@ __device__ __forceinline__ float4 hipUnpack(uint src) {
     return make_float4(hipUnpack0(src), hipUnpack1(src), hipUnpack2(src), hipUnpack3(src));
 }
 
-__global__ void __attribute__((visibility("default")))
-HipColorConvertNV12ToRGB(uint dst_width, uint dst_height,
+__global__ void HipColorConvertNV12ToRGB(uint dst_width, uint dst_height,
     uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
     const uchar *src_luma_image, uint src_luma_image_stride_in_bytes,
     const uchar *src_chroma_image, uint src_chroma_image_stride_in_bytes,
@@ -357,8 +352,7 @@ void HipExecColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32
                         dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
 }
 
-__global__ void __attribute__((visibility("default")))
-HipColorConvertYUV444ToRGB(uint dst_width, uint dst_height,
+__global__ void HipColorConvertYUV444ToRGB(uint dst_width, uint dst_height,
     uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
     const uchar *src_y_image, const uchar *src_u_image, const uchar *src_v_image, uint src_yuv_image_stride_in_bytes,
     uint dst_width_comp, uint dst_height_comp, uint src_yuv_image_stride_in_bytes_comp) {
@@ -587,8 +581,7 @@ void HipExecColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint
 
 }
 
-__global__ void __attribute__((visibility("default")))
-HipColorConvertYUYVToRGB(uint dst_width, uint dst_height,
+__global__ void HipColorConvertYUYVToRGB(uint dst_width, uint dst_height,
     uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
     const uchar *src_image, uint src_image_stride_in_bytes, uint src_image_stride_in_bytes_comp,
     uint dst_width_comp, uint dst_height_comp) {
@@ -820,8 +813,7 @@ void HipExecColorConvertYUYVToRGB(hipStream_t stream, uint32_t dst_width, uint32
                         (const uchar *)src_image, src_image_stride_in_bytes, src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
 }
 
-__global__ void __attribute__((visibility("default")))
-HipScaleImageNV12Nearest(uint scaled_y_width, uint scaled_y_height, uchar *scaled_y_image, uint scaled_y_image_stride_in_bytes,
+__global__ void HipScaleImageNV12Nearest(uint scaled_y_width, uint scaled_y_height, uchar *scaled_y_image, uint scaled_y_image_stride_in_bytes,
     const uchar *src_y_image, uint src_y_image_stride_in_bytes, float xscale_y, float yscale_y, float xoffset_y, float yoffset_y,
     uint scaled_uv_width, uint scaled_uv_height, uchar *scaled_u_image, uchar *scaled_v_image, uint scaled_uv_image_stride_in_bytes,
     const uchar *src_u_image, const uchar *src_v_image, uint src_uv_image_stride_in_bytes,
@@ -942,8 +934,7 @@ void HipExecScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, u
                         (const uchar *)src_u_image, (const uchar *)src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
 }
 
-__global__ void __attribute__((visibility("default")))
-HipChannelExtractU16ToU8U8(uint dst_width, uint dst_height,
+__global__ void HipChannelExtractU16ToU8U8(uint dst_width, uint dst_height,
     uchar *dst_image1, uchar *dst_image2, uint dst_image_stride_in_bytes,
     const uchar *src_image, uint src_image_stride_in_bytes) {
 
@@ -982,8 +973,7 @@ void HipExecChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint
 
 }
 
-__global__ void __attribute__((visibility("default")))
-HipChannelCombineU8U8ToU16(uint dst_width, uint dst_height,
+__global__ void HipChannelCombineU8U8ToU16(uint dst_width, uint dst_height,
     uchar *dst_image, uint dst_image_stride_in_bytes,
     const uchar *src_image1, uint src_image1_stride_in_bytes,
     const uchar *src_image2, uint src_image2_stride_in_bytes) {
@@ -1025,8 +1015,7 @@ void HipExecChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32
 
 }
 
-__global__ void __attribute__((visibility("default")))
-HipScaleImageU8U8Nearest(uint dst_width, uint dst_height,
+__global__ void HipScaleImageU8U8Nearest(uint dst_width, uint dst_height,
     uchar *dst_image, uint dst_image_stride_in_bytes,
     const uchar *src_image, uint src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
@@ -1088,8 +1077,7 @@ void HipExecScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32
 
 }
 
-__global__ void __attribute__((visibility("default")))
-HipScaleImageYUV444Nearest(uint dst_width, uint dst_height, uchar *dst_y_image, uchar *dst_u_image, uchar *dst_v_image, uint dst_image_stride_in_bytes,
+__global__ void HipScaleImageYUV444Nearest(uint dst_width, uint dst_height, uchar *dst_y_image, uchar *dst_u_image, uchar *dst_v_image, uint dst_image_stride_in_bytes,
     const uchar *src_y_image, const uchar *src_u_image, const uchar *src_v_image, uint src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
@@ -1175,8 +1163,7 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
 
 }
 
-__global__ void __attribute__((visibility("default")))
-HipChannelExtractUYVYToY(uint dst_width, uint dst_height,
+__global__ void HipChannelExtractUYVYToY(uint dst_width, uint dst_height,
     uchar *destination_y, uint dst_luma_stride_in_bytes,
     const uchar *src_image, uint src_image_stride_in_bytes,
     uint dst_width_comp) {
@@ -1211,8 +1198,7 @@ void HipExecChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32
                             src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
-__global__ void __attribute__((visibility("default")))
-HipChannelExtractYUYVtoYUV(uint dst_width, uint dst_height,
+__global__ void HipChannelExtractYUYVtoYUV(uint dst_width, uint dst_height,
     uchar *destination_y, uchar *destination_u, uchar *destination_v, uint dst_luma_stride_in_bytes, uint dst_chroma_stride_in_bytes,
     const uchar *src_image, uint src_image_stride_in_bytes,
     uint dst_width_comp) {

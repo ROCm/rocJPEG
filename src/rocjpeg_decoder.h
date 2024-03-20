@@ -45,7 +45,6 @@ struct HipInteropDeviceMem {
     uint32_t num_layers; // Number of layers making up the surface
 };
 
-/// @brief
 class ROCJpegDecoder {
     public:
        ROCJpegDecoder(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
@@ -55,13 +54,12 @@ class ROCJpegDecoder {
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
-       RocJpegStatus ConvertYUVtoRGB(const void *yuv_dev_mem, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
-            void *rgb_dev_mem, const size_t rgb_image_stride);
        RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
        RocJpegStatus ReleaseHipInteropMem();
        RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
        RocJpegStatus CopyLuma(RocJpegImage *destination, uint16_t picture_height);
        RocJpegStatus CopyChroma(RocJpegImage *destination, uint16_t chroma_height);
+       RocJpegStatus ColorConvertToRGBI(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        int num_devices_;
        int device_id_;
        hipDeviceProp_t hip_dev_prop_;

@@ -37,6 +37,9 @@ THE SOFTWARE.
 #include "rocjpeg_parser.h"
 #include "../api/rocjpeg.h"
 
+/*Note: va.h doesn't have VA_FOURCC_YUYV defined but vaExportSurfaceHandle returns 0x56595559 for packed YUYV for YUV 4:2:2*/
+#define ROCJPEG_FOURCC_YUYV 0x56595559
+
 class RocJpegVappiDecoder {
 public:
     RocJpegVappiDecoder(int device_id = 0);

@@ -120,7 +120,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 }
                 break;
             case ROCJPEG_OUTPUT_YUV:
-                if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
+                if (hip_interop_.surface_format == ROCJPEG_FOURCC_YUYV) {
                     // Extract the packed YUYV and copy them into the first, second, and thrid channels of the destination.
                     ChannelExtractYUYVToYUV(hip_stream_,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_width,
@@ -149,7 +149,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 }
                 break;
             case ROCJPEG_OUTPUT_Y:
-                if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
+                if (hip_interop_.surface_format == ROCJPEG_FOURCC_YUYV) {
                     ChannelExtractUYVYToY(hip_stream_,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
@@ -164,32 +164,10 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 }
                 break;
             case ROCJPEG_OUTPUT_RGBI:
-                switch (hip_interop_.surface_format) {
-                    case VA_FOURCC_444P:
-                        ColorConvertYUV444ToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                                    jpeg_stream_params->picture_parameter_buffer.picture_height,
-                                                                    destination->channel[0], destination->pitch[0],
-                                                                    hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0], hip_interop_.offset[1]);
-                        break;
-                    case 0x56595559:
-                        ColorConvertYUYVToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
-                                                                  destination->channel[0], destination->pitch[0],
-                                                                  hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
-                        break;
-                    case VA_FOURCC_NV12:
-                        ColorConvertNV12ToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
-                                                                  destination->channel[0], destination->pitch[0],
-                                                                  hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
-                                                                  hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1], hip_interop_.pitch[1]);
-                        break;
-                    case VA_FOURCC_Y800:
-                    //TODO add support
-                        break;
-                    default:
-                        std::cerr << "Error! surface format is not supported!" << std::endl;
-                        return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+                rocjpeg_status = ColorConvertToRGBI(jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                    jpeg_stream_params->picture_parameter_buffer.picture_height, destination);
+                if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                        return rocjpeg_status;
                 }
                 break;
             default:
@@ -214,7 +192,7 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
     if (!jpeg_parser_.ParseJpegStream(data, length)) {
-        std::cerr << "ERROR: jpeg parser failed!" << std::endl;
+        ERR("ERROR: jpeg parser failed!");
         return ROCJPEG_STATUS_BAD_JPEG;
     }
     const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
@@ -271,34 +249,6 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
 
     return ROCJPEG_STATUS_SUCCESS;
 }
-
-RocJpegStatus ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, uint32_t width, uint32_t height, uint32_t yuv_image_stride, RocJpegChromaSubsampling subsampling,
-    void *rgb_dev_mem, const size_t rgb_image_stride) {
-
-    size_t luma_size = (yuv_image_stride * align(height, 16));
-
-    switch (subsampling) {
-        case ROCJPEG_CSS_444:
-            ColorConvertYUV444ToRGBI(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
-                (const uint8_t *)yuv_dev_mem, yuv_image_stride, luma_size);
-            break;
-        case ROCJPEG_CSS_422:
-            //TODO add support
-            break;
-        case ROCJPEG_CSS_420:
-            ColorConvertNV12ToRGBI(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
-                (const uint8_t *)yuv_dev_mem, yuv_image_stride, (const uint8_t *)yuv_dev_mem + luma_size, yuv_image_stride);
-            break;
-        case ROCJPEG_CSS_400:
-            //TODO add support
-            break;
-        default:
-            std::cout << "Error! surface format is not supported!" << std::endl;
-            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
-    }
-
-    return ROCJPEG_STATUS_SUCCESS;
-    }
 
 RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
     hipExternalMemoryHandleDesc external_mem_handle_desc = {};
@@ -359,7 +309,7 @@ RocJpegStatus ROCJpegDecoder::CopyLuma(RocJpegImage *destination, uint16_t pictu
 }
 
 RocJpegStatus ROCJpegDecoder::CopyChroma(RocJpegImage *destination, uint16_t chroma_height) {
-    // copy channel2
+    // copy channel1
     if (hip_interop_.pitch[1] != 0 && destination->pitch[1] != 0 && destination->channel[1] != nullptr) {
         uint32_t chroma_size = destination->pitch[1] * chroma_height;
         uint8_t *layer1_mem = hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1];
@@ -395,11 +345,35 @@ RocJpegStatus ROCJpegDecoder::GetChromaHeight(uint16_t picture_height, uint16_t 
         case VA_FOURCC_Y800: /*Y800: one-plane 8-bit greyscale YUV 4:0:0*/
             chroma_height = 0;
             break;
-        case 0x56595559: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
-                         /*Note: va.h doesn't have VA_FOURCC_YUYV defined but vaExportSurfaceHandle returns 0x56595559 for packed YUYV for YUV 4:2:2*/
+        case ROCJPEG_FOURCC_YUYV: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
             chroma_height = picture_height;
             break;
         default:
+            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::ColorConvertToRGBI(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
+    switch (hip_interop_.surface_format) {
+        case VA_FOURCC_444P:
+            ColorConvertYUV444ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                  hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0], hip_interop_.offset[1]);
+            break;
+        case ROCJPEG_FOURCC_YUYV:
+            ColorConvertYUYVToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
+            break;
+        case VA_FOURCC_NV12:
+            ColorConvertNV12ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
+                                                hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1], hip_interop_.pitch[1]);
+            break;
+        case VA_FOURCC_Y800:
+            //TODO add support
+           break;
+        default:
+            ERR("ERROR! surface format is not supported!");
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
     }
     return ROCJPEG_STATUS_SUCCESS;

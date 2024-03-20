@@ -17,7 +17,9 @@ make -j
 ## Run
 
 ```shell
-./jpegdecode -i <input JPEG file [required]> 
-              -o <output path to save decoded image [optional]> 
-              -d <GPU device ID - 0:device 0 / 1:device 1/ ... [optional - default:0]>
+    ./jpegdecode -i <Path to single image or directory of images - [required]>
+                 -be <Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding) [optional]>
+                 -fmt <Select rocJPEG output format for decoding, one of the [unchanged, yuv, y, rgbi] [optional - default: unchanged]>
+                 -o <Output file path or directory - Write decoded images based on the selected outfut format to this file or directory [optional]>
+                 -d <GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.) [optional - default: 0]>
 ```

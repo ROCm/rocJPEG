@@ -59,7 +59,7 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 
-void HipExexChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
 void HipExecChannelExtractYUYVtoUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
@@ -1184,30 +1184,27 @@ HipChannelExtractUYVYToY(uint dst_width, uint dst_height,
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
-    if ((x < dst_width_comp && y < dst_height)) {
+    if (x < dst_width_comp && y < dst_height) {
         uint src_idx = y * src_image_stride_in_bytes + (x << 4);
-        uint dst_idx = y * dst_luma_stride_in_bytes + (x << 2);
+        uint dst_idx = y * dst_luma_stride_in_bytes + (x << 3);
 
-        d_uint8 src = *((d_uint8 *)(&src_image[src_idx]));
-        uint4 dst;
+        uint4 src = *((uint4 *)(&src_image[src_idx]));
+        uint2 dst = {};
+        dst.x = hipPack(make_float4(hipUnpack0(src.x), hipUnpack2(src.x), hipUnpack0(src.y), hipUnpack2(src.y)));
+        dst.y = hipPack(make_float4(hipUnpack0(src.z), hipUnpack2(src.z), hipUnpack0(src.w), hipUnpack2(src.w)));
 
-        dst.x = hipPack(make_float4(hipUnpack0(src.data[0]), hipUnpack2(src.data[0]), hipUnpack0(src.data[1]), hipUnpack2(src.data[1])));
-        dst.y = hipPack(make_float4(hipUnpack0(src.data[2]), hipUnpack2(src.data[2]), hipUnpack0(src.data[3]), hipUnpack2(src.data[3])));
-        dst.z = hipPack(make_float4(hipUnpack0(src.data[4]), hipUnpack2(src.data[4]), hipUnpack0(src.data[5]), hipUnpack2(src.data[5])));
-        dst.w = hipPack(make_float4(hipUnpack0(src.data[6]), hipUnpack2(src.data[6]), hipUnpack0(src.data[7]), hipUnpack2(src.data[7])));
-
-        *((uint4 *)(&destination_y[dst_idx])) = dst;
+        *((uint2 *)(&destination_y[dst_idx])) = dst;
     }
 }
 
-void HipExexChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void HipExecChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
     int localThreads_x = 16;
     int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 3) >> 2;
+    int globalThreads_x = (dst_width + 7) >> 3;
     int globalThreads_y = dst_height;
 
-    uint32_t dst_width_comp = (dst_width + 3) / 4;
+    uint32_t dst_width_comp = (dst_width + 7) / 8;
 
     hipLaunchKernelGGL(HipChannelExtractUYVYToY, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
                             dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_y, dst_luma_stride_in_bytes,

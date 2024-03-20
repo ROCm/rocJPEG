@@ -150,7 +150,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             case ROCJPEG_OUTPUT_Y:
                 // copy Luma (Y channel) to the first-channel of the destination.
                 if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
-                    HipExexChannelExtractUYVYToY(hip_stream_,
+                    HipExecChannelExtractUYVYToY(hip_stream_,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                  destination->channel[0], destination->pitch[0],

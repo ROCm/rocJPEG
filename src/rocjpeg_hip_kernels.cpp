@@ -55,8 +55,8 @@ __global__ void ColorConvertNV12ToRGBIKernel(uint32_t dst_width, uint32_t dst_he
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes,
     uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_luma_image_stride_in_bytes_comp) {
 
-    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
         uint32_t src_y0_idx = y * src_luma_image_stride_in_bytes_comp + (x << 3);
@@ -286,10 +286,10 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes) {
-    int local_threads_x = 16;
-    int local_threads_y = 4;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = (dst_height + 1) >> 1;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
@@ -306,8 +306,8 @@ __global__ void ColorConvertYUV444ToRGBIKernel(uint32_t dst_width, uint32_t dst_
     uint32_t dst_image_stride_in_bytes_comp, const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_yuv_image_stride_in_bytes_comp) {
 
-    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
         uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
@@ -510,10 +510,10 @@ void ColorConvertYUV444ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t d
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
-    int local_threads_x = 16;
-    int local_threads_y = 4;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = (dst_height + 1) >> 1;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
@@ -532,8 +532,8 @@ __global__ void ColorConvertYUYVToRGBIKernel(uint32_t dst_width, uint32_t dst_he
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes, uint32_t src_image_stride_in_bytes_comp,
     uint32_t dst_width_comp, uint32_t dst_height_comp) {
 
-    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
         uint32_t l0_idx = y * src_image_stride_in_bytes_comp + (x << 4);
@@ -744,10 +744,10 @@ __global__ void ColorConvertYUYVToRGBIKernel(uint32_t dst_width, uint32_t dst_he
 void ColorConvertYUYVToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int local_threads_x = 16;
-    int local_threads_y = 4;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = (dst_height + 1) >> 1;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
@@ -766,8 +766,8 @@ __global__ void ScaleImageNV12NearestKernel(uint32_t scaled_y_width, uint32_t sc
     const uint8_t *src_u_image, const uint8_t *src_v_image, uint32_t src_uv_image_stride_in_bytes,
     float x_scale_uv, float y_scale_uv, float x_offset_uv, float y_offset_uv) {
 
-    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x >= scaled_y_width || y >= scaled_y_height) {
         return;
@@ -781,23 +781,23 @@ __global__ void ScaleImageNV12NearestKernel(uint32_t scaled_y_width, uint32_t sc
     src_y_image += src_y_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
-    scaled_y_dst.x  = src_y_image[(int)fx];
+    scaled_y_dst.x  = src_y_image[(int32_t)fx];
     fx += scale_info.x;
-    scaled_y_dst.x |= src_y_image[(int)fx] << 8;
+    scaled_y_dst.x |= src_y_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    scaled_y_dst.x |= src_y_image[(int)fx] << 16;
+    scaled_y_dst.x |= src_y_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    scaled_y_dst.x |= src_y_image[(int)fx] << 24;
+    scaled_y_dst.x |= src_y_image[(int32_t)fx] << 24;
 
     fx += scale_info.x;
 
-    scaled_y_dst.y  = src_y_image[(int)fx];
+    scaled_y_dst.y  = src_y_image[(int32_t)fx];
     fx += scale_info.x;
-    scaled_y_dst.y |= src_y_image[(int)fx] << 8;
+    scaled_y_dst.y |= src_y_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    scaled_y_dst.y |= src_y_image[(int)fx] << 16;
+    scaled_y_dst.y |= src_y_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    scaled_y_dst.y |= src_y_image[(int)fx] << 24;
+    scaled_y_dst.y |= src_y_image[(int32_t)fx] << 24;
 
     *((uint2 *)(&scaled_y_image[scaled_y_idx])) = scaled_y_dst;
 
@@ -815,31 +815,31 @@ __global__ void ScaleImageNV12NearestKernel(uint32_t scaled_y_width, uint32_t sc
     src_v_image += src_uv_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     fx = fmaf((float)x, scale_info.x, scale_info.z);
 
-    scaled_u_dst.x  = src_u_image[(int)fx];
-    scaled_v_dst.x  = src_v_image[(int)fx];
+    scaled_u_dst.x  = src_u_image[(int32_t)fx];
+    scaled_v_dst.x  = src_v_image[(int32_t)fx];
     fx += scale_info.x;
-    scaled_u_dst.x |= src_u_image[(int)fx] << 8;
-    scaled_v_dst.x |= src_v_image[(int)fx] << 8;
+    scaled_u_dst.x |= src_u_image[(int32_t)fx] << 8;
+    scaled_v_dst.x |= src_v_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    scaled_u_dst.x |= src_u_image[(int)fx] << 16;
-    scaled_v_dst.x |= src_v_image[(int)fx] << 16;
+    scaled_u_dst.x |= src_u_image[(int32_t)fx] << 16;
+    scaled_v_dst.x |= src_v_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    scaled_u_dst.x |= src_u_image[(int)fx] << 24;
-    scaled_v_dst.x |= src_v_image[(int)fx] << 24;
+    scaled_u_dst.x |= src_u_image[(int32_t)fx] << 24;
+    scaled_v_dst.x |= src_v_image[(int32_t)fx] << 24;
 
     fx += scale_info.x;
 
-    scaled_u_dst.y  = src_u_image[(int)fx];
-    scaled_v_dst.y  = src_v_image[(int)fx];
+    scaled_u_dst.y  = src_u_image[(int32_t)fx];
+    scaled_v_dst.y  = src_v_image[(int32_t)fx];
     fx += scale_info.x;
-    scaled_u_dst.y |= src_u_image[(int)fx] << 8;
-    scaled_v_dst.y |= src_v_image[(int)fx] << 8;
+    scaled_u_dst.y |= src_u_image[(int32_t)fx] << 8;
+    scaled_v_dst.y |= src_v_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    scaled_u_dst.y |= src_u_image[(int)fx] << 16;
-    scaled_v_dst.y |= src_v_image[(int)fx] << 16;
+    scaled_u_dst.y |= src_u_image[(int32_t)fx] << 16;
+    scaled_v_dst.y |= src_v_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    scaled_u_dst.y |= src_u_image[(int)fx] << 24;
-    scaled_v_dst.y |= src_v_image[(int)fx] << 24;
+    scaled_u_dst.y |= src_u_image[(int32_t)fx] << 24;
+    scaled_v_dst.y |= src_v_image[(int32_t)fx] << 24;
 
     *((uint2 *)(&scaled_u_image[scaled_uv_idx])) = scaled_u_dst;
     *((uint2 *)(&scaled_v_image[scaled_uv_idx])) = scaled_v_dst;
@@ -851,10 +851,10 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image) {
 
-    int local_threads_x = 16;
-    int local_threads_y = 16;
-    int global_threads_x = (scaled_y_width + 7) >> 3;
-    int global_threads_y = scaled_y_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 16;
+    int32_t global_threads_x = (scaled_y_width + 7) >> 3;
+    int32_t global_threads_y = scaled_y_height;
 
     uint32_t src_uv_width = src_y_width / 2;
     uint32_t src_uv_height = src_y_height / 2;
@@ -885,8 +885,8 @@ __global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_h
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
-    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x >= dst_width || y >= dst_height) {
         return;
@@ -910,9 +910,9 @@ __global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_h
 void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes) {
-    int local_threads_x = 16, local_threads_y = 16;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16, local_threads_y = 16;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
 
     ChannelExtractU16ToU8U8Kernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image1, dst_image2,
@@ -925,8 +925,8 @@ __global__ void ChannelCombineU8U8ToU16Kernel(uint32_t dst_width, uint32_t dst_h
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes) {
 
-    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x >= dst_width || y >= dst_height) {
         return;
@@ -951,10 +951,10 @@ void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes) {
-    int local_threads_x = 16;
-    int local_threads_y = 16;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 16;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
 
     ChannelCombineU8U8ToU16Kernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image,
@@ -967,8 +967,8 @@ __global__ void ScaleImageU8U8NearestKernel(uint32_t dst_width, uint32_t dst_hei
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
-    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x >= dst_width || y >= dst_height) {
         return;
@@ -982,23 +982,23 @@ __global__ void ScaleImageU8U8NearestKernel(uint32_t dst_width, uint32_t dst_hei
     src_image += src_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
-    dst.x  = src_image[(int)fx];
+    dst.x  = src_image[(int32_t)fx];
     fx += scale_info.x;
-    dst.x |= src_image[(int)fx] << 8;
+    dst.x |= src_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    dst.x |= src_image[(int)fx] << 16;
+    dst.x |= src_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    dst.x |= src_image[(int)fx] << 24;
+    dst.x |= src_image[(int32_t)fx] << 24;
 
     fx += scale_info.x;
 
-    dst.y  = src_image[(int)fx];
+    dst.y  = src_image[(int32_t)fx];
     fx += scale_info.x;
-    dst.y |= src_image[(int)fx] << 8;
+    dst.y |= src_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    dst.y |= src_image[(int)fx] << 16;
+    dst.y |= src_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    dst.y |= src_image[(int)fx] << 24;
+    dst.y |= src_image[(int32_t)fx] << 24;
 
     *((uint2 *)(&dst_image[dst_idx])) = dst;
 }
@@ -1007,10 +1007,10 @@ void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     uint32_t src_width, uint32_t src_height,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int local_threads_x = 16;
-    int local_threads_y = 16;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 16;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
 
     float xscale = (float)((double)src_width / (double)dst_width);
     float yscale = (float)((double)src_height / (double)dst_height);
@@ -1027,8 +1027,8 @@ __global__ void ScaleImageYUV444NearestKernel(uint32_t dst_width, uint32_t dst_h
     const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image, uint32_t src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
-    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x >= dst_width || y >= dst_height) {
         return;
@@ -1045,38 +1045,38 @@ __global__ void ScaleImageYUV444NearestKernel(uint32_t dst_width, uint32_t dst_h
 
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
-    y_dst.x  = src_y_image[(int)fx];
-    u_dst.x  = src_u_image[(int)fx];
-    v_dst.x  = src_v_image[(int)fx];
+    y_dst.x  = src_y_image[(int32_t)fx];
+    u_dst.x  = src_u_image[(int32_t)fx];
+    v_dst.x  = src_v_image[(int32_t)fx];
     fx += scale_info.x;
-    y_dst.x |= src_y_image[(int)fx] << 8;
-    u_dst.x |= src_u_image[(int)fx] << 8;
-    v_dst.x |= src_v_image[(int)fx] << 8;
+    y_dst.x |= src_y_image[(int32_t)fx] << 8;
+    u_dst.x |= src_u_image[(int32_t)fx] << 8;
+    v_dst.x |= src_v_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    y_dst.x |= src_y_image[(int)fx] << 16;
-    u_dst.x |= src_u_image[(int)fx] << 16;
-    v_dst.x |= src_v_image[(int)fx] << 16;
+    y_dst.x |= src_y_image[(int32_t)fx] << 16;
+    u_dst.x |= src_u_image[(int32_t)fx] << 16;
+    v_dst.x |= src_v_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    y_dst.x |= src_y_image[(int)fx] << 24;
-    u_dst.x |= src_u_image[(int)fx] << 24;
-    v_dst.x |= src_v_image[(int)fx] << 24;
+    y_dst.x |= src_y_image[(int32_t)fx] << 24;
+    u_dst.x |= src_u_image[(int32_t)fx] << 24;
+    v_dst.x |= src_v_image[(int32_t)fx] << 24;
     fx += scale_info.x;
 
-    y_dst.y  = src_y_image[(int)fx];
-    u_dst.y  = src_u_image[(int)fx];
-    v_dst.y  = src_v_image[(int)fx];
+    y_dst.y  = src_y_image[(int32_t)fx];
+    u_dst.y  = src_u_image[(int32_t)fx];
+    v_dst.y  = src_v_image[(int32_t)fx];
     fx += scale_info.x;
-    y_dst.y |= src_y_image[(int)fx] << 8;
-    u_dst.y |= src_u_image[(int)fx] << 8;
-    v_dst.y |= src_v_image[(int)fx] << 8;
+    y_dst.y |= src_y_image[(int32_t)fx] << 8;
+    u_dst.y |= src_u_image[(int32_t)fx] << 8;
+    v_dst.y |= src_v_image[(int32_t)fx] << 8;
     fx += scale_info.x;
-    y_dst.y |= src_y_image[(int)fx] << 16;
-    u_dst.y |= src_u_image[(int)fx] << 16;
-    v_dst.y |= src_v_image[(int)fx] << 16;
+    y_dst.y |= src_y_image[(int32_t)fx] << 16;
+    u_dst.y |= src_u_image[(int32_t)fx] << 16;
+    v_dst.y |= src_v_image[(int32_t)fx] << 16;
     fx += scale_info.x;
-    y_dst.y |= src_y_image[(int)fx] << 24;
-    u_dst.y |= src_u_image[(int)fx] << 24;
-    v_dst.y |= src_v_image[(int)fx] << 24;
+    y_dst.y |= src_y_image[(int32_t)fx] << 24;
+    u_dst.y |= src_u_image[(int32_t)fx] << 24;
+    v_dst.y |= src_v_image[(int32_t)fx] << 24;
 
     *((uint2 *)(&dst_y_image[dst_idx])) = y_dst;
     *((uint2 *)(&dst_u_image[dst_idx])) = u_dst;
@@ -1087,10 +1087,10 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image, uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
-    int local_threads_x = 16;
-    int local_threads_y = 16;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 16;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
 
     float xscale = (float)((double)src_width / (double)dst_width);
     float yscale = (float)((double)src_height / (double)dst_height);
@@ -1109,8 +1109,8 @@ __global__ void ChannelExtractUYVYToYKernel(uint32_t dst_width, uint32_t dst_hei
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     uint32_t dst_width_comp) {
 
-    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x < dst_width_comp && y < dst_height) {
         uint32_t src_idx = y * src_image_stride_in_bytes + (x << 4);
@@ -1127,10 +1127,10 @@ __global__ void ChannelExtractUYVYToYKernel(uint32_t dst_width, uint32_t dst_hei
 
 void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int local_threads_x = 16;
-    int local_threads_y = 4;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
@@ -1144,8 +1144,8 @@ __global__ void ChannelExtractYUYVToYUVKernel(uint32_t dst_width, uint32_t dst_h
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     uint32_t dst_width_comp) {
 
-    int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
-    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp && y < dst_height)) {
         uint32_t src_idx = y * src_image_stride_in_bytes + (x << 4);
@@ -1171,10 +1171,10 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
-    int local_threads_x = 16;
-    int local_threads_y = 4;
-    int global_threads_x = (dst_width + 7) >> 3;
-    int global_threads_y = dst_height;
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = dst_height;
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
     ChannelExtractYUYVToYUVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),

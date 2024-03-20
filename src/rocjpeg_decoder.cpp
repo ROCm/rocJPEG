@@ -122,7 +122,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             case ROCJPEG_OUTPUT_YUV:
                 if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
                     // Extract the packed YUYV and copy them into the first, second, and thrid channels of the destination.
-                    ChannelExtractYUYVtoYUV(hip_stream_,
+                    ChannelExtractYUYVToYUV(hip_stream_,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                   destination->channel[0], destination->channel[1], destination->channel[2],

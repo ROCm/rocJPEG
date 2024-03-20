@@ -1148,7 +1148,7 @@ void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_
                             src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
-__global__ void HipChannelExtractYUYVtoYUV(uint dst_width, uint dst_height,
+__global__ void HipChannelExtractYUYVToYUV(uint dst_width, uint dst_height,
     uchar *destination_y, uchar *destination_u, uchar *destination_v, uint dst_luma_stride_in_bytes, uint dst_chroma_stride_in_bytes,
     const uchar *src_image, uint src_image_stride_in_bytes,
     uint dst_width_comp) {
@@ -1176,7 +1176,7 @@ __global__ void HipChannelExtractYUYVtoYUV(uint dst_width, uint dst_height,
     }
 }
 
-void ChannelExtractYUYVtoYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
@@ -1186,7 +1186,7 @@ void ChannelExtractYUYVtoYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     int globalThreads_y = dst_height;
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    hipLaunchKernelGGL(HipChannelExtractYUYVtoYUV, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
+    hipLaunchKernelGGL(HipChannelExtractYUYVToYUV, dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
                             dim3(localThreads_x, localThreads_y), 0, stream, dst_width, dst_height, destination_y, destination_u, destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes,
                             src_image, src_image_stride_in_bytes, dst_width_comp);
     }

@@ -22,52 +22,52 @@ THE SOFTWARE.
 
 #include "rocjpeg_hip_kernels.h"
 
-__device__ __forceinline__ uint hipPack(float4 src) {
+__device__ __forceinline__ uint32_t hipPack(float4 src) {
     return __builtin_amdgcn_cvt_pk_u8_f32(src.w, 3,
            __builtin_amdgcn_cvt_pk_u8_f32(src.z, 2,
            __builtin_amdgcn_cvt_pk_u8_f32(src.y, 1,
            __builtin_amdgcn_cvt_pk_u8_f32(src.x, 0, 0))));
 }
 
-__device__ __forceinline__ float hipUnpack0(uint src) {
+__device__ __forceinline__ float hipUnpack0(uint32_t src) {
     return (float)(src & 0xFF);
 }
 
-__device__ __forceinline__ float hipUnpack1(uint src) {
+__device__ __forceinline__ float hipUnpack1(uint32_t src) {
     return (float)((src >> 8) & 0xFF);
 }
 
-__device__ __forceinline__ float hipUnpack2(uint src) {
+__device__ __forceinline__ float hipUnpack2(uint32_t src) {
     return (float)((src >> 16) & 0xFF);
 }
 
-__device__ __forceinline__ float hipUnpack3(uint src) {
+__device__ __forceinline__ float hipUnpack3(uint32_t src) {
     return (float)((src >> 24) & 0xFF);
 }
 
-__device__ __forceinline__ float4 hipUnpack(uint src) {
+__device__ __forceinline__ float4 hipUnpack(uint32_t src) {
     return make_float4(hipUnpack0(src), hipUnpack1(src), hipUnpack2(src), hipUnpack3(src));
 }
 
-__global__ void ColorConvertNV12ToRGBIKernel(uint dst_width, uint dst_height,
-    uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
-    const uchar *src_luma_image, uint src_luma_image_stride_in_bytes,
-    const uchar *src_chroma_image, uint src_chroma_image_stride_in_bytes,
-    uint dst_width_comp, uint dst_height_comp, uint src_luma_image_stride_in_bytes_comp) {
+__global__ void ColorConvertNV12ToRGBIKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_image_stride_in_bytes_comp,
+    const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
+    const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes,
+    uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_luma_image_stride_in_bytes_comp) {
 
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
-        uint src_y0_idx = y * src_luma_image_stride_in_bytes_comp + (x << 3);
-        uint src_y1_idx = src_y0_idx + src_luma_image_stride_in_bytes;
-        uint src_uv_idx = y * src_chroma_image_stride_in_bytes + (x << 3);
+        uint32_t src_y0_idx = y * src_luma_image_stride_in_bytes_comp + (x << 3);
+        uint32_t src_y1_idx = src_y0_idx + src_luma_image_stride_in_bytes;
+        uint32_t src_uv_idx = y * src_chroma_image_stride_in_bytes + (x << 3);
         uint2 y0 = *((uint2 *)(&src_luma_image[src_y0_idx]));
         uint2 y1 = *((uint2 *)(&src_luma_image[src_y1_idx]));
         uint2 uv = *((uint2 *)(&src_chroma_image[src_uv_idx]));
 
-        uint rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
-        uint rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
 
         float4 f;
         uint2 u0, u1;
@@ -298,21 +298,20 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
 
     ColorConvertNV12ToRGBIKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                         dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
-                             dst_image_stride_in_bytes_comp, src_luma_image, src_luma_image_stride_in_bytes, src_chroma_image,
-                             src_chroma_image_stride_in_bytes, dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
+                        dst_image_stride_in_bytes_comp, src_luma_image, src_luma_image_stride_in_bytes, src_chroma_image,
+                        src_chroma_image_stride_in_bytes, dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
 }
 
-__global__ void ColorConvertYUV444ToRGBIKernel(uint dst_width, uint dst_height,
-    uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
-    const uchar *src_y_image, const uchar *src_u_image, const uchar *src_v_image, uint src_yuv_image_stride_in_bytes,
-    uint dst_width_comp, uint dst_height_comp, uint src_yuv_image_stride_in_bytes_comp) {
+__global__ void ColorConvertYUV444ToRGBIKernel(uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    uint32_t dst_image_stride_in_bytes_comp, const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_yuv_image_stride_in_bytes_comp) {
 
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
-        uint src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
-        uint src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
+        uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
+        uint32_t src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
 
 
         uint2 y0 = *((uint2 *)(&src_y_image[src_y0_idx]));
@@ -324,8 +323,8 @@ __global__ void ColorConvertYUV444ToRGBIKernel(uint dst_width, uint dst_height,
         uint2 v0 = *((uint2 *)(&src_v_image[src_y0_idx]));
         uint2 v1 = *((uint2 *)(&src_v_image[src_y1_idx]));
 
-        uint rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
-        uint rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
 
         float2 cr = make_float2( 0.0000f,  1.5748f);
         float2 cg = make_float2(-0.1873f, -0.4681f);
@@ -522,28 +521,28 @@ void ColorConvertYUV444ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t d
     uint32_t src_yuv_image_stride_in_bytes_comp = src_yuv_image_stride_in_bytes * 2;
 
     ColorConvertYUV444ToRGBIKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
-                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
-                             dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
-                             src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
-                             dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uint8_t *)dst_image,
+                        dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
+                        src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
+                        dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 }
 
-__global__ void ColorConvertYUYVToRGBIKernel(uint dst_width, uint dst_height,
-    uchar *dst_image, uint dst_image_stride_in_bytes, uint dst_image_stride_in_bytes_comp,
-    const uchar *src_image, uint src_image_stride_in_bytes, uint src_image_stride_in_bytes_comp,
-    uint dst_width_comp, uint dst_height_comp) {
+__global__ void ColorConvertYUYVToRGBIKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_image_stride_in_bytes_comp,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes, uint32_t src_image_stride_in_bytes_comp,
+    uint32_t dst_width_comp, uint32_t dst_height_comp) {
 
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
-        uint l0_idx = y * src_image_stride_in_bytes_comp + (x << 4);
-        uint l1_idx = l0_idx + src_image_stride_in_bytes;
+        uint32_t l0_idx = y * src_image_stride_in_bytes_comp + (x << 4);
+        uint32_t l1_idx = l0_idx + src_image_stride_in_bytes;
         uint4 l0 = *((uint4 *)(&src_image[l0_idx]));
         uint4 l1 = *((uint4 *)(&src_image[l1_idx]));
 
-        uint rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
-        uint rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
 
         float4 f;
 
@@ -756,15 +755,15 @@ void ColorConvertYUYVToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     uint32_t src_image_stride_in_bytes_comp = src_image_stride_in_bytes * 2;
 
     ColorConvertYUYVToRGBIKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
-                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
-                             dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_image, src_image_stride_in_bytes,
-                             src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
+                                   dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uint8_t *)dst_image,
+                                   dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_image, src_image_stride_in_bytes,
+                                   src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
 }
 
-__global__ void ScaleImageNV12NearestKernel(uint scaled_y_width, uint scaled_y_height, uchar *scaled_y_image, uint scaled_y_image_stride_in_bytes,
-    const uchar *src_y_image, uint src_y_image_stride_in_bytes, float xscale_y, float yscale_y, float xoffset_y, float yoffset_y,
-    uint scaled_uv_width, uint scaled_uv_height, uchar *scaled_u_image, uchar *scaled_v_image, uint scaled_uv_image_stride_in_bytes,
-    const uchar *src_u_image, const uchar *src_v_image, uint src_uv_image_stride_in_bytes,
+__global__ void ScaleImageNV12NearestKernel(uint32_t scaled_y_width, uint32_t scaled_y_height, uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes,
+    const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, float xscale_y, float yscale_y, float xoffset_y, float yoffset_y,
+    uint32_t scaled_uv_width, uint32_t scaled_uv_height, uint8_t *scaled_u_image, uint8_t *scaled_v_image, uint32_t scaled_uv_image_stride_in_bytes,
+    const uint8_t *src_u_image, const uint8_t *src_v_image, uint32_t src_uv_image_stride_in_bytes,
     float x_scale_uv, float y_scale_uv, float x_offset_uv, float y_offset_uv) {
 
     int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
@@ -774,12 +773,12 @@ __global__ void ScaleImageNV12NearestKernel(uint scaled_y_width, uint scaled_y_h
         return;
     }
 
-    uint scaled_y_idx = y * scaled_y_image_stride_in_bytes + x;
+    uint32_t scaled_y_idx = y * scaled_y_image_stride_in_bytes + x;
 
     float4 scale_info = make_float4(xscale_y, yscale_y, xoffset_y, yoffset_y);
 
     uint2 scaled_y_dst;
-    src_y_image += src_y_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
+    src_y_image += src_y_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
     scaled_y_dst.x  = src_y_image[(int)fx];
@@ -807,13 +806,13 @@ __global__ void ScaleImageNV12NearestKernel(uint scaled_y_width, uint scaled_y_h
         return;
     }
 
-    uint scaled_uv_idx = y * scaled_uv_image_stride_in_bytes + x;
+    uint32_t scaled_uv_idx = y * scaled_uv_image_stride_in_bytes + x;
 
     scale_info = make_float4(x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
 
     uint2 scaled_u_dst, scaled_v_dst;
-    src_u_image += src_uv_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
-    src_v_image += src_uv_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
+    src_u_image += src_uv_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
+    src_v_image += src_uv_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     fx = fmaf((float)x, scale_info.x, scale_info.z);
 
     scaled_u_dst.x  = src_u_image[(int)fx];
@@ -882,9 +881,9 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
                                   src_u_image, src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
 }
 
-__global__ void ChannelExtractU16ToU8U8Kernel(uint dst_width, uint dst_height,
-    uchar *dst_image1, uchar *dst_image2, uint dst_image_stride_in_bytes,
-    const uchar *src_image, uint src_image_stride_in_bytes) {
+__global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
     int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
@@ -921,10 +920,10 @@ void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t ds
 
 }
 
-__global__ void ChannelCombineU8U8ToU16Kernel(uint dst_width, uint dst_height,
-    uchar *dst_image, uint dst_image_stride_in_bytes,
-    const uchar *src_image1, uint src_image1_stride_in_bytes,
-    const uchar *src_image2, uint src_image2_stride_in_bytes) {
+__global__ void ChannelCombineU8U8ToU16Kernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
+    const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes) {
 
     int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
@@ -933,9 +932,9 @@ __global__ void ChannelCombineU8U8ToU16Kernel(uint dst_width, uint dst_height,
         return;
     }
 
-    uint src1_idx = y * src_image1_stride_in_bytes + x;
-    uint src2_idx = y * src_image2_stride_in_bytes + x;
-    uint dst_idx =  y * dst_image_stride_in_bytes + x + x;
+    uint32_t src1_idx = y * src_image1_stride_in_bytes + x;
+    uint32_t src2_idx = y * src_image2_stride_in_bytes + x;
+    uint32_t dst_idx =  y * dst_image_stride_in_bytes + x + x;
 
     uint2 src1 = *((uint2 *)(&src_image1[src1_idx]));
     uint2 src2 = *((uint2 *)(&src_image2[src2_idx]));
@@ -963,9 +962,9 @@ void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_
 
 }
 
-__global__ void ScaleImageU8U8NearestKernel(uint dst_width, uint dst_height,
-    uchar *dst_image, uint dst_image_stride_in_bytes,
-    const uchar *src_image, uint src_image_stride_in_bytes,
+__global__ void ScaleImageU8U8NearestKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
     int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
@@ -975,12 +974,12 @@ __global__ void ScaleImageU8U8NearestKernel(uint dst_width, uint dst_height,
         return;
     }
 
-    uint dst_idx = y * dst_image_stride_in_bytes + x;
+    uint32_t dst_idx = y * dst_image_stride_in_bytes + x;
 
     float4 scale_info = make_float4(xscale, yscale, xoffset, yoffset);
 
     uint2 dst;
-    src_image += src_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
+    src_image += src_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
     dst.x  = src_image[(int)fx];
@@ -1019,13 +1018,13 @@ void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     float yoffset = (float)((double)src_height / (double)dst_height * 0.5);
 
     ScaleImageU8U8NearestKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
-                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image , dst_image_stride_in_bytes,
-                        src_image, src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
+                                  dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image , dst_image_stride_in_bytes,
+                                  src_image, src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 
 }
 
-__global__ void ScaleImageYUV444NearestKernel(uint dst_width, uint dst_height, uchar *dst_y_image, uchar *dst_u_image, uchar *dst_v_image, uint dst_image_stride_in_bytes,
-    const uchar *src_y_image, const uchar *src_u_image, const uchar *src_v_image, uint src_image_stride_in_bytes,
+__global__ void ScaleImageYUV444NearestKernel(uint32_t dst_width, uint32_t dst_height, uint8_t *dst_y_image, uint8_t *dst_u_image, uint8_t *dst_v_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image, uint32_t src_image_stride_in_bytes,
     float xscale, float yscale, float xoffset, float yoffset) {
 
     int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
@@ -1035,14 +1034,14 @@ __global__ void ScaleImageYUV444NearestKernel(uint dst_width, uint dst_height, u
         return;
     }
 
-    uint dst_idx = y * dst_image_stride_in_bytes + x;
+    uint32_t dst_idx = y * dst_image_stride_in_bytes + x;
 
     float4 scale_info = make_float4(xscale, yscale, xoffset, yoffset);
 
     uint2 y_dst, u_dst, v_dst;
-    src_y_image += src_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
-    src_u_image += src_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
-    src_v_image += src_image_stride_in_bytes * (uint)fmaf((float)y, scale_info.y, scale_info.w);
+    src_y_image += src_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
+    src_u_image += src_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
+    src_v_image += src_image_stride_in_bytes * (uint32_t)fmaf((float)y, scale_info.y, scale_info.w);
 
     float fx = fmaf((float)x, scale_info.x, scale_info.z);
 
@@ -1100,22 +1099,22 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
 
     ScaleImageYUV444NearestKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_yuv_image,
-                                         dst_yuv_image + dst_u_image_offset, dst_yuv_image + (dst_u_image_offset * 2), dst_image_stride_in_bytes,
-                                         src_yuv_image, src_yuv_image + src_u_image_offset, src_yuv_image + (src_u_image_offset * 2),
-                                         src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
+                                    dst_yuv_image + dst_u_image_offset, dst_yuv_image + (dst_u_image_offset * 2), dst_image_stride_in_bytes,
+                                    src_yuv_image, src_yuv_image + src_u_image_offset, src_yuv_image + (src_u_image_offset * 2),
+                                    src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 }
 
-__global__ void ChannelExtractUYVYToYKernel(uint dst_width, uint dst_height,
-    uchar *destination_y, uint dst_luma_stride_in_bytes,
-    const uchar *src_image, uint src_image_stride_in_bytes,
-    uint dst_width_comp) {
+__global__ void ChannelExtractUYVYToYKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
+    uint32_t dst_width_comp) {
 
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if (x < dst_width_comp && y < dst_height) {
-        uint src_idx = y * src_image_stride_in_bytes + (x << 4);
-        uint dst_idx = y * dst_luma_stride_in_bytes + (x << 3);
+        uint32_t src_idx = y * src_image_stride_in_bytes + (x << 4);
+        uint32_t dst_idx = y * dst_luma_stride_in_bytes + (x << 3);
 
         uint4 src = *((uint4 *)(&src_image[src_idx]));
         uint2 dst_y;
@@ -1137,25 +1136,25 @@ void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_
 
     ChannelExtractUYVYToYKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                   dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y,
-                                        dst_luma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
+                                  dst_luma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
-__global__ void ChannelExtractYUYVToYUVKernel(uint dst_width, uint dst_height,
-    uchar *destination_y, uchar *destination_u, uchar *destination_v, uint dst_luma_stride_in_bytes, uint dst_chroma_stride_in_bytes,
-    const uchar *src_image, uint src_image_stride_in_bytes,
-    uint dst_width_comp) {
+__global__ void ChannelExtractYUYVToYUVKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
+    uint32_t dst_width_comp) {
 
     int x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
     int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
 
     if ((x < dst_width_comp && y < dst_height)) {
-        uint src_idx = y * src_image_stride_in_bytes + (x << 4);
-        uint dst_y_idx = y * dst_luma_stride_in_bytes + (x << 3);
-        uint dst_uv_idx = y * dst_chroma_stride_in_bytes + (x << 2);
+        uint32_t src_idx = y * src_image_stride_in_bytes + (x << 4);
+        uint32_t dst_y_idx = y * dst_luma_stride_in_bytes + (x << 3);
+        uint32_t dst_uv_idx = y * dst_chroma_stride_in_bytes + (x << 2);
 
         uint4 src = *((uint4 *)(&src_image[src_idx]));
         uint2 dst_y;
-        uint dst_u, dst_v;
+        uint32_t dst_u, dst_v;
 
         dst_y.x = hipPack(make_float4(hipUnpack0(src.x), hipUnpack2(src.x), hipUnpack0(src.y), hipUnpack2(src.y)));
         dst_y.y = hipPack(make_float4(hipUnpack0(src.z), hipUnpack2(src.z), hipUnpack0(src.w), hipUnpack2(src.w)));
@@ -1163,8 +1162,8 @@ __global__ void ChannelExtractYUYVToYUVKernel(uint dst_width, uint dst_height,
         dst_v = hipPack(make_float4(hipUnpack3(src.x), hipUnpack3(src.y), hipUnpack3(src.z), hipUnpack3(src.w)));
 
         *((uint2 *)(&destination_y[dst_y_idx])) = dst_y;
-        *((uint *)(&destination_u[dst_uv_idx])) = dst_u;
-        *((uint *)(&destination_v[dst_uv_idx])) = dst_v;
+        *((uint32_t *)(&destination_u[dst_uv_idx])) = dst_u;
+        *((uint32_t *)(&destination_v[dst_uv_idx])) = dst_v;
     }
 }
 
@@ -1180,5 +1179,5 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
 
     ChannelExtractYUYVToYUVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y, destination_u,
-                                         destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
+                                    destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
     }

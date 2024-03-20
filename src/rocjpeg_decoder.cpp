@@ -122,7 +122,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             case ROCJPEG_OUTPUT_YUV:
                 if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
                     // Extract the packed YUYV and copy them into the first, second, and thrid channels of the destination.
-                    HipExecChannelExtractYUYVtoYUV(hip_stream_,
+                    ChannelExtractYUYVtoYUV(hip_stream_,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                   destination->channel[0], destination->channel[1], destination->channel[2],
@@ -135,7 +135,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                     }
                     if (hip_interop_.surface_format == VA_FOURCC_NV12) {
                         // Extract the interleaved UV channels and copy them into the second and thrid channels of the destination.
-                        HipExecChannelExtractU16ToU8U8(hip_stream_,
+                        ChannelExtractU16ToU8U8(hip_stream_,
                                                        jpeg_stream_params->picture_parameter_buffer.picture_width >> 1,
                                                        jpeg_stream_params->picture_parameter_buffer.picture_height >> 1,
                                                        destination->channel[1], destination->channel[2], destination->pitch[1],
@@ -150,7 +150,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 break;
             case ROCJPEG_OUTPUT_Y:
                 if (hip_interop_.surface_format == 0x56595559 /*YUYV*/) {
-                    HipExecChannelExtractUYVYToY(hip_stream_,
+                    ChannelExtractUYVYToY(hip_stream_,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                  jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                  destination->channel[0], destination->pitch[0],
@@ -166,19 +166,19 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
             case ROCJPEG_OUTPUT_RGBI:
                 switch (hip_interop_.surface_format) {
                     case VA_FOURCC_444P:
-                        HipExecColorConvertYUV444ToRGB(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                        ColorConvertYUV444ToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                                     jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                                     destination->channel[0], destination->pitch[0],
                                                                     hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0], hip_interop_.offset[1]);
                         break;
                     case 0x56595559:
-                        HipExecColorConvertYUYVToRGB(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                        ColorConvertYUYVToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                                   jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                                   destination->channel[0], destination->pitch[0],
                                                                   hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
                         break;
                     case VA_FOURCC_NV12:
-                        HipExecColorConvertNV12ToRGB(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                        ColorConvertNV12ToRGBI(hip_stream_, jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                                   jpeg_stream_params->picture_parameter_buffer.picture_height,
                                                                   destination->channel[0], destination->pitch[0],
                                                                   hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
@@ -279,14 +279,14 @@ RocJpegStatus ROCJpegDecoder::ConvertYUVtoRGB(const void *yuv_dev_mem, uint32_t 
 
     switch (subsampling) {
         case ROCJPEG_CSS_444:
-            HipExecColorConvertYUV444ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
+            ColorConvertYUV444ToRGBI(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
                 (const uint8_t *)yuv_dev_mem, yuv_image_stride, luma_size);
             break;
         case ROCJPEG_CSS_422:
             //TODO add support
             break;
         case ROCJPEG_CSS_420:
-            HipExecColorConvertNV12ToRGB(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
+            ColorConvertNV12ToRGBI(hip_stream_, width, height, (uint8_t *)rgb_dev_mem, rgb_image_stride,
                 (const uint8_t *)yuv_dev_mem, yuv_image_stride, (const uint8_t *)yuv_dev_mem + luma_size, yuv_image_stride);
             break;
         case ROCJPEG_CSS_400:

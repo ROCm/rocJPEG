@@ -71,8 +71,8 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint32_t dst_chroma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
 
-typedef struct d_uint6 {
+typedef struct UINT6TYPE {
   uint data[6];
-} d_uint6;
+} DUINT6;
 
 #endif //ROC_JPEG_HIP_KERNELS_H_

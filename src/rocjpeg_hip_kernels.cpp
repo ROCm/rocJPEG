@@ -107,7 +107,7 @@ __global__ void ColorConvertNV12ToRGBIKernel(uint dst_width, uint dst_height,
         float2 cg = make_float2(-0.1873f, -0.4681f);
         float2 cb = make_float2( 1.8556f,  0.0000f);
         float3 yuv;
-        d_uint6 rgb0, rgb1;
+        DUINT6 rgb0, rgb1;
 
         yuv.x = hipUnpack0(y0.x);
         yuv.y = hipUnpack0(u0.x);
@@ -277,8 +277,8 @@ __global__ void ColorConvertNV12ToRGBIKernel(uint dst_width, uint dst_height,
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[5] = hipPack(f);
 
-        *((d_uint6 *)(&dst_image[rgb0_idx])) = rgb0;
-        *((d_uint6 *)(&dst_image[rgb1_idx])) = rgb1;
+        *((DUINT6 *)(&dst_image[rgb0_idx])) = rgb0;
+        *((DUINT6 *)(&dst_image[rgb1_idx])) = rgb1;
     }
 }
 
@@ -286,18 +286,18 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes) {
-    int localThreads_x = 16;
-    int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = (dst_height + 1) >> 1;
+    int local_threads_x = 16;
+    int local_threads_y = 4;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_luma_image_stride_in_bytes_comp = src_luma_image_stride_in_bytes * 2;
 
-    ColorConvertNV12ToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
+    ColorConvertNV12ToRGBIKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
                              dst_image_stride_in_bytes_comp, src_luma_image, src_luma_image_stride_in_bytes, src_chroma_image,
                              src_chroma_image_stride_in_bytes, dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
 }
@@ -331,7 +331,7 @@ __global__ void ColorConvertYUV444ToRGBIKernel(uint dst_width, uint dst_height,
         float2 cg = make_float2(-0.1873f, -0.4681f);
         float2 cb = make_float2( 1.8556f,  0.0000f);
         float3 yuv;
-        d_uint6 rgb0, rgb1;
+        DUINT6 rgb0, rgb1;
         float4 f;
 
         yuv.x = hipUnpack0(y0.x);
@@ -502,8 +502,8 @@ __global__ void ColorConvertYUV444ToRGBIKernel(uint dst_width, uint dst_height,
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[5] = hipPack(f);
 
-        *((d_uint6 *)(&dst_image[rgb0_idx])) = rgb0;
-        *((d_uint6 *)(&dst_image[rgb1_idx])) = rgb1;
+        *((DUINT6 *)(&dst_image[rgb0_idx])) = rgb0;
+        *((DUINT6 *)(&dst_image[rgb1_idx])) = rgb1;
     }
 }
 
@@ -511,18 +511,18 @@ void ColorConvertYUV444ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t d
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
-    int localThreads_x = 16;
-    int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = (dst_height + 1) >> 1;
+    int local_threads_x = 16;
+    int local_threads_y = 4;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_yuv_image_stride_in_bytes_comp = src_yuv_image_stride_in_bytes * 2;
 
-    ColorConvertYUV444ToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
+    ColorConvertYUV444ToRGBIKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
                              dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
                              src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
                              dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
@@ -568,7 +568,7 @@ __global__ void ColorConvertYUYVToRGBIKernel(uint dst_width, uint dst_height,
         float2 cg = make_float2(-0.1873f, -0.4681f);
         float2 cb = make_float2( 1.8556f,  0.0000f);
         float3 yuv;
-        d_uint6 prgb0, prgb1;
+        DUINT6 prgb0, prgb1;
 
         yuv.x = hipUnpack0(py0.x);
         yuv.y = hipUnpack0(pu0.x);
@@ -738,25 +738,25 @@ __global__ void ColorConvertYUYVToRGBIKernel(uint dst_width, uint dst_height,
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb1.data[5] = hipPack(f);
 
-        *((d_uint6 *)(&dst_image[rgb0_idx])) = prgb0;
-        *((d_uint6 *)(&dst_image[rgb1_idx])) = prgb1;
+        *((DUINT6 *)(&dst_image[rgb0_idx])) = prgb0;
+        *((DUINT6 *)(&dst_image[rgb1_idx])) = prgb1;
     }
 }
 void ColorConvertYUYVToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int localThreads_x = 16;
-    int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = (dst_height + 1) >> 1;
+    int local_threads_x = 16;
+    int local_threads_y = 4;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = (dst_height + 1) >> 1;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
     uint32_t dst_height_comp = (dst_height + 1) / 2;
     uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
     uint32_t src_image_stride_in_bytes_comp = src_image_stride_in_bytes * 2;
 
-    ColorConvertYUYVToRGBIKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
+    ColorConvertYUYVToRGBIKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, (uchar *)dst_image,
                              dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_image, src_image_stride_in_bytes,
                              src_image_stride_in_bytes_comp, dst_width_comp, dst_height_comp);
 }
@@ -852,10 +852,10 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image) {
 
-    int localThreads_x = 16;
-    int localThreads_y = 16;
-    int globalThreads_x = (scaled_y_width + 7) >> 3;
-    int globalThreads_y = scaled_y_height;
+    int local_threads_x = 16;
+    int local_threads_y = 16;
+    int global_threads_x = (scaled_y_width + 7) >> 3;
+    int global_threads_y = scaled_y_height;
 
     uint32_t src_uv_width = src_y_width / 2;
     uint32_t src_uv_height = src_y_height / 2;
@@ -875,8 +875,8 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
     float x_offset_uv = (float)((double)src_uv_width / (double)scaled_uv_width * 0.5);
     float y_offset_uv = (float)((double)src_uv_height / (double)scaled_uv_height * 0.5);
 
-    ScaleImageNV12NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                  dim3(localThreads_x, localThreads_y), 0, stream>>>(scaled_y_width, scaled_y_height, scaled_y_image,
+    ScaleImageNV12NearestKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                  dim3(local_threads_x, local_threads_y), 0, stream>>>(scaled_y_width, scaled_y_height, scaled_y_image,
                                   scaled_y_image_stride_in_bytes, src_y_image, src_y_image_stride_in_bytes, xscale_y, yscale_y, xoffset_y, yoffset_y,
                                   scaled_uv_width, scaled_uv_height, scaled_u_image, scaled_v_image, scaled_uv_image_stride_in_bytes,
                                   src_u_image, src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
@@ -911,12 +911,12 @@ __global__ void ChannelExtractU16ToU8U8Kernel(uint dst_width, uint dst_height,
 void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes) {
-    int localThreads_x = 16, localThreads_y = 16;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16, local_threads_y = 16;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
 
-    ChannelExtractU16ToU8U8Kernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image1, dst_image2,
+    ChannelExtractU16ToU8U8Kernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                    dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image1, dst_image2,
                                     dst_image_stride_in_bytes, src_image1, src_image1_stride_in_bytes);
 
 }
@@ -952,13 +952,13 @@ void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
     const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes) {
-    int localThreads_x = 16;
-    int localThreads_y = 16;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16;
+    int local_threads_y = 16;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
 
-    ChannelCombineU8U8ToU16Kernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image,
+    ChannelCombineU8U8ToU16Kernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                    dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image,
                                     dst_image_stride_in_bytes, src_image1, src_image1_stride_in_bytes, src_image2, src_image2_stride_in_bytes);
 
 }
@@ -1008,18 +1008,18 @@ void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     uint32_t src_width, uint32_t src_height,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int localThreads_x = 16;
-    int localThreads_y = 16;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16;
+    int local_threads_y = 16;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
 
     float xscale = (float)((double)src_width / (double)dst_width);
     float yscale = (float)((double)src_height / (double)dst_height);
     float xoffset = (float)((double)src_width / (double)dst_width * 0.5);
     float yoffset = (float)((double)src_height / (double)dst_height * 0.5);
 
-    ScaleImageU8U8NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                        dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_image , dst_image_stride_in_bytes,
+    ScaleImageU8U8NearestKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image , dst_image_stride_in_bytes,
                         src_image, src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 
 }
@@ -1088,18 +1088,18 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image, uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset) {
 
-    int localThreads_x = 16;
-    int localThreads_y = 16;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16;
+    int local_threads_y = 16;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
 
     float xscale = (float)((double)src_width / (double)dst_width);
     float yscale = (float)((double)src_height / (double)dst_height);
     float xoffset = (float)((double)src_width / (double)dst_width * 0.5);
     float yoffset = (float)((double)src_height / (double)dst_height * 0.5);
 
-    ScaleImageYUV444NearestKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, dst_yuv_image,
+    ScaleImageYUV444NearestKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                    dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_yuv_image,
                                          dst_yuv_image + dst_u_image_offset, dst_yuv_image + (dst_u_image_offset * 2), dst_image_stride_in_bytes,
                                          src_yuv_image, src_yuv_image + src_u_image_offset, src_yuv_image + (src_u_image_offset * 2),
                                          src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
@@ -1128,15 +1128,15 @@ __global__ void ChannelExtractUYVYToYKernel(uint dst_width, uint dst_height,
 
 void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
-    int localThreads_x = 16;
-    int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16;
+    int local_threads_y = 4;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    ChannelExtractUYVYToYKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                  dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, destination_y,
+    ChannelExtractUYVYToYKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                  dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y,
                                         dst_luma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
@@ -1172,13 +1172,13 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
-    int localThreads_x = 16;
-    int localThreads_y = 4;
-    int globalThreads_x = (dst_width + 7) >> 3;
-    int globalThreads_y = dst_height;
+    int local_threads_x = 16;
+    int local_threads_y = 4;
+    int global_threads_x = (dst_width + 7) >> 3;
+    int global_threads_y = dst_height;
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    ChannelExtractYUYVToYUVKernel<<<dim3(ceil((float)globalThreads_x / localThreads_x), ceil((float)globalThreads_y / localThreads_y)),
-                                    dim3(localThreads_x, localThreads_y), 0, stream>>>(dst_width, dst_height, destination_y, destination_u,
+    ChannelExtractYUYVToYUVKernel<<<dim3(ceil((float)global_threads_x / local_threads_x), ceil((float)global_threads_y / local_threads_y)),
+                                    dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y, destination_u,
                                          destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
     }

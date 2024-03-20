@@ -20,7 +20,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#pragma once 
+#ifndef ROC_JPEG_VAAPI_DECODER_H_
+#define ROC_JPEG_VAAPI_DECODER_H_
+
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -61,3 +64,5 @@ private:
     RocJpegStatus CreateDecoderConfig();
     RocJpegStatus DestroyDataBuffers();
 };
+
+#endif // ROC_JPEG_VAAPI_DECODER_H_

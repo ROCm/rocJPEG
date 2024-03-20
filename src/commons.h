@@ -20,6 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#ifndef ROC_JPEG_COMMON_H_
+#define ROC_JPEG_COMMON_H_
+
 #pragma once
 #include <stdexcept>
 #include <exception>
@@ -77,3 +80,5 @@ class RocJpegException : public std::exception {
 };
 
 #define THROW(X) throw RocJpegException(" { "+std::string(__func__)+" } " + X);
+
+#endif //ROC_JPEG_COMMON_H_

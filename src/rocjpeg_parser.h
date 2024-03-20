@@ -20,15 +20,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+
+#ifndef ROC_JPEG_PARSER_H_
+#define ROC_JPEG_PARSER_H_
+
 #include <stdint.h>
 #include <iostream>
 #include <cstring>
 #include "commons.h"
 
 #pragma once
-
-#ifndef JPEG_PARSER_H_
-#define JPEG_PARSER_H_
 
 #define NUM_COMPONENTS 4
 #define HUFFMAN_TABLES 2
@@ -173,4 +174,4 @@ class JpegParser {
         JpegStreamParameters jpeg_stream_parameters_;
 };
 
-#endif  // JPEG_PARSER_H_
+#endif  // ROC_JPEG_PARSER_H_

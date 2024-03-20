@@ -70,9 +70,9 @@ void HipExecScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint
 void HipExecChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
-void HipExecChannelExtractYUYVtoUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_chroma_stride_in_bytes,
-    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+void HipExecChannelExtractYUYVtoYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes,
+    uint32_t dst_chroma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
 }
 

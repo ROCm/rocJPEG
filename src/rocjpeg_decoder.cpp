@@ -127,18 +127,10 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 }
                 break;
             case ROCJPEG_OUTPUT_Y:
-                if (hip_interop_.surface_format == ROCJPEG_FOURCC_YUYV) {
-                    ChannelExtractUYVYToY(hip_stream_,
-                                                 jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                 jpeg_stream_params->picture_parameter_buffer.picture_height,
-                                                 destination->channel[0], destination->pitch[0],
-                                                 hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
-
-                } else {
-                    rocjpeg_status = CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height);
-                    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-                        return rocjpeg_status;
-                    }
+                rocjpeg_status = GetYOutputFormat(jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                  jpeg_stream_params->picture_parameter_buffer.picture_height, destination);
+                if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+                    return rocjpeg_status;
                 }
                 break;
             case ROCJPEG_OUTPUT_RGBI:
@@ -377,6 +369,20 @@ RocJpegStatus ROCJpegDecoder::GetYUVOutputFormat(uint32_t picture_width, uint32_
             if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
                 return rocjpeg_status;
             }
+        }
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus ROCJpegDecoder::GetYOutputFormat(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
+    RocJpegStatus rocjpeg_status;
+    if (hip_interop_.surface_format == ROCJPEG_FOURCC_YUYV) {
+        ChannelExtractUYVYToY(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                              hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
+    } else {
+        rocjpeg_status = CopyLuma(destination, picture_height);
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            return rocjpeg_status;
         }
     }
     return ROCJPEG_STATUS_SUCCESS;

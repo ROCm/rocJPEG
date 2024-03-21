@@ -43,7 +43,7 @@ THE SOFTWARE.
 #define CHECK_VAAPI(call) {                                               \
     VAStatus va_status = (call);                                          \
     if (va_status != VA_STATUS_SUCCESS) {                                 \
-        std::cerr << "VAAPI failure: 'status: " << vaErrorStr(va_status) << "' at " << __FILE__ << ":" << __LINE__ << std::endl;\
+        std::cerr << "VAAPI failure: " << #call << " failed with status: " << std::hex << "0x" << va_status << std::dec << " = '" << vaErrorStr(va_status) << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
         return ROCJPEG_STATUS_EXECUTION_FAILED;                           \
     }                                                                     \
 }

@@ -881,7 +881,7 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
                                   src_u_image, src_v_image, src_uv_image_stride_in_bytes, x_scale_uv, y_scale_uv, x_offset_uv, y_offset_uv);
 }
 
-__global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_height,
+__global__ void ConvertInterleavedUVToPlanarUVKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
@@ -907,14 +907,14 @@ __global__ void ChannelExtractU16ToU8U8Kernel(uint32_t dst_width, uint32_t dst_h
     *((uint2 *)(&dst_image2[dst_idx])) = dst2;
 
 }
-void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ConvertInterleavedUVToPlanarUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes) {
     int32_t local_threads_x = 16, local_threads_y = 16;
     int32_t global_threads_x = (dst_width + 7) >> 3;
     int32_t global_threads_y = dst_height;
 
-    ChannelExtractU16ToU8U8Kernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+    ConvertInterleavedUVToPlanarUVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image1, dst_image2,
                                     dst_image_stride_in_bytes, src_image1, src_image1_stride_in_bytes);
 
@@ -1104,7 +1104,7 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
                                     src_image_stride_in_bytes, xscale, yscale, xoffset, yoffset);
 }
 
-__global__ void ChannelExtractUYVYToYKernel(uint32_t dst_width, uint32_t dst_height,
+__global__ void ExtractYFromPackedYUYVKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     uint32_t dst_width_comp) {
@@ -1125,7 +1125,7 @@ __global__ void ChannelExtractUYVYToYKernel(uint32_t dst_width, uint32_t dst_hei
     }
 }
 
-void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ExtractYFromPackedYUYV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
     int32_t local_threads_x = 16;
     int32_t local_threads_y = 4;
@@ -1134,12 +1134,12 @@ void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_
 
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    ChannelExtractUYVYToYKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+    ExtractYFromPackedYUYVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                   dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y,
                                   dst_luma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
 }
 
-__global__ void ChannelExtractYUYVToYUVKernel(uint32_t dst_width, uint32_t dst_height,
+__global__ void ConvertPackedYUYVToPlanarYUVKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes,
     uint32_t dst_width_comp) {
@@ -1167,7 +1167,7 @@ __global__ void ChannelExtractYUYVToYUVKernel(uint32_t dst_width, uint32_t dst_h
     }
 }
 
-void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ConvertPackedYUYVToPlanarYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
 
@@ -1177,7 +1177,7 @@ void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t ds
     int32_t global_threads_y = dst_height;
     uint32_t dst_width_comp = (dst_width + 7) / 8;
 
-    ChannelExtractYUYVToYUVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+    ConvertPackedYUYVToPlanarYUVKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                                     dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, destination_y, destination_u,
                                     destination_v, dst_luma_stride_in_bytes, dst_chroma_stride_in_bytes, src_image, src_image_stride_in_bytes, dst_width_comp);
     }

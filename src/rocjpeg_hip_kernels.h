@@ -45,7 +45,7 @@ void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t
     const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
     const uint8_t *src_u_image, const uint8_t *src_v_image);
 
-void ChannelExtractU16ToU8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ConvertInterleavedUVToPlanarUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes);
 
@@ -63,10 +63,10 @@ void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
     uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 
-void ChannelExtractUYVYToY(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ExtractYFromPackedYUYV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
-void ChannelExtractYUYVToYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+void ConvertPackedYUYVToPlanarYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes,
     uint32_t dst_chroma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 

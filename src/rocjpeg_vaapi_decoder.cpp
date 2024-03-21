@@ -39,23 +39,23 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
 
         VAStatus va_status = vaDestroySurfaces(va_display_, va_surface_ids_.data(), va_surface_ids_.size());
         if (va_status != VA_STATUS_SUCCESS) {
-            ERR("ERROR: vaDestroySurfaces failed with status " + TOSTR(va_status));
+            ERR("ERROR: vaDestroySurfaces failed!");
         }
         if (va_context_id_) {
             va_status = vaDestroyContext(va_display_, va_context_id_);
             if (va_status != VA_STATUS_SUCCESS) {
-                ERR("ERROR: vaDestroyContext failed with status " + TOSTR(va_status));
+                ERR("ERROR: vaDestroyContext failed!");
             }
         }
         if (va_config_id_) {
             va_status = vaDestroyConfig(va_display_, va_config_id_);
             if (va_status != VA_STATUS_SUCCESS) {
-                ERR("ERROR: vaDestroyConfig failed with status " + TOSTR(va_status));
+                ERR("ERROR: vaDestroyConfig failed!");
             }
         }
         va_status = vaTerminate(va_display_);
         if (va_status != VA_STATUS_SUCCESS) {
-            ERR("ERROR: vaTerminate failed with status " + TOSTR(va_status));
+            ERR("ERROR: vaTerminate failed!");
         }
 
     }
@@ -71,12 +71,12 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string gcn_arch_name) 
     std::string drm_node = "/dev/dri/renderD" + std::to_string(128 + device_id_ * num_render_cards_per_device);
     rocjpeg_status = InitVAAPI(drm_node);
     if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("ERROR: Failed to initilize the VAAPI!" + TOSTR(rocjpeg_status));
+        ERR("ERROR: Failed to initilize VA-API!");
         return rocjpeg_status;
     }
     rocjpeg_status = CreateDecoderConfig();
     if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("ERROR: Failed to create a VAAPI decoder configuration" + TOSTR(rocjpeg_status));
+        ERR("ERROR: Failed to create a VA-API decoder configuration");
         return rocjpeg_status;
     }
 
@@ -91,7 +91,7 @@ RocJpegStatus RocJpegVappiDecoder::InitVAAPI(std::string drm_node) {
     }
     va_display_ = vaGetDisplayDRM(drm_fd_);
     if (!va_display_) {
-        ERR("ERROR: failed to create va_display ");
+        ERR("ERROR: failed to create va_display!");
         return ROCJPEG_STATUS_NOT_INITIALIZED;
     }
     vaSetInfoCallback(va_display_, NULL, NULL);
@@ -197,7 +197,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
 
     RocJpegStatus rocjpeg_status = DestroyDataBuffers();
     if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("Error: Failed to destroy VAAPI buffer");
+        ERR("Error: Failed to destroy VA-API buffer");
         return ROCJPEG_STATUS_EXECUTION_FAILED;
     }
 
@@ -259,10 +259,6 @@ RocJpegStatus RocJpegVappiDecoder::SyncSurface(uint32_t surface_id) {
     CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));
     while (surface_status != VASurfaceReady) {
         VAStatus va_status = vaSyncSurface(va_display_, surface_id);
-        /* Current implementation of vaSyncSurface() does not block indefinitely (contrary to VA-API spec), it returns
-         * VA_STATUS_ERROR_TIMEDOUT error when it blocks for a certain amount of time. Although time out can come from
-         * various reasons, we treat it as non-fatal and contiue waiting.
-         */
         if (va_status != VA_STATUS_SUCCESS) {
             if (va_status == 0x26 /*VA_STATUS_ERROR_TIMEDOUT*/) {
                 CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));

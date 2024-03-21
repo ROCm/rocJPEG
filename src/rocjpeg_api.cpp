@@ -35,7 +35,7 @@ RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, Ro
     try {
         rocjpeg_handle = new RocJpegDecoderHandle(backend, device_id);
     } catch(const std::exception& e) {
-        ERR(STR("Failed to init the rocDecode handle, ") + STR(e.what()));
+        ERR(STR("Failed to init the rocJPEG handle, ") + STR(e.what()));
         return ROCJPEG_STATUS_NOT_INITIALIZED;
     }
     *handle = rocjpeg_handle;

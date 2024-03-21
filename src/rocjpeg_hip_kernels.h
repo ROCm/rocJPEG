@@ -40,28 +40,9 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
     const uint8_t *src_chroma_image, uint32_t src_chroma_image_stride_in_bytes);
 
-void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
-    uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
-    const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
-    const uint8_t *src_u_image, const uint8_t *src_v_image);
-
 void ConvertInterleavedUVToPlanarUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes);
-
-void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
-    const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
-    const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes);
-
-void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t src_width, uint32_t src_height,
-    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
-
-void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
-    uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
-    uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
-    uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
 
 void ExtractYFromPackedYUYV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
@@ -70,6 +51,24 @@ void ConvertPackedYUYVToPlanarYUV(hipStream_t stream, uint32_t dst_width, uint32
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes,
     uint32_t dst_chroma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
+void ChannelCombineU16U8U8(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes,
+    const uint8_t *src_image2, uint32_t src_image2_stride_in_bytes);
+
+void ScaleImageYUV444Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_yuv_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_u_image_offset,
+    uint32_t src_width, uint32_t src_height, const uint8_t *src_yuv_image,
+    uint32_t src_image_stride_in_bytes, uint32_t src_u_image_offset);
+
+void ScaleImageNV12Nearest(hipStream_t stream, uint32_t scaled_y_width, uint32_t scaled_y_height,
+    uint8_t *scaled_y_image, uint32_t scaled_y_image_stride_in_bytes, uint32_t src_y_width, uint32_t src_y_height,
+    const uint8_t *src_y_image, uint32_t src_y_image_stride_in_bytes, uint8_t *scaled_u_image, uint8_t *scaled_v_image,
+    const uint8_t *src_u_image, const uint8_t *src_v_image);
+
+void ScaleImageU8U8Nearest(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t src_width, uint32_t src_height,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
 
 typedef struct UINT6TYPE {
   uint data[6];

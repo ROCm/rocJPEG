@@ -50,15 +50,50 @@ if(NOT ROCJPEG_FOUND)
     message("-- ${Yellow}${PROJECT_NAME} requires rocJPEG. Install rocJPEG before running CTests")
 endif()
 
-# jpegDecode
 add_test(
   NAME
-    jpeg_decode-fmt-unchanged
+    jpeg-decode-fmt-unchanged
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/mug_420.jpg
+            -i ${ROCM_PATH}/share/rocjpeg/images/
+)
+
+add_test(
+  NAME
+    jpeg-decode-fmt-yuv
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt yuv
+)
+
+add_test(
+  NAME
+    jpeg-decode-fmt-y
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt y
+)
+
+add_test(
+  NAME
+    jpeg-decode-fmt-rgbi
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgbi
 )

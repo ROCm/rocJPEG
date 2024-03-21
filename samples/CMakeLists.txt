@@ -24,12 +24,48 @@ cmake_minimum_required(VERSION 3.5)
 
 add_test(
   NAME
-    jpeg_decode-YUV420
+  jpeg-decode-fmt-unchanged
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${CMAKE_SOURCE_DIR}/data/images/mug_420.jpg
+            -i ${CMAKE_SOURCE_DIR}/data/images/
+)
+
+add_test(
+  NAME
+  jpeg-decode-fmt-yuv
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv
+)
+
+add_test(
+  NAME
+  jpeg-decode-fmt-y
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt y
+)
+
+add_test(
+  NAME
+  jpeg-decode-fmt-rgbi
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgbi
 )

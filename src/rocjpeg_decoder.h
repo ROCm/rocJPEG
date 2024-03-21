@@ -30,7 +30,7 @@ THE SOFTWARE.
 #include <queue>
 #include "../api/rocjpeg.h"
 #include "rocjpeg_parser.h"
-#include "commons.h"
+#include "rocjpeg_commons.h"
 #include "rocjpeg_vaapi_decoder.h"
 #include "rocjpeg_hip_kernels.h"
 

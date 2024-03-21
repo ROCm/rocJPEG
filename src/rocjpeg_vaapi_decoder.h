@@ -33,7 +33,7 @@ THE SOFTWARE.
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
-#include "commons.h"
+#include "rocjpeg_commons.h"
 #include "rocjpeg_parser.h"
 #include "../api/rocjpeg.h"
 

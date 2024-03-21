@@ -27,7 +27,7 @@ THE SOFTWARE.
 #include <stdint.h>
 #include <iostream>
 #include <cstring>
-#include "commons.h"
+#include "rocjpeg_commons.h"
 
 #pragma once
 

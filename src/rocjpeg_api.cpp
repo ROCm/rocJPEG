@@ -20,8 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "rocjpeg_handle.h"
-#include "commons.h"
+#include "rocjpeg_api_handle.h"
+#include "rocjpeg_commons.h"
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle)

@@ -31,7 +31,7 @@ THE SOFTWARE.
 #include "rocjpeg_decoder.h"
 
 /**
- * @brief RocJpegHandle structure
+ * @brief RocJpegHandle class
  * 
  */
 class RocJpegDecoderHandle {

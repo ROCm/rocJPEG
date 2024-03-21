@@ -761,6 +761,67 @@ void ColorConvertNV12ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst
                         src_chroma_image_stride_in_bytes, dst_width_comp, dst_height_comp, src_luma_image_stride_in_bytes_comp);
 }
 
+__global__ void ColorConvertYUV400ToRGBIKernel(uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_image_stride_in_bytes_comp,
+    const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
+    uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_luma_image_stride_in_bytes_comp) {
+
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp) && (y < dst_height_comp)) {
+        uint32_t src_y0_idx = y * src_luma_image_stride_in_bytes_comp + (x << 3);
+        uint32_t src_y1_idx = src_y0_idx + src_luma_image_stride_in_bytes;
+
+        uint2 y0 = *((uint2 *)(&src_luma_image[src_y0_idx]));
+        uint2 y1 = *((uint2 *)(&src_luma_image[src_y1_idx]));
+
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+
+        DUINT6 rgb0, rgb1;
+
+        rgb0.data[0] = hipPack(make_float4(hipUnpack0(y0.x), hipUnpack0(y0.x), hipUnpack0(y0.x), hipUnpack1(y0.x)));
+        rgb0.data[1] = hipPack(make_float4(hipUnpack1(y0.x), hipUnpack1(y0.x), hipUnpack2(y0.x), hipUnpack2(y0.x)));
+        rgb0.data[2] = hipPack(make_float4(hipUnpack2(y0.x), hipUnpack3(y0.x), hipUnpack3(y0.x), hipUnpack3(y0.x)));
+        rgb0.data[3] = hipPack(make_float4(hipUnpack0(y0.y), hipUnpack0(y0.y), hipUnpack0(y0.y), hipUnpack1(y0.y)));
+        rgb0.data[4] = hipPack(make_float4(hipUnpack1(y0.y), hipUnpack1(y0.y), hipUnpack2(y0.y), hipUnpack2(y0.y)));
+        rgb0.data[5] = hipPack(make_float4(hipUnpack2(y0.y), hipUnpack3(y0.y), hipUnpack3(y0.y), hipUnpack3(y0.y)));
+
+        rgb1.data[0] = hipPack(make_float4(hipUnpack0(y1.x), hipUnpack0(y1.x), hipUnpack0(y1.x), hipUnpack1(y1.x)));
+        rgb1.data[1] = hipPack(make_float4(hipUnpack1(y1.x), hipUnpack1(y1.x), hipUnpack2(y1.x), hipUnpack2(y1.x)));
+        rgb1.data[2] = hipPack(make_float4(hipUnpack2(y1.x), hipUnpack3(y1.x), hipUnpack3(y1.x), hipUnpack3(y1.x)));
+        rgb1.data[3] = hipPack(make_float4(hipUnpack0(y1.y), hipUnpack0(y1.y), hipUnpack0(y1.y), hipUnpack1(y1.y)));
+        rgb1.data[4] = hipPack(make_float4(hipUnpack1(y1.y), hipUnpack1(y1.y), hipUnpack2(y1.y), hipUnpack2(y1.y)));
+        rgb1.data[5] = hipPack(make_float4(hipUnpack2(y1.y), hipUnpack3(y1.y), hipUnpack3(y1.y), hipUnpack3(y1.y)));
+
+        *((DUINT6 *)(&dst_image[rgb0_idx])) = rgb0;
+        *((DUINT6 *)(&dst_image[rgb1_idx])) = rgb1;
+    }
+}
+
+void ColorConvertYUV400ToRGBI(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes){
+
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
+
+    uint32_t dst_width_comp = (dst_width + 7) / 8;
+    uint32_t dst_height_comp = (dst_height + 1) / 2;
+    uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
+    uint32_t src_luma_image_stride_in_bytes_comp = src_luma_image_stride_in_bytes * 2;
+
+    ColorConvertYUV400ToRGBIKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
+                        dst_image_stride_in_bytes_comp, src_luma_image, src_luma_image_stride_in_bytes, dst_width_comp, dst_height_comp,
+                        src_luma_image_stride_in_bytes_comp);
+
+}
+
+
 __global__ void ConvertInterleavedUVToPlanarUVKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {

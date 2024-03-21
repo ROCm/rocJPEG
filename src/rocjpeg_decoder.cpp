@@ -304,7 +304,8 @@ RocJpegStatus ROCJpegDecoder::ColorConvertToRGBI(uint32_t picture_width, uint32_
                                                 hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1], hip_interop_.pitch[1]);
             break;
         case VA_FOURCC_Y800:
-            //TODO add support
+            ColorConvertYUV400ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
            break;
         default:
             ERR("ERROR! surface format is not supported!");

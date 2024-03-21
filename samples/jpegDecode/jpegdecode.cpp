@@ -116,10 +116,6 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
     }
 }
 
-static inline int align(int value, int alignment) {
-   return (value + alignment - 1) & ~(alignment - 1);
-}
-
 void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
 
     uint8_t *hst_ptr = nullptr;

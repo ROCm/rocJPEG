@@ -3,7 +3,7 @@
 
 <p align="center"><img width="70%" src="docs/data/AMD_rocJPEG_Logo.png" /></p>
 
-rocJPEG is a high performance JPEG decode SDK for AMD GPUs. rocJPEG API lets developers access the JPEG decoding features available on the GPU.
+rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API, you can access the JPEG decoding features available on your GPU.
 
 ## Supported JPEG chroma subsampling
 
@@ -27,10 +27,12 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. rocJPEG API lets dev
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
-* AMD Mesa Drivers
+* AMD Multimedia packages
   ```shell
-  sudo apt install libva-amdgpu-dev mesa-amdgpu-va-drivers
+  sudo apt install libva-amdgpu-dev libdrm-amdgpu1 mesa-amdgpu-va-drivers
   ```
+> [!NOTE]
+> RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel libdrm-amdgpu mesa-amdgpu-dri-drivers`
 
 * CMake `3.5` or later
 
@@ -85,7 +87,7 @@ Install rocJPEG runtime, development, and test packages.
 
 * Runtime package - `rocjpeg` only provides the rocjpeg library `librocjpeg.so`
 * Development package - `rocjpeg-dev`/`rocjpeg-devel` provides the library, header files, and samples
-* Test package - `rocjpeg-test` provides ctest to verify installation
+* Test package - `rocjpeg-test` provides CTest to verify installation
 
 #### Ubuntu
 
@@ -197,4 +199,4 @@ page.
 * ROCm:
   * rocm-core - `6.1.0.60100-62`
   * amdgpu-core - `1:6.1.60100-1741643`
-* rocJPEG Setup Script - `V1.4`
+* rocJPEG Setup Script - `V1.0`

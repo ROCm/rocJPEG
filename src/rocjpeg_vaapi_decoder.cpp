@@ -64,25 +64,15 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
 }
 
 RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string gcn_arch_name) {
-    RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
-
     // There are 8 renderDXXX per physical device on gfx940, gfx941, and gfx942
     int num_render_cards_per_device = ((gcn_arch_name.compare("gfx940") == 0) ||
                                        (gcn_arch_name.compare("gfx941") == 0) ||
                                        (gcn_arch_name.compare("gfx942") == 0)) ? 8 : 1;
     std::string drm_node = "/dev/dri/renderD" + std::to_string(128 + device_id_ * num_render_cards_per_device);
-    rocjpeg_status = InitVAAPI(drm_node);
-    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("ERROR: Failed to initilize VA-API!");
-        return rocjpeg_status;
-    }
-    rocjpeg_status = CreateDecoderConfig();
-    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("ERROR: Failed to create a VA-API decoder configuration");
-        return rocjpeg_status;
-    }
+    CHECK_ROCJPEG(InitVAAPI(drm_node));
+    CHECK_ROCJPEG(CreateDecoderConfig());
 
-    return rocjpeg_status;
+    return ROCJPEG_STATUS_SUCCESS;
 }
 
 RocJpegStatus RocJpegVappiDecoder::InitVAAPI(std::string drm_node) {
@@ -197,11 +187,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     }
     CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, &va_surface_id, 1, &va_context_id_));
 
-    RocJpegStatus rocjpeg_status = DestroyDataBuffers();
-    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-        ERR("Error: Failed to destroy VA-API buffer");
-        return ROCJPEG_STATUS_EXECUTION_FAILED;
-    }
+    CHECK_ROCJPEG(DestroyDataBuffers());
 
     CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->picture_parameter_buffer, &va_picture_parameter_buf_id_));
     CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));

@@ -781,19 +781,40 @@ __global__ void ColorConvertYUV400ToRGBIKernel(uint32_t dst_width, uint32_t dst_
 
         DUINT6 rgb0, rgb1;
 
-        rgb0.data[0] = hipPack(make_float4(hipUnpack0(y0.x), hipUnpack0(y0.x), hipUnpack0(y0.x), hipUnpack1(y0.x)));
-        rgb0.data[1] = hipPack(make_float4(hipUnpack1(y0.x), hipUnpack1(y0.x), hipUnpack2(y0.x), hipUnpack2(y0.x)));
-        rgb0.data[2] = hipPack(make_float4(hipUnpack2(y0.x), hipUnpack3(y0.x), hipUnpack3(y0.x), hipUnpack3(y0.x)));
-        rgb0.data[3] = hipPack(make_float4(hipUnpack0(y0.y), hipUnpack0(y0.y), hipUnpack0(y0.y), hipUnpack1(y0.y)));
-        rgb0.data[4] = hipPack(make_float4(hipUnpack1(y0.y), hipUnpack1(y0.y), hipUnpack2(y0.y), hipUnpack2(y0.y)));
-        rgb0.data[5] = hipPack(make_float4(hipUnpack2(y0.y), hipUnpack3(y0.y), hipUnpack3(y0.y), hipUnpack3(y0.y)));
+        uint8_t y0_b0, y0_b1, y0_b2, y0_b3, y0_b4, y0_b5, y0_b6, y0_b7;
+        uint8_t y1_b0, y1_b1, y1_b2, y1_b3, y1_b4, y1_b5, y1_b6, y1_b7;
 
-        rgb1.data[0] = hipPack(make_float4(hipUnpack0(y1.x), hipUnpack0(y1.x), hipUnpack0(y1.x), hipUnpack1(y1.x)));
-        rgb1.data[1] = hipPack(make_float4(hipUnpack1(y1.x), hipUnpack1(y1.x), hipUnpack2(y1.x), hipUnpack2(y1.x)));
-        rgb1.data[2] = hipPack(make_float4(hipUnpack2(y1.x), hipUnpack3(y1.x), hipUnpack3(y1.x), hipUnpack3(y1.x)));
-        rgb1.data[3] = hipPack(make_float4(hipUnpack0(y1.y), hipUnpack0(y1.y), hipUnpack0(y1.y), hipUnpack1(y1.y)));
-        rgb1.data[4] = hipPack(make_float4(hipUnpack1(y1.y), hipUnpack1(y1.y), hipUnpack2(y1.y), hipUnpack2(y1.y)));
-        rgb1.data[5] = hipPack(make_float4(hipUnpack2(y1.y), hipUnpack3(y1.y), hipUnpack3(y1.y), hipUnpack3(y1.y)));
+        y0_b0 = hipUnpack0(y0.x);
+        y0_b1 = hipUnpack1(y0.x);
+        y0_b2 = hipUnpack2(y0.x);
+        y0_b3 = hipUnpack3(y0.x);
+        y0_b4 = hipUnpack0(y0.y);
+        y0_b5 = hipUnpack1(y0.y);
+        y0_b6 = hipUnpack2(y0.y);
+        y0_b7 = hipUnpack3(y0.y);
+
+        y1_b0 = hipUnpack0(y1.x);
+        y1_b1 = hipUnpack1(y1.x);
+        y1_b2 = hipUnpack2(y1.x);
+        y1_b3 = hipUnpack3(y1.x);
+        y1_b4 = hipUnpack0(y1.y);
+        y1_b5 = hipUnpack1(y1.y);
+        y1_b6 = hipUnpack2(y1.y);
+        y1_b7 = hipUnpack3(y1.y);
+
+        rgb0.data[0] = hipPack(make_float4(y0_b0, y0_b0, y0_b0, y0_b1));
+        rgb0.data[1] = hipPack(make_float4(y0_b1, y0_b1, y0_b2, y0_b2));
+        rgb0.data[2] = hipPack(make_float4(y0_b2, y0_b3, y0_b3, y0_b3));
+        rgb0.data[3] = hipPack(make_float4(y0_b4, y0_b4, y0_b4, y0_b5));
+        rgb0.data[4] = hipPack(make_float4(y0_b5, y0_b5, y0_b6, y0_b6));
+        rgb0.data[5] = hipPack(make_float4(y0_b6, y0_b7, y0_b7, y0_b7));
+
+        rgb1.data[0] = hipPack(make_float4(y1_b0, y1_b0, y1_b0, y1_b1));
+        rgb1.data[1] = hipPack(make_float4(y1_b1, y1_b1, y1_b2, y1_b2));
+        rgb1.data[2] = hipPack(make_float4(y1_b2, y1_b3, y1_b3, y1_b3));
+        rgb1.data[3] = hipPack(make_float4(y1_b4, y1_b4, y1_b4, y1_b5));
+        rgb1.data[4] = hipPack(make_float4(y1_b5, y1_b5, y1_b6, y1_b6));
+        rgb1.data[5] = hipPack(make_float4(y1_b6, y1_b7, y1_b7, y1_b7));
 
         *((DUINT6 *)(&dst_image[rgb0_idx])) = rgb0;
         *((DUINT6 *)(&dst_image[rgb1_idx])) = rgb1;

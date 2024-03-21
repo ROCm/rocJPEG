@@ -55,7 +55,7 @@ class ROCJpegDecoder {
     private:
        RocJpegStatus InitHIP(int device_id);
        RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
-       RocJpegStatus ReleaseHipInteropMem();
+       RocJpegStatus ReleaseHipInteropMem(VASurfaceID current_surface_id);
        RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
        RocJpegStatus CopyLuma(RocJpegImage *destination, uint16_t picture_height);
        RocJpegStatus CopyChroma(RocJpegImage *destination, uint16_t chroma_height);

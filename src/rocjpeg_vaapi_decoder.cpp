@@ -36,10 +36,12 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
             ERR("Error: Failed to destroy VAAPI buffer");
         }
-
-        VAStatus va_status = vaDestroySurfaces(va_display_, va_surface_ids_.data(), va_surface_ids_.size());
-        if (va_status != VA_STATUS_SUCCESS) {
-            ERR("ERROR: vaDestroySurfaces failed!");
+        VAStatus va_status;
+        if (va_surface_ids_.size() > 0) {
+            va_status = vaDestroySurfaces(va_display_, va_surface_ids_.data(), va_surface_ids_.size());
+            if (va_status != VA_STATUS_SUCCESS) {
+                ERR("ERROR: vaDestroySurfaces failed!");
+            }
         }
         if (va_context_id_) {
             va_status = vaDestroyContext(va_display_, va_context_id_);
@@ -218,7 +220,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus RocJpegVappiDecoder::ExportSurface(uint32_t surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
+RocJpegStatus RocJpegVappiDecoder::ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
 
     bool is_surface_id_found = false;
     int idx = 0;
@@ -240,7 +242,7 @@ RocJpegStatus RocJpegVappiDecoder::ExportSurface(uint32_t surface_id, VADRMPRIME
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus RocJpegVappiDecoder::SyncSurface(uint32_t surface_id) {
+RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
     VASurfaceStatus surface_status;
     bool is_surface_id_found = false;
     int idx = 0;
@@ -271,5 +273,26 @@ RocJpegStatus RocJpegVappiDecoder::SyncSurface(uint32_t surface_id) {
             break;
         }
     }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus RocJpegVappiDecoder::ReleaseSurface(VASurfaceID surface_id) {
+    bool is_surface_id_found = false;
+    int idx = 0;
+
+    for (idx = 0; idx < va_surface_ids_.size(); idx++) {
+        if (va_surface_ids_[idx] == surface_id) {
+            is_surface_id_found = true;
+            break;
+        }
+    }
+
+    if (!is_surface_id_found) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+
+    CHECK_VAAPI(vaDestroySurfaces(va_display_, &va_surface_ids_[idx], 1));
+    va_surface_ids_.erase(va_surface_ids_.begin() + idx);
+
     return ROCJPEG_STATUS_SUCCESS;
 }

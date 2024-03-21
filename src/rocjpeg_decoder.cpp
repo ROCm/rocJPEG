@@ -113,7 +113,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
         CHECK_HIP(hipStreamSynchronize(hip_stream_));
 
-        CHECK_ROCJPEG(ReleaseHipInteropMem());
+        CHECK_ROCJPEG(ReleaseHipInteropMem(current_surface_id));
     }
 
     return ROCJPEG_STATUS_SUCCESS;
@@ -217,7 +217,7 @@ RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_d
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem() {
+RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem(VASurfaceID current_surface_id) {
     if (hip_interop_.hip_mapped_device_mem != nullptr) {
         CHECK_HIP(hipFree(hip_interop_.hip_mapped_device_mem));
     }
@@ -225,6 +225,8 @@ RocJpegStatus ROCJpegDecoder::ReleaseHipInteropMem() {
         CHECK_HIP(hipDestroyExternalMemory(hip_interop_.hip_ext_mem));
     }
     memset((void*)&hip_interop_, 0, sizeof(hip_interop_));
+
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.ReleaseSurface(current_surface_id));
 
     return ROCJPEG_STATUS_SUCCESS;
 }

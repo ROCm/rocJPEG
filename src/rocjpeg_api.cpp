@@ -142,3 +142,28 @@ extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status) 
             return "UNKNOWN_ERROR";
     }
 }
+
+/*****************************************************************************************************/
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);
+//! \ingroup group_amd_rocjpeg
+//! Resets and initizlizes batch decoder for working on the batches of specified size
+//! Should be called once for decoding bathes of this specific size, also use to reset failed batches
+//! \return ROCJPEG_STATUS_SUCCESS if successful
+/*****************************************************************************************************/
+RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format) {
+    return ROCJPEG_STATUS_NOT_IMPLEMENTED;
+}
+
+
+/*****************************************************************************************************/
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations, hipStream_t stream);
+//! \ingroup group_amd_rocjpeg
+//! Decodes batch of images. Output buffers should be large enough to be able to store
+//! outputs of specified format, see single image decoding description for details. Call to
+//! rocjpegDecodeBatchedInitialize() is required prior to this call, batch size is expected to be the same as
+//! parameter to this batch initialization function.
+//! \return ROCJPEG_STATUS_SUCCESS if successful
+/*****************************************************************************************************/
+RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations) {
+    return ROCJPEG_STATUS_NOT_IMPLEMENTED;
+}

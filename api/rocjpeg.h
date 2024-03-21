@@ -208,7 +208,7 @@ RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, in
 //! \ingroup group_amd_rocjpeg
 //! Decodes batch of images. Output buffers should be large enough to be able to store 
 //! outputs of specified format, see single image decoding description for details. Call to 
-//! nvjpegDecodeBatchedInitialize() is required prior to this call, batch size is expected to be the same as 
+//! rocjpegDecodeBatchedInitialize() is required prior to this call, batch size is expected to be the same as 
 //! parameter to this batch initialization function.
 //! 
 //! IN/OUT     handle        : Library handle
@@ -216,24 +216,9 @@ RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, in
 //! IN         data          : Array of size batch_size of pointers to the input buffers containing the jpeg images to be decoded. 
 //! IN         lengths       : Array of size batch_size with lengths of the jpeg images' buffers in the batch.
 //! IN/OUT     destinations  : Array of size batch_size with pointers to structure with information about output buffers, 
-//! IN/OUT     stream        : CUDA stream where to submit all GPU work
-//! \return NVJPEG_STATUS_SUCCESS if successful
+//! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations, hipStream_t stream);
-
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedPreAllocate(RocJpegHandle handle, int batch_size, int width, int height, RocJpegChromaSubsampling chroma_subsampling, RocJpegOutputFormat output_format);
-//! \ingroup group_amd_rocjpeg
-//! Allocates the internal buffers as a pre-allocation step
-//! IN    handle          : Library handle
-//! IN    jpeg_handle     : Decoded jpeg image state handle
-//! IN    width   : frame width
-//! IN    height  : frame height
-//! IN    chroma_subsampling   : chroma subsampling of images to be decoded
-//! IN    output_format : out format
-//! \return NVJPEG_STATUS_SUCCESS if successful
-/*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedPreAllocate(RocJpegHandle handle, int batch_size, int width, int height, RocJpegChromaSubsampling chroma_subsampling, RocJpegOutputFormat output_format);
+RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations);
 
 /*****************************************************************************************************/
 //! \fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);

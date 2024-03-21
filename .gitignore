@@ -2,3 +2,4 @@ build/
 samples/*/build
 .vscode/
 doxygen_output*
+_doxygen/

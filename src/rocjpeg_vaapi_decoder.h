@@ -52,8 +52,12 @@ public:
 private:
     int device_id_;
     int drm_fd_;
+    uint32_t min_picture_width_;
+    uint32_t min_picture_height_;
+    uint32_t max_picture_width_;
+    uint32_t max_picture_height_;
     VADisplay va_display_;
-    VAConfigAttrib va_config_attrib_;
+    std::vector<VAConfigAttrib> va_config_attrib_;
     VAConfigID va_config_id_;
     VAProfile va_profile_;
     VAContextID va_context_id_;

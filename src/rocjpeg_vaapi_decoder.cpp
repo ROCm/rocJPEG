@@ -22,9 +22,9 @@ THE SOFTWARE.
 
 #include "rocjpeg_vaapi_decoder.h"
 
-RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, va_display_{0},
-    va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline}, va_context_id_{0}, va_surface_ids_{},
-    va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
+RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
+    max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
+    va_context_id_{0}, va_surface_ids_{}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
     va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {};
 
 RocJpegVappiDecoder::~RocJpegVappiDecoder() {
@@ -111,9 +111,18 @@ RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
     }
 
     if (hw_jpeg_decoder_supported) {
-        va_config_attrib_.type = VAConfigAttribRTFormat;
-        CHECK_VAAPI(vaGetConfigAttributes(va_display_, va_profile_, VAEntrypointVLD, &va_config_attrib_, 1));
-        CHECK_VAAPI(vaCreateConfig(va_display_, va_profile_, VAEntrypointVLD, &va_config_attrib_, 1, &va_config_id_));
+        va_config_attrib_.resize(3);
+        va_config_attrib_[0].type = VAConfigAttribRTFormat;
+        va_config_attrib_[1].type = VAConfigAttribMaxPictureWidth;
+        va_config_attrib_[2].type = VAConfigAttribMaxPictureHeight;
+        CHECK_VAAPI(vaGetConfigAttributes(va_display_, va_profile_, VAEntrypointVLD, va_config_attrib_.data(), va_config_attrib_.size()));
+        CHECK_VAAPI(vaCreateConfig(va_display_, va_profile_, VAEntrypointVLD, &va_config_attrib_[0], 1, &va_config_id_));
+        if (va_config_attrib_[1].value != VA_ATTRIB_NOT_SUPPORTED) {
+            max_picture_width_ = va_config_attrib_[1].value;
+        }
+        if (va_config_attrib_[2].value != VA_ATTRIB_NOT_SUPPORTED) {
+            max_picture_height_ = va_config_attrib_[2].value;
+        }
         return ROCJPEG_STATUS_SUCCESS;
     } else {
         return ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED;
@@ -155,6 +164,14 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         sizeof(jpeg_stream_params->slice_parameter_buffer) != sizeof(VASliceParameterBufferJPEGBaseline)) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
+
+    if (jpeg_stream_params->picture_parameter_buffer.picture_width < min_picture_width_ ||
+        jpeg_stream_params->picture_parameter_buffer.picture_height < min_picture_height_ ||
+        jpeg_stream_params->picture_parameter_buffer.picture_width > max_picture_width_ ||
+        jpeg_stream_params->picture_parameter_buffer.picture_height > max_picture_height_) {
+            ERR("The JPEG image resolution is not supported!");
+            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+        }
 
     uint8_t surface_format;
     switch (jpeg_stream_params->chroma_subsampling) {

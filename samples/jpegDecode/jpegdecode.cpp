@@ -51,7 +51,7 @@ void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Path to single image or directory of images - required" << std::endl
     << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
-    << "-fmt Select rocJPEG output format for decoding, one of the [unchanged, yuv, y, rgbi]; optional; default: unchanged" << std::endl
+    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb]; optional; default: native" << std::endl
     << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
     << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl;
     exit(0);
@@ -99,14 +99,14 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
                 ShowHelpAndExit("-fmt");
             }
             std::string selected_output_format = argv[i];
-            if (selected_output_format == "unchanged") {
-                output_format = ROCJPEG_OUTPUT_UNCHANGED;
+            if (selected_output_format == "native") {
+                output_format = ROCJPEG_OUTPUT_NATIVE;
             } else if (selected_output_format == "yuv") {
-                output_format = ROCJPEG_OUTPUT_YUV;
+                output_format = ROCJPEG_OUTPUT_YUV_PLANAR;
             } else if (selected_output_format == "y") {
                 output_format = ROCJPEG_OUTPUT_Y;
-            } else if (selected_output_format == "rgbi") {
-                output_format = ROCJPEG_OUTPUT_RGBI;
+            } else if (selected_output_format == "rgb") {
+                output_format = ROCJPEG_OUTPUT_RGB;
             } else {
                 ShowHelpAndExit(argv[i]);
             }
@@ -130,7 +130,7 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
 
     switch (output_format) {
-        case ROCJPEG_OUTPUT_UNCHANGED:
+        case ROCJPEG_OUTPUT_NATIVE:
             switch (subsampling) {
                 case ROCJPEG_CSS_444:
                     widths[2] = widths[1] = widths[0] = img_width;
@@ -154,7 +154,7 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
                     return;
             }
             break;
-        case ROCJPEG_OUTPUT_YUV:
+        case ROCJPEG_OUTPUT_YUV_PLANAR:
             switch (subsampling) {
                 case ROCJPEG_CSS_444:
                     widths[2] = widths[1] = widths[0] = img_width;
@@ -184,7 +184,7 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
             widths[0] = img_width;
             heights[0] = img_height;
             break;
-        case ROCJPEG_OUTPUT_RGBI:
+        case ROCJPEG_OUTPUT_RGB:
             widths[0] = img_width * 3;
             heights[0] = img_height;
             break;
@@ -310,7 +310,7 @@ int main(int argc, char **argv) {
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegHandle rocjpeg_handle = nullptr;
     RocJpegImage output_image = {};
-    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_UNCHANGED;
+    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_NATIVE;
 
     ParseCommandLine(input_path, output_file_path, dump_output_frames, device_id, rocjpeg_backend, output_format, argc, argv);
     if (!GetFilePaths(input_path, file_paths, is_dir, is_file)) {
@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
         }
 
         switch (output_format) {
-            case ROCJPEG_OUTPUT_UNCHANGED:
+            case ROCJPEG_OUTPUT_NATIVE:
                 switch (subsampling) {
                     case ROCJPEG_CSS_444:
                         num_channels = 3;
@@ -419,7 +419,7 @@ int main(int argc, char **argv) {
                         return EXIT_FAILURE;
                 }
                 break;
-            case ROCJPEG_OUTPUT_YUV:
+            case ROCJPEG_OUTPUT_YUV_PLANAR:
                 if (subsampling == ROCJPEG_CSS_400) {
                     num_channels = 1;
                     output_image.pitch[0] = widths[0];
@@ -439,7 +439,7 @@ int main(int argc, char **argv) {
                 output_image.pitch[0] = widths[0];
                 channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
-            case ROCJPEG_OUTPUT_RGBI:
+            case ROCJPEG_OUTPUT_RGB:
                 num_channels = 1;
                 output_image.pitch[0] = widths[0] * 3;
                 channel_sizes[0] = output_image.pitch[0] * heights[0];
@@ -468,17 +468,17 @@ int main(int argc, char **argv) {
             std::string file_name_no_ext = base_file_name.substr(0, p);
             std::string file_extension;
             switch (output_format) {
-                case ROCJPEG_OUTPUT_UNCHANGED:
+                case ROCJPEG_OUTPUT_NATIVE:
                     file_extension = "native";
                     break;
-                case ROCJPEG_OUTPUT_YUV:
+                case ROCJPEG_OUTPUT_YUV_PLANAR:
                     file_extension = "yuv";
                     break;
                 case ROCJPEG_OUTPUT_Y:
                     file_extension = "y";
                     break;
-                case ROCJPEG_OUTPUT_RGBI:
-                    file_extension = "rgbi";
+                case ROCJPEG_OUTPUT_RGB:
+                    file_extension = "rgb";
                     break;
                 default:
                     file_extension = "";

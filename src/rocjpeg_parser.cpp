@@ -19,7 +19,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-
 #include "rocjpeg_parser.h"
 
 JpegParser::JpegParser() : stream_{nullptr}, stream_end_{nullptr}, stream_length_{0},
@@ -278,7 +277,7 @@ bool JpegParser::ParseSOS() {
 
     uint32_t num_components = stream_[2];
 
-    if(num_components > NUM_COMPONENTS - 1) {
+    if (num_components > NUM_COMPONENTS - 1) {
         ERR("invalid number of component!")
         return false;
     }

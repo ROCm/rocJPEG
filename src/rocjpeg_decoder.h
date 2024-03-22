@@ -59,7 +59,7 @@ class ROCJpegDecoder {
        RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
        RocJpegStatus CopyLuma(RocJpegImage *destination, uint16_t picture_height);
        RocJpegStatus CopyChroma(RocJpegImage *destination, uint16_t chroma_height);
-       RocJpegStatus ColorConvertToRGBI(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+       RocJpegStatus ColorConvertToRGB(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        RocJpegStatus GetPlanarYUVOutputFormat(uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination);
        RocJpegStatus GetYOutputFormat(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        int num_devices_;

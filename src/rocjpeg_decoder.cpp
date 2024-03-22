@@ -58,7 +58,7 @@ RocJpegStatus ROCJpegDecoder::InitializeDecoder() {
     if (backend_ == ROCJPEG_BACKEND_HARDWARE) {
         rocjpeg_status = jpeg_vaapi_decoder_.InitializeDecoder(hip_dev_prop_.gcnArchName);
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
-            ERR("ERROR: Failed to initilize the VAAPI JPEG decoder!");
+            ERR("ERROR: Failed to initialize the VA-API JPEG decoder!");
             return rocjpeg_status;
         }
     } else if (backend_ == ROCJPEG_BACKEND_HYBRID) {
@@ -90,12 +90,12 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
         CHECK_ROCJPEG(GetChromaHeight(jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
 
         switch (output_format) {
-            case ROCJPEG_OUTPUT_UNCHANGED:
+            case ROCJPEG_OUTPUT_NATIVE:
                 // copy the native decoded output buffers from interop memory directly to the destination buffers
                 CHECK_ROCJPEG(CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height));
                 CHECK_ROCJPEG(CopyChroma(destination, chroma_height));
                 break;
-            case ROCJPEG_OUTPUT_YUV:
+            case ROCJPEG_OUTPUT_YUV_PLANAR:
                 CHECK_ROCJPEG(GetPlanarYUVOutputFormat(jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                     jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, destination));
                 break;
@@ -103,8 +103,8 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
                 CHECK_ROCJPEG(GetYOutputFormat(jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                   jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
                 break;
-            case ROCJPEG_OUTPUT_RGBI:
-                CHECK_ROCJPEG(ColorConvertToRGBI(jpeg_stream_params->picture_parameter_buffer.picture_width,
+            case ROCJPEG_OUTPUT_RGB:
+                CHECK_ROCJPEG(ColorConvertToRGB(jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                     jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
                 break;
             default:
@@ -130,32 +130,27 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
         return ROCJPEG_STATUS_BAD_JPEG;
     }
     const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
-
     *num_components = jpeg_stream_params->picture_parameter_buffer.num_components;
     widths[0] = jpeg_stream_params->picture_parameter_buffer.picture_width;
     heights[0] = jpeg_stream_params->picture_parameter_buffer.picture_height;
+    widths[3] = 0;
+    heights[3] = 0;
 
     switch (jpeg_stream_params->chroma_subsampling) {
         case CSS_444:
             *subsampling = ROCJPEG_CSS_444;
             widths[2] = widths[1] = widths[0];
             heights[2] = heights[1] = heights[0];
-            widths[3] = 0;
-            heights[3] = 0;
             break;
         case CSS_422:
             *subsampling = ROCJPEG_CSS_422;
             widths[2] = widths[1] = widths[0] >> 1;
             heights[2] = heights[1] = heights[0];
-            widths[3] = 0;
-            heights[3] = 0;
             break;
         case CSS_420:
             *subsampling = ROCJPEG_CSS_420;
             widths[2] = widths[1] = widths[0] >> 1;
             heights[2] = heights[1] = heights[0] >> 1;
-            widths[3] = 0;
-            heights[3] = 0;
             break;
         case CSS_400:
             *subsampling = ROCJPEG_CSS_400;
@@ -166,15 +161,11 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
             *subsampling = ROCJPEG_CSS_411;
             widths[2] = widths[1] = widths[0] >> 2;
             heights[2] = heights[1] = heights[0];
-            widths[3] = 0;
-            heights[3] = 0;
             break;
         case CSS_440:
             *subsampling = ROCJPEG_CSS_440;
             widths[2] = widths[1] = widths[0] >> 1;
             heights[2] = heights[1] = heights[0] >> 1;
-            widths[3] = 0;
-            heights[3] = 0;
             break;
         default:
             *subsampling = ROCJPEG_CSS_UNKNOWN;
@@ -187,31 +178,26 @@ RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, u
 RocJpegStatus ROCJpegDecoder::GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
     hipExternalMemoryHandleDesc external_mem_handle_desc = {};
     hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
-
     external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
     external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
     external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
 
     CHECK_HIP(hipImportExternalMemory(&hip_interop_.hip_ext_mem, &external_mem_handle_desc));
-
     external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
     CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&hip_interop_.hip_mapped_device_mem, hip_interop_.hip_ext_mem, &external_mem_buffer_desc));
 
     hip_interop_.surface_format = va_drm_prime_surface_desc.fourcc;
     hip_interop_.width = va_drm_prime_surface_desc.width;
     hip_interop_.height = va_drm_prime_surface_desc.height;
-
     hip_interop_.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
     hip_interop_.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
     hip_interop_.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
-
     hip_interop_.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
     hip_interop_.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
     hip_interop_.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
-
     hip_interop_.num_layers = va_drm_prime_surface_desc.num_layers;
 
-    for (int i = 0; i < (int)va_drm_prime_surface_desc.num_objects; ++i) {
+    for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
         close(va_drm_prime_surface_desc.objects[i].fd);
     }
     return ROCJPEG_STATUS_SUCCESS;
@@ -290,23 +276,23 @@ RocJpegStatus ROCJpegDecoder::GetChromaHeight(uint16_t picture_height, uint16_t 
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus ROCJpegDecoder::ColorConvertToRGBI(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
+RocJpegStatus ROCJpegDecoder::ColorConvertToRGB(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
     switch (hip_interop_.surface_format) {
         case VA_FOURCC_444P:
-            ColorConvertYUV444ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+            ColorConvertYUV444ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                   hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0], hip_interop_.offset[1]);
             break;
         case ROCJPEG_FOURCC_YUYV:
-            ColorConvertYUYVToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+            ColorConvertYUYVToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                 hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
             break;
         case VA_FOURCC_NV12:
-            ColorConvertNV12ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+            ColorConvertNV12ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                 hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0],
                                                 hip_interop_.hip_mapped_device_mem + hip_interop_.offset[1], hip_interop_.pitch[1]);
             break;
         case VA_FOURCC_Y800:
-            ColorConvertYUV400ToRGBI(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+            ColorConvertYUV400ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                 hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
            break;
         default:

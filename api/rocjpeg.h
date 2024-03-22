@@ -55,15 +55,14 @@ typedef enum {
     ROCJPEG_STATUS_INVALID_PARAMETER = -2,
     ROCJPEG_STATUS_BAD_JPEG = -3,
     ROCJPEG_STATUS_JPEG_NOT_SUPPORTED = -4,
-    ROCJPEG_STATUS_ALLOCATOR_FAILURE = -5,
+    ROCJPEG_STATUS_OUTOF_MEMORY = -5,
     ROCJPEG_STATUS_EXECUTION_FAILED = -6,
     ROCJPEG_STATUS_ARCH_MISMATCH = -7,
     ROCJPEG_STATUS_INTERNAL_ERROR = -8,
     ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED = -9,
     ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED = -10,
     ROCJPEG_STATUS_RUNTIME_ERROR = -11,
-    ROCJPEG_STATUS_OUTOF_MEMORY = -12,
-    ROCJPEG_STATUS_NOT_IMPLEMENTED = -13,
+    ROCJPEG_STATUS_NOT_IMPLEMENTED = -12,
 } RocJpegStatus;
 
 /*****************************************************/
@@ -104,14 +103,14 @@ typedef enum {
     // For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
     // For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
     // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_UNCHANGED = 0,
+    ROCJPEG_OUTPUT_NATIVE = 0,
     // extract Y, U, and V channels from the decoded YUV image from the VCN JPEG deocder and write into first, second, and thrid channel of RocJpegImage.
     // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_YUV = 1,
+    ROCJPEG_OUTPUT_YUV_PLANAR = 1,
     // return luma component (Y) and write to first channel of RocJpegImage
     ROCJPEG_OUTPUT_Y = 2,
     // convert to interleaved RGB using HIP kernels and write to first channel of RocJpegImage
-    ROCJPEG_OUTPUT_RGBI = 3,
+    ROCJPEG_OUTPUT_RGB = 3,
     // maximum allowed value
     ROCJPEG_OUTPUT_FORMAT_MAX = 4
 } RocJpegOutputFormat;
@@ -176,10 +175,10 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
 //! \ingroup group_amd_rocjpeg
-//! Decodes single image based on the backedn used to create the rocJpeg handle in rocJpegCreate API.
+//! Decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API.
 //! Destination buffers should be large enough to be able to store output of specified format. These buffers should be pre-allocted by the user in the device memories.
 //! For each color plane (channel) sizes could be retrieved for image using rocJpegGetImageInfo API
-//! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_idth for
+//! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
 //! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
 //! IN handle : rocJpeg handle
 //! IN data : Pointer to the buffer containing the jpeg stream to be decoded.
@@ -193,8 +192,8 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);
 //! \ingroup group_amd_rocjpeg
-//! Resets and initizlizes batch decoder for working on the batches of specified size
-//! Should be called once for decoding bathes of this specific size, also use to reset failed batches
+//! Resets and initializes batch decoder for working on the batches of specified size
+//! Should be called once for decoding batches of this specific size, also use to reset failed batches
 //! IN/OUT     handle          : Library handle
 //! IN         batch_size      : Size of the batch
 //! IN         max_cpu_threads : Maximum number of CPU threads that will be processing this batch

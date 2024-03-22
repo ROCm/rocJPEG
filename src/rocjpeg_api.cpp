@@ -80,9 +80,13 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length,
-//!                     int *num_components, RocJpegChromaSubsampling *subsampling, int *widths, int *heights)
-//! Retrieve the image info, including channel, width and height of each component, and chroma subsampling.
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
+//! \ingroup group_amd_rocjpeg
+//! Decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API.
+//! Destination buffers should be large enough to be able to store output of specified format. These buffers should be pre-allocted by the user in the device memories.
+//! For each color plane (channel) sizes could be retrieved for image using rocJpegGetImageInfo API
+//! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
+//! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format,
     RocJpegImage *destination) {
@@ -120,8 +124,6 @@ extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status) 
             return "ROCJPEG_STATUS_BAD_JPEG";
         case ROCJPEG_STATUS_JPEG_NOT_SUPPORTED:
             return "ROCJPEG_STATUS_JPEG_NOT_SUPPORTED";
-        case ROCJPEG_STATUS_ALLOCATOR_FAILURE:
-            return "ROCJPEG_STATUS_ALLOCATOR_FAILURE";
         case ROCJPEG_STATUS_EXECUTION_FAILED:
             return "ROCJPEG_STATUS_EXECUTION_FAILED";
         case ROCJPEG_STATUS_ARCH_MISMATCH:
@@ -146,8 +148,8 @@ extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status) 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);
 //! \ingroup group_amd_rocjpeg
-//! Resets and initizlizes batch decoder for working on the batches of specified size
-//! Should be called once for decoding bathes of this specific size, also use to reset failed batches
+//! Resets and initializes batch decoder for working on the batches of specified size
+//! Should be called once for decoding batches of this specific size, also use to reset failed batches
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format) {

@@ -16,7 +16,7 @@ def runCompileCommand(platform, project, jobName, boolean debug=false, boolean s
                 make -j\$(nproc)
                 sudo make install
                 sudo make package
-                ldd -v /opt/rocm/lib/librocjpeg.so.so
+                ldd -v /opt/rocm/lib/librocjpeg.so
                 """
 
     platform.runCommand(this, command)

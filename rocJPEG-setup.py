@@ -36,11 +36,8 @@ __status__ = "Shipping"
 parser = argparse.ArgumentParser()
 parser.add_argument('--rocm_path', 	type=str, default='/opt/rocm',
                     help='ROCm Installation Path - optional (default:/opt/rocm) - ROCm Installation Required')
-parser.add_argument('--developer', 	type=str, default='ON',
-                    help='Setup Developer Options - optional (default:ON) [options:ON/OFF]')
 
 args = parser.parse_args()
-developerInstall = args.developer.upper()
 
 ROCM_PATH = args.rocm_path
 
@@ -57,11 +54,6 @@ else:
         "WARNING: If ROCm installed, set ROCm Path with \"--rocm_path\" option for full installation [Default:/opt/rocm]\n")
     print("ERROR: rocJPEG Setup requires ROCm install\n")
     exit(-1)
-
-if developerInstall not in ('OFF', 'ON'):
-    print(
-        "ERROR: Developer Option Not Supported - [Supported Options: OFF or ON]\n")
-    exit()
 
 # get platfrom info
 platfromInfo = platform.platform()
@@ -103,7 +95,7 @@ elif os.path.exists('/usr/bin/zypper'):
     platfromInfo = platfromInfo+'-SLES'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-    print("\nrocJPEG Setup Supported on: Ubuntu 20/22; CentOS 7/8; RedHat 8/9; & SLES 15 SP4\n")
+    print("\nrocJPEG Setup Supported on: Ubuntu 20/22; CentOS 8; RedHat 8/9; & SLES 15 SP5\n")
     exit(-1)
 
 # rocJPEG Setup

@@ -66,7 +66,6 @@ For your convenience, we provide the setup script,
 
 ```shell
   python rocJPEG-setup.py  --rocm_path [ ROCm Installation Path - optional (default:/opt/rocm)]
-                             --developer [ Setup Developer Options - optional (default:ON) [options:ON/OFF]]
 ```
 
 **NOTE:** This script only needs to be executed once.

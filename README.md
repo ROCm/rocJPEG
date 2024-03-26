@@ -55,7 +55,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 
 >[!NOTE]
 > * All package installs are shown with the `apt` package manager. Use the appropriate package manager for your operating system.
-> * To install rocDecode with minimum requirements, follow the [quick-start](./docs/install/quick-start.rst) instructions
+> * To install rocJPEG with minimum requirements, follow the [quick-start](./docs/install/quick-start.rst) instructions
 
 
 #### Prerequisites setup script for Linux
@@ -150,7 +150,7 @@ To verify your installation using a sample application, run:
 mkdir rocjpeg-sample && cd rocjpeg-sample
 cmake /opt/rocm/share/rocjpeg/samples/jpegDecode/
 make -j8
-./videodecode -i /opt/rocm/share/rocjpeg/image/mug_420.jpg
+./jpegdecode -i /opt/rocm/share/rocjpeg/image/mug_420.jpg
 ```
 
 ### Using test package
@@ -172,7 +172,7 @@ individual folders to build and run the samples.
 
 ## Docker
 
-You can find rocDecode Docker containers in our
+You can find rocJPEG Docker containers in our
 [GitHub repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).
 
 ## Documentation

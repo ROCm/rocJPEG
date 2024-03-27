@@ -64,11 +64,21 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
 }
 
 RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string gcn_arch_name) {
+    std::size_t pos = gcn_arch_name.find_first_of(":");
+    std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
+
     // There are 8 renderDXXX per physical device on gfx940, gfx941, and gfx942
-    int num_render_cards_per_device = ((gcn_arch_name.compare("gfx940") == 0) ||
-                                       (gcn_arch_name.compare("gfx941") == 0) ||
-                                       (gcn_arch_name.compare("gfx942") == 0)) ? 8 : 1;
-    std::string drm_node = "/dev/dri/renderD" + std::to_string(128 + device_id_ * num_render_cards_per_device);
+    int num_render_cards_per_device = ((gcn_arch_name_base.compare("gfx940") == 0) ||
+                                       (gcn_arch_name_base.compare("gfx941") == 0) ||
+                                       (gcn_arch_name_base.compare("gfx942") == 0)) ? 8 : 1;
+    std::vector<int> visible_devices;
+    GetVisibleDevices(visible_devices);
+    std::string drm_node;
+    if (device_id_ < visible_devices.size()) {
+        drm_node = "/dev/dri/renderD" + std::to_string(128 + visible_devices[device_id_] * num_render_cards_per_device);
+    } else {
+        drm_node = "/dev/dri/renderD" + std::to_string(128 + device_id_ * num_render_cards_per_device);
+    }
     CHECK_ROCJPEG(InitVAAPI(drm_node));
     CHECK_ROCJPEG(CreateDecoderConfig());
 
@@ -298,4 +308,16 @@ RocJpegStatus RocJpegVappiDecoder::ReleaseSurface(VASurfaceID surface_id) {
     va_surface_ids_.erase(va_surface_ids_.begin() + idx);
 
     return ROCJPEG_STATUS_SUCCESS;
+}
+
+void RocJpegVappiDecoder::GetVisibleDevices(std::vector<int>& visible_devices_vetor) {
+    char *visible_devices = std::getenv("HIP_VISIBLE_DEVICES");
+    if (visible_devices != nullptr) {
+        char *token = std::strtok(visible_devices,",");
+        while (token != nullptr) {
+            visible_devices_vetor.push_back(std::atoi(token));
+            token = std::strtok(nullptr,",");
+        }
+    std::sort(visible_devices_vetor.begin(), visible_devices_vetor.end());
+    }
 }

@@ -70,6 +70,7 @@ private:
     RocJpegStatus InitVAAPI(std::string drm_node);
     RocJpegStatus CreateDecoderConfig();
     RocJpegStatus DestroyDataBuffers();
+    void GetVisibleDevices(std::vector<int>& visible_devices);
 };
 
 #endif // ROC_JPEG_VAAPI_DECODER_H_

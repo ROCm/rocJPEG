@@ -1,6 +1,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-<p align="center"><img width="70%" src="docs/data/AMD_rocJPEG_Logo.png" /></p>
+<p align="center"><img width="70%" src="https://raw.githubusercontent.com/ROCm/rocJPEG/develop/docs/data/AMD_rocJPEG_Logo.png?token=GHSAT0AAAAAACQDGMWUFHBF2FTMAPZF52XAZQEP7WQ"/></p>
 
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API, you can access the JPEG decoding features available on your GPU.
 
@@ -14,22 +14,26 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 ## Prerequisites
 
 * Linux distribution
-    * Ubuntu - `20.04` / `22.04`
-    * RHEL - `8` / `9`
-    * SLES - `15-SP5`
+  * Ubuntu - `20.04` / `22.04`
+  * RHEL - `8` / `9`
+  * SLES - `15-SP5`
 
 * [ROCm supported hardware](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html)
-> [!IMPORTANT] 
+
+> [!IMPORTANT]
 > `gfx908` or higher GPU required
 
 * Install ROCm `6.1.0` or later with [amdgpu-install](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html): Required usecase - rocm
+
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
 * AMD Multimedia packages
-  ```shell
-  sudo apt install libva-amdgpu-dev libdrm-amdgpu1 mesa-amdgpu-va-drivers
-  ```
+
+```shell
+sudo apt install libva-amdgpu-dev libdrm-amdgpu1 mesa-amdgpu-va-drivers
+```
+
 > [!NOTE]
 > RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel libdrm-amdgpu mesa-amdgpu-dri-drivers`
 
@@ -45,7 +49,8 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
   sudo apt install pkg-config
   ```
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
+>
 > * If using Ubuntu 22.04, you must install `libstdc++-12-dev`
 >
 >  ```shell
@@ -53,11 +58,12 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 >  ```
 
 >[!NOTE]
+>
 > * All package installs are shown with the `apt` package manager. Use the appropriate package manager for your operating system.
 > * To install rocJPEG with minimum requirements, follow the [quick-start](./docs/install/quick-start.rst) instructions
 
+### Prerequisites setup script for Linux
 
-#### Prerequisites setup script for Linux
 For your convenience, we provide the setup script,
 [rocJPEG-setup.py](rocJPEG-setup.py) which installs all required dependencies. Run this script only once.
 
@@ -104,6 +110,7 @@ sudo yum install rocjpeg rocjpeg-devel rocjpeg-test
 ```shell
 sudo zypper install rocjpeg rocjpeg-devel rocjpeg-test
 ```
+
 >[!NOTE]
 > Package install auto installs all dependencies.
 

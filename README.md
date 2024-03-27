@@ -1,6 +1,6 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-<p align="center"><img width="70%" src="https://raw.githubusercontent.com/ROCm/rocJPEG/develop/docs/data/AMD_rocJPEG_Logo.png?token=GHSAT0AAAAAACQDGMWUFHBF2FTMAPZF52XAZQEP7WQ"/></p>
+![rocJPEG Logo](./docs/data/AMD_rocJPEG_Logo.png)
 
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API, you can access the JPEG decoding features available on your GPU.
 

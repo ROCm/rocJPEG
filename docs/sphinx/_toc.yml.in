@@ -1,0 +1,10 @@
+defaults:
+  numbered: False
+root: index
+subtrees:
+- caption: API Reference
+  entries:
+    - file: doxygen/html/index
+- caption: About
+  entries:
+    - file: license

@@ -26,10 +26,12 @@ THE SOFTWARE.
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
+#include <filesystem>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -40,11 +42,19 @@ THE SOFTWARE.
 /*Note: va.h doesn't have VA_FOURCC_YUYV defined but vaExportSurfaceHandle returns 0x56595559 for packed YUYV for YUV 4:2:2*/
 #define ROCJPEG_FOURCC_YUYV 0x56595559
 
+typedef enum {
+    kSpx = 0, // Single Partition Accelerator
+    kDpx = 1, // Dual Partition Accelerator
+    kTpx = 2, // Triple Partition Accelerator
+    kQpx = 3, // Quad Partition Accelerator
+    kCpx = 4, // Core Partition Accelerator
+} ComputePartition;
+
 class RocJpegVappiDecoder {
 public:
     RocJpegVappiDecoder(int device_id = 0);
     ~RocJpegVappiDecoder();
-    RocJpegStatus InitializeDecoder(std::string gcn_arch_name);
+    RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name);
     RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id);
     RocJpegStatus ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
     RocJpegStatus SyncSurface(VASurfaceID surface_id);
@@ -71,6 +81,10 @@ private:
     RocJpegStatus CreateDecoderConfig();
     RocJpegStatus DestroyDataBuffers();
     void GetVisibleDevices(std::vector<int>& visible_devices);
+    void GetCurrentComputePartition(std::vector<ComputePartition> &currnet_compute_partitions);
+    void GetNumRenderCardsPerDevice(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
+                                    std::vector<ComputePartition> &current_compute_partitions,
+                                    int &num_render_cards_per_socket, int &offset);
 };
 
 #endif // ROC_JPEG_VAAPI_DECODER_H_

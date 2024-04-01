@@ -63,7 +63,8 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
     }
 }
 
-RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, std::string gcn_arch_name) {
+RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id) {
+    device_id_ = device_id;
     std::size_t pos = gcn_arch_name.find_first_of(":");
     std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
 

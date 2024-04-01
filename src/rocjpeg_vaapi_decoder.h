@@ -54,7 +54,7 @@ class RocJpegVappiDecoder {
 public:
     RocJpegVappiDecoder(int device_id = 0);
     ~RocJpegVappiDecoder();
-    RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name);
+    RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id);
     RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id);
     RocJpegStatus ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
     RocJpegStatus SyncSurface(VASurfaceID surface_id);

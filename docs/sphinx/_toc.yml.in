@@ -2,9 +2,36 @@ defaults:
   numbered: False
 root: index
 subtrees:
-- caption: API Reference
+- entries:
+  - file: what-is-rocJPEG.rst
+    title: What is rocJPEG?
+
+- caption: Install
   entries:
-    - file: doxygen/html/index
+  - file: install/quick-start.rst
+    title: Quick-start
+  - file: install/install.md
+    title: Installation guide
+
+- caption: API reference
+  entries:
+  - file: doxygen/html/files
+    title: API library
+  - file: doxygen/html/globals
+    title: Functions
+  - file: doxygen/html/annotated
+    title: Data structures
+
+- caption: How to
+  entries:
+  - file: how-to/using-rocjpeg.rst
+    title: Use rocJPEG
+
+- caption: Tutorials
+  entries:
+  - url: https://github.com/ROCm/rocJPEG/tree/develop/samples
+    title: GitHub samples
+
 - caption: About
   entries:
-    - file: license
+  - file: license.md

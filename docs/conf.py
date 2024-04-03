@@ -9,8 +9,6 @@ import shutil
 
 from rocm_docs import ROCmDocs
 
-shutil.copy2('../README.md','./index.md')
-
 with open('../CMakeLists.txt', encoding='utf-8') as f:
     match = re.search(r'.*\bset\(VERSION\s+\"?([0-9.]+)[^0-9.]+', f.read())
     if not match:

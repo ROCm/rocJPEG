@@ -31,10 +31,9 @@ Below is the signature of ``rocJpegCreate()`` function:
 The API takes in the following arguments:
 
 * A ``RocJpegBackend`` type, which specifies the backend to use for creating a decoder handle.
-Currently, the rocJPEG library only supports ``ROCJPEG_BACKEND_HARDWARE``, which creates a decoder
-for baseline JPEG bitstream using VCN hardware-accelerated JPEG decoder in AMD GPUs.
-* The GPU device ID for which a decoder should be created. The GPU device ID is a zero-based index,
-  where 0 is for the first GPU on a system.
+  Currently, the rocJPEG library only supports ``ROCJPEG_BACKEND_HARDWARE``, which creates a decoder
+  for baseline JPEG bitstream using VCN hardware-accelerated JPEG decoder in AMD GPUs.
+* The GPU device ID for which a decoder should be created. The GPU device ID is a zero-based index, where 0 is for the first GPU on a system.
 * A decoder handle, which is returned by ``rocJpegCreate()`` and must be retained for the entire decode session,
   as it is passed along with the other decoding APIs.
 
@@ -118,14 +117,13 @@ You can set the ``RocJpegOutputFormat`` parameter to one of the ``output_format`
 For example, if ``output_format`` is set to ``ROCJPEG_OUTPUT_NATIVE``, then based on the chroma subsampling of the input image, the
 ``rocJpegDecode()`` function does one of the following:
 
-  * For ``ROCJPEG_CSS_444`` write Y, U, and V to first, second, and third channels of ``RocJpegImage``.
-  * For ``ROCJPEG_CSS_422`` write YUYV (packed) to first channel of ``RocJpegImage``.
-  * For ``ROCJPEG_CSS_420`` write Y to first channel and UV (interleaved) to second channel of ``RocJpegImage``.
-  * For ``ROCJPEG_CSS_400`` write Y to first channel of ``RocJpegImage``.
+* For ``ROCJPEG_CSS_444`` write Y, U, and V to first, second, and third channels of ``RocJpegImage``.
+* For ``ROCJPEG_CSS_422`` write YUYV (packed) to first channel of ``RocJpegImage``.
+* For ``ROCJPEG_CSS_420`` write Y to first channel and UV (interleaved) to second channel of ``RocJpegImage``.
+* For ``ROCJPEG_CSS_400`` write Y to first channel of ``RocJpegImage``.
 
 if ``output_format`` is set to ``ROCJPEG_OUTPUT_Y`` or ``ROCJPEG_OUTPUT_RGB`` then ``rocJpegDecode()`` copies the output to first channel of ``RocJpegImage``.
 Alternately, in the case of ``ROCJPEG_OUTPUT_YUV_PLANAR``, the data is written to the corresponding channels of the ``RocJpegImage`` destination structure.
-
 The destination buffers should be large enough to be able to store output of specified format. These buffers should be
 pre-allocted by the user in the device memories. For each color plane (channel), sizes could be retrieved for image using
 ``rocJpegGetImageInfo()`` API and minimum required memory buffer for each plane is plane_height * plane_pitch where
@@ -139,12 +137,9 @@ the required size for the output buffers for a single decode JPEG. To optimally 
 
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_444", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[0] for c = 0, 1, 2"
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_422", "destination.pitch[0] = widths[0] * 2", "destination.channel[0] = destination.pitch[0] * heights[0]"
-  "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_420", "destination.pitch[1] = destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]
-                                                                                                          destination.channel[1] = destination.pitch[1] * (heights[0] >> 1)"
+  "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_420", "destination.pitch[1] = destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0], destination.channel[1] = destination.pitch[1] * (heights[0] >> 1)"
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_400", "destination.pitch[0] = widhts[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
-  "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_444
-                                ROCJPEG_CSS_422
-                                ROCJPEG_CSS_420", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
+  "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_444, ROCJPEG_CSS_422, ROCJPEG_CSS_420", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
   "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_400", "destination.pitch[0] = widhts[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_Y", "Any of the supported chroma subsampling", "destination.pitch[0] = widhts[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_RGB", "Any of the supported chroma subsampling", "destination.pitch[0] = widhts[0] * 3", "destination.channel[0] = destination.pitch[0] * heights[0]"

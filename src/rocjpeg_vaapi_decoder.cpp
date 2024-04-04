@@ -71,7 +71,6 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     std::vector<int> visible_devices;
     GetVisibleDevices(visible_devices);
 
-    int num_render_cards_per_socket = 1;
     int offset = 0;
     if (gcn_arch_name_base.compare("gfx940") == 0 ||
         gcn_arch_name_base.compare("gfx941") == 0 ||
@@ -80,17 +79,21 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
             GetCurrentComputePartition(current_compute_partitions);
             if (current_compute_partitions.empty()) {
                 //if the current_compute_partitions is empty then the default SPX mode is assumed.
-                num_render_cards_per_socket = 8;
+                if (device_id_ < visible_devices.size()) {
+                    offset = visible_devices[device_id_] * 7;
+                } else {
+                    offset = device_id_ * 7;
+                }
             } else {
-                GetNumRenderCardsPerDevice(device_name, device_id_, visible_devices, current_compute_partitions, num_render_cards_per_socket, offset);
+                GetNumRenderCardsPerDevice(device_name, device_id_, visible_devices, current_compute_partitions, offset);
             }
     }
 
     std::string drm_node = "/dev/dri/renderD";
     if (device_id_ < visible_devices.size()) {
-        drm_node += std::to_string(128 + offset + visible_devices[device_id_] * num_render_cards_per_socket);
+        drm_node += std::to_string(128 + offset + visible_devices[device_id_]);
     } else {
-        drm_node += std::to_string(128 + offset + device_id_ * num_render_cards_per_socket);
+        drm_node += std::to_string(128 + offset + device_id_);
     }
     CHECK_ROCJPEG(InitVAAPI(drm_node));
     CHECK_ROCJPEG(CreateDecoderConfig());
@@ -363,32 +366,41 @@ void RocJpegVappiDecoder::GetCurrentComputePartition(std::vector<ComputePartitio
 
 void RocJpegVappiDecoder::GetNumRenderCardsPerDevice(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
                                                    std::vector<ComputePartition> &current_compute_partitions,
-                                                   int &num_render_cards_per_socket, int &offset) {
-    offset = 0;
+                                                   int &offset) {
     if (!current_compute_partitions.empty()) {
         switch (current_compute_partitions[0]) {
             case kSpx:
-                num_render_cards_per_socket = 8;
+                if (device_id < visible_devices.size()) {
+                    offset = visible_devices[device_id] * 7;
+                } else {
+                    offset = device_id * 7;
+                }
                 break;
             case kDpx:
-                num_render_cards_per_socket = 4;
+                if (device_id < visible_devices.size()) {
+                    offset = (visible_devices[device_id] / 2) * 6;
+                } else {
+                    offset = (device_id / 2) * 6;
+                }
                 break;
             case kTpx:
-                num_render_cards_per_socket = 2;
                 // Please note that although there are only 6 XCCs per socket on MI300A,
                 // there are two dummy render nodes added by the driver.
                 // This needs to be taken into account when creating drm_node on each socket in TPX mode.
                 if (device_id < visible_devices.size()) {
-                    offset = (visible_devices[device_id] / 3) * 2;
+                    offset = (visible_devices[device_id] / 3) * 5;
                 } else {
-                    offset = (device_id / 3) * 2;
+                    offset = (device_id / 3) * 5;
                 }
                 break;
             case kQpx:
-                num_render_cards_per_socket = 2;
+                if (device_id < visible_devices.size()) {
+                    offset = (visible_devices[device_id] / 4) * 4;
+                } else {
+                    offset = (device_id / 4) * 4;
+                }
                 break;
             case kCpx:
-                num_render_cards_per_socket = 1;
                 // Please note that both MI300A and MI300X have the same gfx_arch_name which is
                 // gfx942. Therefore we cannot use the gfx942 to identify MI300A.
                 // instead use the device name and look for MI300A
@@ -397,7 +409,11 @@ void RocJpegVappiDecoder::GetNumRenderCardsPerDevice(std::string device_name, ui
                 std::string mi300a = "MI300A";
                 size_t found_mi300a = device_name.find(mi300a);
                 if (found_mi300a != std::string::npos) {
-                    offset = (device_id / 6) * 2;
+                    if (device_id < visible_devices.size()) {
+                        offset = (visible_devices[device_id] / 6) * 2;
+                    } else {
+                        offset = (device_id / 6) * 2;
+                    }
                 }
                 break;
         }

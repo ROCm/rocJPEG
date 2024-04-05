@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include <fcntl.h>
 #include <unistd.h>
 #include <filesystem>
+#include <unordered_map>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -50,12 +51,18 @@ typedef enum {
     kCpx = 4, // Core Partition Accelerator
 } ComputePartition;
 
+typedef struct {
+    uint32_t num_jpeg_cores;
+    bool is_hw_format_conversion_supported;
+    bool is_hw_roi_decode_supported;
+} VcnJpegSpec;
+
 class RocJpegVappiDecoder {
 public:
     RocJpegVappiDecoder(int device_id = 0);
     ~RocJpegVappiDecoder();
     RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id);
-    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id);
+    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format);
     RocJpegStatus ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
     RocJpegStatus SyncSurface(VASurfaceID surface_id);
     RocJpegStatus ReleaseSurface(VASurfaceID surface_id);
@@ -72,6 +79,8 @@ private:
     VAProfile va_profile_;
     VAContextID va_context_id_;
     std::vector<VASurfaceID> va_surface_ids_;
+    std::unordered_map<std::string, VcnJpegSpec> vcn_jpeg_spec_;
+    VcnJpegSpec current_vcn_jpeg_spec_;
     VABufferID va_picture_parameter_buf_id_;
     VABufferID va_quantization_matrix_buf_id_;
     VABufferID va_huffmantable_buf_id_;

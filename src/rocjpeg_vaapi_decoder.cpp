@@ -25,7 +25,19 @@ THE SOFTWARE.
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
     max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
     va_context_id_{0}, va_surface_ids_{}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
-    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {};
+    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0}, current_vcn_jpeg_spec_{0} {
+        vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
+                          {"gfx90a", {2, false, false}},
+                          {"gfx940", {24, true, true}},
+                          {"gfx941", {32, true, true}},
+                          {"gfx942", {32, true, true}},
+                          {"gfx1030", {2, false, false}},
+                          {"gfx1031", {2, false, false}},
+                          {"gfx1032", {2, false, false}},
+                          {"gfx1100", {2, false, false}},
+                          {"gfx1101", {1, false, false}},
+                          {"gfx1102", {2, false, false}}};
+    };
 
 RocJpegVappiDecoder::~RocJpegVappiDecoder() {
     if (drm_fd_ != -1) {
@@ -68,6 +80,10 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     std::size_t pos = gcn_arch_name.find_first_of(":");
     std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
 
+    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base);
+    if (it != vcn_jpeg_spec_.end()) {
+        current_vcn_jpeg_spec_ = it->second;
+    }
     std::vector<int> visible_devices;
     GetVisibleDevices(visible_devices);
 
@@ -179,7 +195,7 @@ RocJpegStatus RocJpegVappiDecoder::DestroyDataBuffers() {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id) {
+RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format) {
     if (jpeg_stream_params == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
@@ -199,19 +215,28 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
         }
 
-    uint8_t surface_format;
+    uint32_t surface_format;
+    VASurfaceAttrib surface_attrib;
+    surface_attrib.type = VASurfaceAttribPixelFormat;
+    surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
+    surface_attrib.value.type = VAGenericValueTypeInteger;
+
     switch (jpeg_stream_params->chroma_subsampling) {
         case CSS_444:
             surface_format = VA_RT_FORMAT_YUV444;
+            surface_attrib.value.value.i = VA_FOURCC_444P;
             break;
         case CSS_422:
             surface_format = VA_RT_FORMAT_YUV422;
+            surface_attrib.value.value.i = ROCJPEG_FOURCC_YUYV;
             break;
         case CSS_420:
             surface_format = VA_RT_FORMAT_YUV420;
+            surface_attrib.value.value.i = VA_FOURCC_NV12;
             break;
         case CSS_400:
             surface_format = VA_RT_FORMAT_YUV400;
+            surface_attrib.value.value.i = VA_FOURCC_Y800;
             break;
         default:
             ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
@@ -219,8 +244,17 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
             break;
     }
 
+    // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
+    // set the appropriate surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
+    if (output_format == ROCJPEG_OUTPUT_RGB) {
+        if (current_vcn_jpeg_spec_.is_hw_format_conversion_supported) {
+            surface_format = VA_RT_FORMAT_RGB32;
+            surface_attrib.value.value.i = VA_FOURCC_RGBA;
+        }
+    }
+
     VASurfaceID va_surface_id;
-    CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &va_surface_id, 1, nullptr, 1));
+    CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &va_surface_id, 1, &surface_attrib, 1));
     va_surface_ids_.push_back(va_surface_id);
     surface_id = va_surface_id;
 

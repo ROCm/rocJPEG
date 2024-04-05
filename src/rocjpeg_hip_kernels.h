@@ -44,6 +44,10 @@ void ColorConvertYUV400ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t ds
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes);
 
+void ColorConvertRGBAToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes);
+
 void ConvertInterleavedUVToPlanarUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes);
@@ -58,5 +62,9 @@ void ConvertPackedYUYVToPlanarYUV(hipStream_t stream, uint32_t dst_width, uint32
 typedef struct UINT6TYPE {
   uint data[6];
 } DUINT6;
+
+typedef struct UINT8TYPE {
+  uint data[8];
+} DUINT8;
 
 #endif //ROC_JPEG_HIP_KERNELS_H_

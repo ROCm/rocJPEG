@@ -842,6 +842,43 @@ void ColorConvertYUV400ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t ds
 
 }
 
+__global__ void ColorConvertRGBAToRGBKernel(uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
+
+    int x = (hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x) * 8;
+    int y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if (x >= dst_width || y >= dst_height) {
+        return;
+    }
+
+    uint32_t src_idx = y * src_image_stride_in_bytes + (x << 2);
+    uint32_t dst_idx  = y * dst_image_stride_in_bytes + (x * 3);
+
+    DUINT8 src = *((DUINT8 *)(&src_image[src_idx]));
+    DUINT6 dst;
+
+    dst.data[0] = hipPack(make_float4(hipUnpack0(src.data[0]), hipUnpack1(src.data[0]), hipUnpack2(src.data[0]), hipUnpack0(src.data[1])));
+    dst.data[1] = hipPack(make_float4(hipUnpack1(src.data[1]), hipUnpack2(src.data[1]), hipUnpack0(src.data[2]), hipUnpack1(src.data[2])));
+    dst.data[2] = hipPack(make_float4(hipUnpack2(src.data[2]), hipUnpack0(src.data[3]), hipUnpack1(src.data[3]), hipUnpack2(src.data[3])));
+    dst.data[3] = hipPack(make_float4(hipUnpack0(src.data[4]), hipUnpack1(src.data[4]), hipUnpack2(src.data[4]), hipUnpack0(src.data[5])));
+    dst.data[4] = hipPack(make_float4(hipUnpack1(src.data[5]), hipUnpack2(src.data[5]), hipUnpack0(src.data[6]), hipUnpack1(src.data[6])));
+    dst.data[5] = hipPack(make_float4(hipUnpack2(src.data[6]), hipUnpack0(src.data[7]), hipUnpack1(src.data[7]), hipUnpack2(src.data[7])));
+
+    *((DUINT6 *)(&dst_image[dst_idx])) = dst;
+}
+
+void ColorConvertRGBAToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
+    int localThreads_x = 16;
+    int localThreads_y = 16;
+    int globalThreads_x = (dst_width + 7) >> 3;
+    int globalThreads_y = dst_height;
+
+    ColorConvertRGBAToRGBKernel<<<dim3(ceil(static_cast<float>(globalThreads_x) / localThreads_x), ceil(static_cast<float>(globalThreads_y) / localThreads_y)),
+                        dim3(localThreads_x, localThreads_y), 0, stream >>>(dst_width, dst_height, dst_image, dst_image_stride_in_bytes,
+                        src_image, src_image_stride_in_bytes);
+}
 
 __global__ void ConvertInterleavedUVToPlanarUVKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,

@@ -78,7 +78,7 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
     const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
     VASurfaceID current_surface_id;
-    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id));
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, output_format));
 
     if (destination != nullptr) {
         VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
@@ -270,6 +270,9 @@ RocJpegStatus ROCJpegDecoder::GetChromaHeight(uint16_t picture_height, uint16_t 
         case ROCJPEG_FOURCC_YUYV: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
             chroma_height = picture_height;
             break;
+        case VA_FOURCC_RGBA:
+            chroma_height = 0;
+            break;
         default:
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
     }
@@ -293,6 +296,10 @@ RocJpegStatus ROCJpegDecoder::ColorConvertToRGB(uint32_t picture_width, uint32_t
             break;
         case VA_FOURCC_Y800:
             ColorConvertYUV400ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
+           break;
+        case VA_FOURCC_RGBA:
+            ColorConvertRGBAToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                 hip_interop_.hip_mapped_device_mem, hip_interop_.pitch[0]);
            break;
         default:

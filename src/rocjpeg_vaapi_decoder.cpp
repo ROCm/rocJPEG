@@ -221,35 +221,34 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
     surface_attrib.value.type = VAGenericValueTypeInteger;
 
-    switch (jpeg_stream_params->chroma_subsampling) {
-        case CSS_444:
-            surface_format = VA_RT_FORMAT_YUV444;
-            surface_attrib.value.value.i = VA_FOURCC_444P;
-            break;
-        case CSS_422:
-            surface_format = VA_RT_FORMAT_YUV422;
-            surface_attrib.value.value.i = ROCJPEG_FOURCC_YUYV;
-            break;
-        case CSS_420:
-            surface_format = VA_RT_FORMAT_YUV420;
-            surface_attrib.value.value.i = VA_FOURCC_NV12;
-            break;
-        case CSS_400:
-            surface_format = VA_RT_FORMAT_YUV400;
-            surface_attrib.value.value.i = VA_FOURCC_Y800;
-            break;
-        default:
-            ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
-            return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
-            break;
-    }
-
     // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
     // set the appropriate surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
-    if (output_format == ROCJPEG_OUTPUT_RGB) {
-        if (current_vcn_jpeg_spec_.is_hw_format_conversion_supported) {
-            surface_format = VA_RT_FORMAT_RGB32;
-            surface_attrib.value.value.i = VA_FOURCC_RGBA;
+    // otherwise set the appropriate surface format and attributes based on the chroma subsampling of the image
+    if (output_format == ROCJPEG_OUTPUT_RGB && current_vcn_jpeg_spec_.is_hw_format_conversion_supported) {
+        surface_format = VA_RT_FORMAT_RGB32;
+        surface_attrib.value.value.i = VA_FOURCC_RGBA;
+    } else {
+        switch (jpeg_stream_params->chroma_subsampling) {
+            case CSS_444:
+                surface_format = VA_RT_FORMAT_YUV444;
+                surface_attrib.value.value.i = VA_FOURCC_444P;
+                break;
+            case CSS_422:
+                surface_format = VA_RT_FORMAT_YUV422;
+                surface_attrib.value.value.i = ROCJPEG_FOURCC_YUYV;
+                break;
+            case CSS_420:
+                surface_format = VA_RT_FORMAT_YUV420;
+                surface_attrib.value.value.i = VA_FOURCC_NV12;
+                break;
+            case CSS_400:
+                surface_format = VA_RT_FORMAT_YUV400;
+                surface_attrib.value.value.i = VA_FOURCC_Y800;
+                break;
+            default:
+                ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
+                return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+                break;
         }
     }
 

@@ -87,15 +87,16 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
         CHECK_ROCJPEG(GetHipInteropMem(va_drm_prime_surface_desc));
 
         uint16_t chroma_height = 0;
-        CHECK_ROCJPEG(GetChromaHeight(jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
 
         switch (output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
                 // copy the native decoded output buffers from interop memory directly to the destination buffers
+                CHECK_ROCJPEG(GetChromaHeight(jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
                 CHECK_ROCJPEG(CopyLuma(destination, jpeg_stream_params->picture_parameter_buffer.picture_height));
                 CHECK_ROCJPEG(CopyChroma(destination, chroma_height));
                 break;
             case ROCJPEG_OUTPUT_YUV_PLANAR:
+                CHECK_ROCJPEG(GetChromaHeight(jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
                 CHECK_ROCJPEG(GetPlanarYUVOutputFormat(jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                     jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, destination));
                 break;
@@ -269,9 +270,6 @@ RocJpegStatus ROCJpegDecoder::GetChromaHeight(uint16_t picture_height, uint16_t 
             break;
         case ROCJPEG_FOURCC_YUYV: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
             chroma_height = picture_height;
-            break;
-        case VA_FOURCC_RGBA:
-            chroma_height = 0;
             break;
         default:
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;

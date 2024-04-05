@@ -85,7 +85,7 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
                     offset = device_id_ * 7;
                 }
             } else {
-                GetNumRenderCardsPerDevice(device_name, device_id_, visible_devices, current_compute_partitions, offset);
+                GetDrmNodeOffset(device_name, device_id_, visible_devices, current_compute_partitions, offset);
             }
     }
 
@@ -364,7 +364,7 @@ void RocJpegVappiDecoder::GetCurrentComputePartition(std::vector<ComputePartitio
     }
 }
 
-void RocJpegVappiDecoder::GetNumRenderCardsPerDevice(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
+void RocJpegVappiDecoder::GetDrmNodeOffset(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
                                                    std::vector<ComputePartition> &current_compute_partitions,
                                                    int &offset) {
     if (!current_compute_partitions.empty()) {

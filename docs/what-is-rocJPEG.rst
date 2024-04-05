@@ -15,7 +15,7 @@ overall system power consumption and improve decoding performance.
 Using the rocJPEG API, you can decode compressed JPEG streams while keeping the resulting YUV
 images in video memory. With decoded images in video memory, you can run image post-processing
 using ROCm HIP, thereby avoiding unnecessary data copies via PCIe bus. You can post-process images
-using scaling or color conversion and augmentation kernels (on a GPU or host) in a format for
+using scaling or color space conversion and augmentation kernels (on a GPU or host) in a format for
 GPU/CPU-accelerated inferencing and training.
 
 In addition, you can use the rocJPEG API to create multiple instances of JPEG decoder based on the

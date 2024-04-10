@@ -53,8 +53,8 @@ typedef enum {
 
 typedef struct {
     uint32_t num_jpeg_cores;
-    bool is_hw_format_conversion_supported;
-    bool is_hw_roi_decode_supported;
+    bool can_convert_to_rgb;
+    bool can_roi_decode;
 } VcnJpegSpec;
 
 class RocJpegVappiDecoder {

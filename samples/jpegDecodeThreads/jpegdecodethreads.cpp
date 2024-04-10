@@ -536,6 +536,7 @@ int main(int argc, char **argv) {
         num_threads = file_paths.size();
     }
 
+    std::cout << "info: creating decoder objects, please wait!" << std::endl;
     for (int i = 0; i < num_threads; i++) {
         RocJpegHandle rocjpeg_handle;
         CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, device_id, &rocjpeg_handle));
@@ -577,7 +578,7 @@ int main(int argc, char **argv) {
     double average_decoding_time = total_time_duration / total_decoded_images;
     double avg_image_per_sec = 1000 / average_decoding_time;
     double mpixels_per_sec = total_mpixels * avg_image_per_sec / total_decoded_images;
-    std::cout << "Total elapsed time (ms): " << total_time_duration << std::endl;
+    std::cout << "info: Total elapsed time (ms): " << total_time_duration << std::endl;
     std::cout << "info: total decoded images: " << total_decoded_images << std::endl;
     std::cout << "info: average processing time per image (ms): " << average_decoding_time << std::endl;
     std::cout << "info: average decoded images per sec: " << avg_image_per_sec << std::endl;

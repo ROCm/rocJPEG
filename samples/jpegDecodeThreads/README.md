@@ -1,6 +1,6 @@
-# JPEG decode sample
+# JPEG decode threads sample
 
-The jpeg decode sample illustrates decoding a JPEG images using rocJPEG library to get the individual decoded images in one of the supported output format (i.e., unchanged, yuv, y, rgbi). This sample can be configured with a device ID and optionally able to dump the output to a file.
+The jpeg decode threads sample illustrates decoding JPEG images using rocJPEG library with multiple threads to get the individual decoded images in one of the supported output format (i.e., unchanged, yuv, y, rgbi). This sample can be configured with a device ID and optionally able to dump the output to a file.
 
 ## Prerequisites:
 
@@ -9,7 +9,7 @@ The jpeg decode sample illustrates decoding a JPEG images using rocJPEG library 
 ## Build
 
 ```shell
-mkdir jpeg_decode_sample && cd jpeg_decode_sample
+mkdir jpeg_decode_threads_sample && cd jpeg_decode_threads_sample
 cmake ../
 make -j
 ```
@@ -22,4 +22,5 @@ make -j
                  -fmt <Select rocJPEG output format for decoding, one of the [native, yuv, y, rgbi] [optional - default: native]>
                  -o <Output file path or directory - Write decoded images based on the selected outfut format to this file or directory [optional]>
                  -d <GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.) [optional - default: 0]>
+                 -t <Number of threads [optional - default: 4]>
 ```

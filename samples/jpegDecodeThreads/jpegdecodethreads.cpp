@@ -306,23 +306,7 @@ bool InitHipDevice(int device_id) {
 }
 
 void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::mutex& mutex, RocJpegOutputFormat output_format, int dump_output_frames, std::string &output_file_path,
-                    uint64_t *num_decoded_images, double *total_decode_time, double *mpixels, std::atomic_bool &decoding_complete) {
-    //while (true) {
-        // Get the next JPEG file to process
-        /*std::string file_path;
-        {
-            std::lock_guard<std::mutex> lock(mutex);
-            if (!file_paths.empty()) {
-                file_path = file_paths.front();
-                file_paths.pop();
-            }
-        }
-
-        if (file_path.empty()) {
-            // No more files to process
-            break;
-        }*/
-
+                    uint64_t *num_decoded_images, double *mpixels, std::atomic_bool &decoding_complete) {
         std::vector<char> file_data;
         uint8_t num_components;
         uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
@@ -427,12 +411,7 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
             CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
         }
 
-        auto start_time = std::chrono::high_resolution_clock::now();
         CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, output_format, &output_image));
-        auto end_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> decoder_time = end_time - start_time;
-        double time_per_image = decoder_time.count() * 1000;
-        *total_decode_time += time_per_image;
         *mpixels += (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         *num_decoded_images += 1;
 
@@ -463,7 +442,6 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
             SaveImage(file_name_for_saving, &output_image, widths[0], heights[0], subsampling, output_format);
         }
         decoding_complete = true;
-    //}
 }
 
 class ThreadPool {
@@ -532,7 +510,6 @@ int main(int argc, char **argv) {
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_NATIVE;
     std::vector<RocJpegHandle> rocjpeg_handles;
-    //std::vector<std::thread> threads;
     std::mutex mutex;
     std::vector<uint64_t> num_decoded_images_per_thread;
     std::vector<double> total_decode_time_per_thread;
@@ -572,10 +549,6 @@ int main(int argc, char **argv) {
     }
     std::cout << "info: decoding started with " << num_threads << " threads, please wait!" << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
-    /*for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], std::ref(mutex), output_format, dump_output_frames, std::ref(output_file_path),
-            &num_decoded_images_per_thread[i], &total_decode_time_per_thread[i], &mpixels_per_thread[i]);
-    }*/
     for (int i = 0; i < file_paths.size(); i++) {
         int thread_idx = i % num_threads;
         if (i >= num_threads) {
@@ -586,7 +559,7 @@ int main(int argc, char **argv) {
             }
         }
         thread_pool.ExecuteJob(std::bind(ThreadFunction, file_paths[i], rocjpeg_handles[thread_idx], std::ref(mutex), output_format, dump_output_frames, std::ref(output_file_path),
-            &num_decoded_images_per_thread[thread_idx], &total_decode_time_per_thread[thread_idx], &mpixels_per_thread[thread_idx], std::ref(decoding_status_per_thread[thread_idx]->decoding_complete)));
+            &num_decoded_images_per_thread[thread_idx], &mpixels_per_thread[thread_idx], std::ref(decoding_status_per_thread[thread_idx]->decoding_complete)));
     }
 
     // Wait for all threads to finish
@@ -595,15 +568,13 @@ int main(int argc, char **argv) {
     auto total_time_duration = std::chrono::duration<double, std::milli>(end_time - start_time).count();
 
     uint64_t total_decoded_images = 0;
-    double total_decoding_time = 0;
     double total_mpixels = 0;
     for (auto i = 0 ; i < num_threads; i++) {
-        total_decoding_time += total_decode_time_per_thread[i];
         total_decoded_images += num_decoded_images_per_thread[i];
         total_mpixels += mpixels_per_thread[i];
     }
 
-    double average_decoding_time = total_decoding_time / total_decoded_images;
+    double average_decoding_time = total_time_duration / total_decoded_images;
     double avg_image_per_sec = 1000 / average_decoding_time;
     double mpixels_per_sec = total_mpixels * avg_image_per_sec / total_decoded_images;
     std::cout << "Total elapsed time (ms): " << total_time_duration << std::endl;

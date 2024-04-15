@@ -113,6 +113,7 @@ You can set the ``RocJpegOutputFormat`` parameter to one of the ``output_format`
   "ROCJPEG_OUTPUT_YUV_PLANAR", "Return in the YUV planar format."
   "ROCJPEG_OUTPUT_Y", "Return the Y component only."
   "ROCJPEG_OUTPUT_RGB", "Convert to interleaved RGB."
+  "ROCJPEG_OUTPUT_RGB_PLANAR", "Convert to planar RGB."
 
 For example, if ``output_format`` is set to ``ROCJPEG_OUTPUT_NATIVE``, then based on the chroma subsampling of the input image, the
 ``rocJpegDecode()`` function does one of the following:
@@ -123,7 +124,7 @@ For example, if ``output_format`` is set to ``ROCJPEG_OUTPUT_NATIVE``, then base
 * For ``ROCJPEG_CSS_400`` write Y to first channel of ``RocJpegImage``.
 
 if ``output_format`` is set to ``ROCJPEG_OUTPUT_Y`` or ``ROCJPEG_OUTPUT_RGB`` then ``rocJpegDecode()`` copies the output to first channel of ``RocJpegImage``.
-Alternately, in the case of ``ROCJPEG_OUTPUT_YUV_PLANAR``, the data is written to the corresponding channels of the ``RocJpegImage`` destination structure.
+Alternately, in the case of ``ROCJPEG_OUTPUT_YUV_PLANAR`` or ``ROCJPEG_OUTPUT_RGB_PLANAR``, the data is written to the corresponding channels of the ``RocJpegImage`` destination structure.
 The destination buffers should be large enough to be able to store output of specified format. These buffers should be
 pre-allocated by the user in the device memories. For each color plane (channel), sizes could be retrieved for image using
 ``rocJpegGetImageInfo()`` API and minimum required memory buffer for each plane is plane_height * plane_pitch where
@@ -143,7 +144,7 @@ the required size for the output buffers for a single decode JPEG. To optimally 
   "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_400", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_Y", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_RGB", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0] * 3", "destination.channel[0] = destination.pitch[0] * heights[0]"
-
+  "ROCJPEG_OUTPUT_RGB_PLANAR", "Any of the supported chroma subsampling", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
 5. Destroy the decoder
 ====================================================
 

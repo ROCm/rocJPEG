@@ -109,10 +109,12 @@ typedef enum {
     ROCJPEG_OUTPUT_YUV_PLANAR = 1,
     // return luma component (Y) and write to first channel of RocJpegImage
     ROCJPEG_OUTPUT_Y = 2,
-    // convert to interleaved RGB using HIP kernels and write to first channel of RocJpegImage
+    // convert to interleaved RGB using VCN JPEG decoder (on MI300+) or using HIP kernels and write to first channel of RocJpegImage
     ROCJPEG_OUTPUT_RGB = 3,
+    // convert to RGB PLANAR using VCN JPEG decoder (on MI300+) or HIP kernels and write to first, second, and thrid channel of RocJpegImage.
+    ROCJPEG_OUTPUT_RGB_PLANAR = 4,
     // maximum allowed value
-    ROCJPEG_OUTPUT_FORMAT_MAX = 4
+    ROCJPEG_OUTPUT_FORMAT_MAX = 5
 } RocJpegOutputFormat;
 
 /*****************************************************/

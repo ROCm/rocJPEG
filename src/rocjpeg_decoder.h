@@ -57,9 +57,9 @@ class ROCJpegDecoder {
        RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
        RocJpegStatus ReleaseHipInteropMem(VASurfaceID current_surface_id);
        RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
-       RocJpegStatus CopyLuma(RocJpegImage *destination, uint16_t picture_height);
-       RocJpegStatus CopyChroma(RocJpegImage *destination, uint16_t chroma_height);
+       RocJpegStatus CopyChannel(RocJpegImage *destination, uint16_t channel_height, uint8_t channel_index);
        RocJpegStatus ColorConvertToRGB(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+       RocJpegStatus ColorConvertToRGBPlanar(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        RocJpegStatus GetPlanarYUVOutputFormat(uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination);
        RocJpegStatus GetYOutputFormat(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        int num_devices_;

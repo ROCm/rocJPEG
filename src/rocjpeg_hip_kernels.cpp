@@ -80,18 +80,14 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         DUINT6 rgb0, rgb1;
         float4 f;
 
-        yuv.x = hipUnpack0(y0.x);
-        yuv.y = hipUnpack0(u0.x);
-        yuv.z = hipUnpack0(v0.x);
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.x);
-        yuv.y = hipUnpack1(u0.x);
-        yuv.z = hipUnpack1(v0.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -100,9 +96,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.x);
-        yuv.y = hipUnpack2(u0.x);
-        yuv.z = hipUnpack2(v0.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -111,9 +105,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.x);
-        yuv.y = hipUnpack3(u0.x);
-        yuv.z = hipUnpack3(v0.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -122,18 +114,14 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y0.y);
-        yuv.y = hipUnpack0(u0.y);
-        yuv.z = hipUnpack0(v0.y);
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.y);
-        yuv.y = hipUnpack1(u0.y);
-        yuv.z = hipUnpack1(v0.y);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -142,9 +130,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.y);
-        yuv.y = hipUnpack2(u0.y);
-        yuv.z = hipUnpack2(v0.y);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -153,9 +139,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.y);
-        yuv.y = hipUnpack3(u0.y);
-        yuv.z = hipUnpack3(v0.y);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -164,18 +148,14 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.x);
-        yuv.y = hipUnpack0(u1.x);
-        yuv.z = hipUnpack0(v1.x);
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.x);
-        yuv.y = hipUnpack1(u1.x);
-        yuv.z = hipUnpack1(v1.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -184,9 +164,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.x);
-        yuv.y = hipUnpack2(u1.x);
-        yuv.z = hipUnpack2(v1.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -195,9 +173,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.x);
-        yuv.y = hipUnpack3(u1.x);
-        yuv.z = hipUnpack3(v1.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -206,18 +182,14 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.y);
-        yuv.y = hipUnpack0(u1.y);
-        yuv.z = hipUnpack0(v1.y);
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.y);
-        yuv.y = hipUnpack1(u1.y);
-        yuv.z = hipUnpack1(v1.y);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -226,9 +198,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.y);
-        yuv.y = hipUnpack2(u1.y);
-        yuv.z = hipUnpack2(v1.y);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -237,9 +207,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.y);
-        yuv.y = hipUnpack3(u1.y);
-        yuv.z = hipUnpack3(v1.y);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -305,18 +273,14 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         DUINT6 rgb0, rgb1;
         float4 f;
 
-        yuv.x = hipUnpack0(y0.x);
-        yuv.y = hipUnpack0(u0.x);
-        yuv.z = hipUnpack0(v0.x);
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.x);
-        yuv.y = hipUnpack1(u0.x);
-        yuv.z = hipUnpack1(v0.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -325,9 +289,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.x);
-        yuv.y = hipUnpack2(u0.x);
-        yuv.z = hipUnpack2(v0.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -336,9 +298,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.x);
-        yuv.y = hipUnpack3(u0.x);
-        yuv.z = hipUnpack3(v0.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -347,18 +307,14 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y0.y);
-        yuv.y = hipUnpack0(u0.y);
-        yuv.z = hipUnpack0(v0.y);
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.y);
-        yuv.y = hipUnpack1(u0.y);
-        yuv.z = hipUnpack1(v0.y);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -367,9 +323,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.y);
-        yuv.y = hipUnpack2(u0.y);
-        yuv.z = hipUnpack2(v0.y);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -378,9 +332,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.y);
-        yuv.y = hipUnpack3(u0.y);
-        yuv.z = hipUnpack3(v0.y);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -389,18 +341,14 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.x);
-        yuv.y = hipUnpack0(u1.x);
-        yuv.z = hipUnpack0(v1.x);
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.x);
-        yuv.y = hipUnpack1(u1.x);
-        yuv.z = hipUnpack1(v1.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -409,9 +357,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.x);
-        yuv.y = hipUnpack2(u1.x);
-        yuv.z = hipUnpack2(v1.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -420,9 +366,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.x);
-        yuv.y = hipUnpack3(u1.x);
-        yuv.z = hipUnpack3(v1.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -431,18 +375,14 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.y);
-        yuv.y = hipUnpack0(u1.y);
-        yuv.z = hipUnpack0(v1.y);
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.y);
-        yuv.y = hipUnpack1(u1.y);
-        yuv.z = hipUnpack1(v1.y);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -451,9 +391,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.y);
-        yuv.y = hipUnpack2(u1.y);
-        yuv.z = hipUnpack2(v1.y);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -462,9 +400,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.y);
-        yuv.y = hipUnpack3(u1.y);
-        yuv.z = hipUnpack3(v1.y);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -562,18 +498,14 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         float3 yuv;
         DUINT6 prgb0, prgb1;
 
-        yuv.x = hipUnpack0(py0.x);
-        yuv.y = hipUnpack0(pu0.x);
-        yuv.z = hipUnpack0(pv0.x);
+        yuv = make_float3(hipUnpack0(py0.x), hipUnpack0(pu0.x), hipUnpack0(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py0.x);
-        yuv.y = hipUnpack1(pu0.x);
-        yuv.z = hipUnpack1(pv0.x);
+        yuv = make_float3(hipUnpack1(py0.x), hipUnpack1(pu0.x), hipUnpack1(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -582,9 +514,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py0.x);
-        yuv.y = hipUnpack2(pu0.x);
-        yuv.z = hipUnpack2(pv0.x);
+        yuv = make_float3(hipUnpack2(py0.x), hipUnpack2(pu0.x), hipUnpack2(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -593,9 +523,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         prgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py0.x);
-        yuv.y = hipUnpack3(pu0.x);
-        yuv.z = hipUnpack3(pv0.x);
+        yuv = make_float3(hipUnpack3(py0.x), hipUnpack3(pu0.x), hipUnpack3(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -604,18 +532,14 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(py0.y);
-        yuv.y = hipUnpack0(pu0.y);
-        yuv.z = hipUnpack0(pv0.y);
+        yuv = make_float3(hipUnpack0(py0.y), hipUnpack0(pu0.y), hipUnpack0(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py0.y);
-        yuv.y = hipUnpack1(pu0.y);
-        yuv.z = hipUnpack1(pv0.y);
+        yuv = make_float3(hipUnpack1(py0.y), hipUnpack1(pu0.y), hipUnpack1(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -624,9 +548,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py0.y);
-        yuv.y = hipUnpack2(pu0.y);
-        yuv.z = hipUnpack2(pv0.y);
+        yuv = make_float3(hipUnpack2(py0.y), hipUnpack2(pu0.y), hipUnpack2(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -635,9 +557,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         prgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py0.y);
-        yuv.y = hipUnpack3(pu0.y);
-        yuv.z = hipUnpack3(pv0.y);
+        yuv = make_float3(hipUnpack3(py0.y), hipUnpack3(pu0.y), hipUnpack3(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -646,18 +566,14 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(py1.x);
-        yuv.y = hipUnpack0(pu1.x);
-        yuv.z = hipUnpack0(pv1.x);
+        yuv = make_float3(hipUnpack0(py1.x), hipUnpack0(pu1.x), hipUnpack0(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py1.x);
-        yuv.y = hipUnpack1(pu1.x);
-        yuv.z = hipUnpack1(pv1.x);
+        yuv = make_float3(hipUnpack1(py1.x), hipUnpack1(pu1.x), hipUnpack1(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -666,9 +582,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py1.x);
-        yuv.y = hipUnpack2(pu1.x);
-        yuv.z = hipUnpack2(pv1.x);
+        yuv = make_float3(hipUnpack2(py1.x), hipUnpack2(pu1.x), hipUnpack2(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -677,9 +591,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         prgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py1.x);
-        yuv.y = hipUnpack3(pu1.x);
-        yuv.z = hipUnpack3(pv1.x);
+        yuv = make_float3(hipUnpack3(py1.x), hipUnpack3(pu1.x), hipUnpack3(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -688,18 +600,14 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(py1.y);
-        yuv.y = hipUnpack0(pu1.y);
-        yuv.z = hipUnpack0(pv1.y);
+        yuv = make_float3(hipUnpack0(py1.y), hipUnpack0(pu1.y), hipUnpack0(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py1.y);
-        yuv.y = hipUnpack1(pu1.y);
-        yuv.z = hipUnpack1(pv1.y);
+        yuv = make_float3(hipUnpack1(py1.y), hipUnpack1(pu1.y), hipUnpack1(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -708,9 +616,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py1.y);
-        yuv.y = hipUnpack2(pu1.y);
-        yuv.z = hipUnpack2(pv1.y);
+        yuv = make_float3(hipUnpack2(py1.y), hipUnpack2(pu1.y), hipUnpack2(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -719,9 +625,7 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         prgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py1.y);
-        yuv.y = hipUnpack3(pu1.y);
-        yuv.z = hipUnpack3(pv1.y);
+        yuv = make_float3(hipUnpack3(py1.y), hipUnpack3(pu1.y), hipUnpack3(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -795,18 +699,14 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         float3 yuv;
         DUINT6 prgb0, prgb1;
 
-        yuv.x = hipUnpack0(py0.x);
-        yuv.y = hipUnpack0(pu0.x);
-        yuv.z = hipUnpack0(pv0.x);
+        yuv = make_float3(hipUnpack0(py0.x), hipUnpack0(pu0.x), hipUnpack0(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py0.x);
-        yuv.y = hipUnpack1(pu0.x);
-        yuv.z = hipUnpack1(pv0.x);
+        yuv = make_float3(hipUnpack1(py0.x), hipUnpack1(pu0.x), hipUnpack1(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -815,9 +715,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py0.x);
-        yuv.y = hipUnpack2(pu0.x);
-        yuv.z = hipUnpack2(pv0.x);
+        yuv = make_float3(hipUnpack2(py0.x), hipUnpack2(pu0.x), hipUnpack2(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -826,9 +724,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         prgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py0.x);
-        yuv.y = hipUnpack3(pu0.x);
-        yuv.z = hipUnpack3(pv0.x);
+        yuv = make_float3(hipUnpack3(py0.x), hipUnpack3(pu0.x), hipUnpack3(pv0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -837,18 +733,14 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(py0.y);
-        yuv.y = hipUnpack0(pu0.y);
-        yuv.z = hipUnpack0(pv0.y);
+        yuv = make_float3(hipUnpack0(py0.y), hipUnpack0(pu0.y), hipUnpack0(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py0.y);
-        yuv.y = hipUnpack1(pu0.y);
-        yuv.z = hipUnpack1(pv0.y);
+        yuv = make_float3(hipUnpack1(py0.y), hipUnpack1(pu0.y), hipUnpack1(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -857,9 +749,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py0.y);
-        yuv.y = hipUnpack2(pu0.y);
-        yuv.z = hipUnpack2(pv0.y);
+        yuv = make_float3(hipUnpack2(py0.y), hipUnpack2(pu0.y), hipUnpack2(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -868,9 +758,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         prgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py0.y);
-        yuv.y = hipUnpack3(pu0.y);
-        yuv.z = hipUnpack3(pv0.y);
+        yuv = make_float3(hipUnpack3(py0.y), hipUnpack3(pu0.y), hipUnpack3(pv0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -879,18 +767,14 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(py1.x);
-        yuv.y = hipUnpack0(pu1.x);
-        yuv.z = hipUnpack0(pv1.x);
+        yuv = make_float3(hipUnpack0(py1.x), hipUnpack0(pu1.x), hipUnpack0(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py1.x);
-        yuv.y = hipUnpack1(pu1.x);
-        yuv.z = hipUnpack1(pv1.x);
+        yuv = make_float3(hipUnpack1(py1.x), hipUnpack1(pu1.x), hipUnpack1(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -899,9 +783,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py1.x);
-        yuv.y = hipUnpack2(pu1.x);
-        yuv.z = hipUnpack2(pv1.x);
+        yuv = make_float3(hipUnpack2(py1.x), hipUnpack2(pu1.x), hipUnpack2(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -910,9 +792,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         prgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py1.x);
-        yuv.y = hipUnpack3(pu1.x);
-        yuv.z = hipUnpack3(pv1.x);
+        yuv = make_float3(hipUnpack3(py1.x), hipUnpack3(pu1.x), hipUnpack3(pv1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -921,18 +801,14 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         prgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(py1.y);
-        yuv.y = hipUnpack0(pu1.y);
-        yuv.z = hipUnpack0(pv1.y);
+        yuv = make_float3(hipUnpack0(py1.y), hipUnpack0(pu1.y), hipUnpack0(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(py1.y);
-        yuv.y = hipUnpack1(pu1.y);
-        yuv.z = hipUnpack1(pv1.y);
+        yuv = make_float3(hipUnpack1(py1.y), hipUnpack1(pu1.y), hipUnpack1(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -941,9 +817,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(py1.y);
-        yuv.y = hipUnpack2(pu1.y);
-        yuv.z = hipUnpack2(pv1.y);
+        yuv = make_float3(hipUnpack2(py1.y), hipUnpack2(pu1.y), hipUnpack2(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -952,9 +826,7 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         prgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(py1.y);
-        yuv.y = hipUnpack3(pu1.y);
-        yuv.z = hipUnpack3(pv1.y);
+        yuv = make_float3(hipUnpack3(py1.y), hipUnpack3(pu1.y), hipUnpack3(pv1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1068,18 +940,14 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         float3 yuv;
         DUINT6 rgb0, rgb1;
 
-        yuv.x = hipUnpack0(y0.x);
-        yuv.y = hipUnpack0(u0.x);
-        yuv.z = hipUnpack0(v0.x);
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.x);
-        yuv.y = hipUnpack1(u0.x);
-        yuv.z = hipUnpack1(v0.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1088,9 +956,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.x);
-        yuv.y = hipUnpack2(u0.x);
-        yuv.z = hipUnpack2(v0.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1099,9 +965,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         rgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.x);
-        yuv.y = hipUnpack3(u0.x);
-        yuv.z = hipUnpack3(v0.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1110,18 +974,14 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y0.y);
-        yuv.y = hipUnpack0(u0.y);
-        yuv.z = hipUnpack0(v0.y);
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.y);
-        yuv.y = hipUnpack1(u0.y);
-        yuv.z = hipUnpack1(v0.y);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1130,9 +990,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.y);
-        yuv.y = hipUnpack2(u0.y);
-        yuv.z = hipUnpack2(v0.y);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1141,9 +999,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         rgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.y);
-        yuv.y = hipUnpack3(u0.y);
-        yuv.z = hipUnpack3(v0.y);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1152,18 +1008,14 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.x);
-        yuv.y = hipUnpack0(u1.x);
-        yuv.z = hipUnpack0(v1.x);
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.x);
-        yuv.y = hipUnpack1(u1.x);
-        yuv.z = hipUnpack1(v1.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1172,9 +1024,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.x);
-        yuv.y = hipUnpack2(u1.x);
-        yuv.z = hipUnpack2(v1.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1183,9 +1033,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.x);
-        yuv.y = hipUnpack3(u1.x);
-        yuv.z = hipUnpack3(v1.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1194,18 +1042,14 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.y);
-        yuv.y = hipUnpack0(u1.y);
-        yuv.z = hipUnpack0(v1.y);
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.y);
-        yuv.y = hipUnpack1(u1.y);
-        yuv.z = hipUnpack1(v1.y);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1214,9 +1058,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.y);
-        yuv.y = hipUnpack2(u1.y);
-        yuv.z = hipUnpack2(v1.y);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1225,9 +1067,7 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.y);
-        yuv.y = hipUnpack3(u1.y);
-        yuv.z = hipUnpack3(v1.y);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1321,18 +1161,14 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         float3 yuv;
         DUINT6 rgb0, rgb1;
 
-        yuv.x = hipUnpack0(y0.x);
-        yuv.y = hipUnpack0(u0.x);
-        yuv.z = hipUnpack0(v0.x);
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.x);
-        yuv.y = hipUnpack1(u0.x);
-        yuv.z = hipUnpack1(v0.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1341,9 +1177,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.x);
-        yuv.y = hipUnpack2(u0.x);
-        yuv.z = hipUnpack2(v0.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1352,9 +1186,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         rgb0.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.x);
-        yuv.y = hipUnpack3(u0.x);
-        yuv.z = hipUnpack3(v0.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1363,18 +1195,14 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y0.y);
-        yuv.y = hipUnpack0(u0.y);
-        yuv.z = hipUnpack0(v0.y);
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y0.y);
-        yuv.y = hipUnpack1(u0.y);
-        yuv.z = hipUnpack1(v0.y);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1383,9 +1211,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y0.y);
-        yuv.y = hipUnpack2(u0.y);
-        yuv.z = hipUnpack2(v0.y);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1394,9 +1220,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         rgb0.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y0.y);
-        yuv.y = hipUnpack3(u0.y);
-        yuv.z = hipUnpack3(v0.y);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1405,18 +1229,14 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.x);
-        yuv.y = hipUnpack0(u1.x);
-        yuv.z = hipUnpack0(v1.x);
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.x);
-        yuv.y = hipUnpack1(u1.x);
-        yuv.z = hipUnpack1(v1.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1425,9 +1245,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.x);
-        yuv.y = hipUnpack2(u1.x);
-        yuv.z = hipUnpack2(v1.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1436,9 +1254,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.x);
-        yuv.y = hipUnpack3(u1.x);
-        yuv.z = hipUnpack3(v1.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -1447,18 +1263,14 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv.x = hipUnpack0(y1.y);
-        yuv.y = hipUnpack0(u1.y);
-        yuv.z = hipUnpack0(v1.y);
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack1(y1.y);
-        yuv.y = hipUnpack1(u1.y);
-        yuv.z = hipUnpack1(v1.y);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -1467,9 +1279,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack2(y1.y);
-        yuv.y = hipUnpack2(u1.y);
-        yuv.z = hipUnpack2(v1.y);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -1478,9 +1288,7 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv.x = hipUnpack3(y1.y);
-        yuv.y = hipUnpack3(u1.y);
-        yuv.z = hipUnpack3(v1.y);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);

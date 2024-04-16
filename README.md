@@ -28,14 +28,19 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
-* AMD Multimedia packages
+* [Video Acceleration API](https://en.wikipedia.org/wiki/Video_Acceleration_API) Version `1.5.0+` - `Libva` is an implementation for VA-API
+   ```shell
+   sudo apt install libva-dev
+   ```
+ > [!NOTE]
+ > RPM Packages for `RHEL`/`SLES` - `libva-devel`
 
-```shell
-sudo apt install libva-amdgpu-dev libdrm-amdgpu1 mesa-amdgpu-va-drivers
-```
-
-> [!NOTE]
-> RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel libdrm-amdgpu mesa-amdgpu-dri-drivers`
+* AMD VA Drivers
+   ```shell
+   sudo apt install mesa-amdgpu-va-drivers
+   ```
+ > [!NOTE]
+ > RPM Packages for `RHEL`/`SLES` - `libdrm-amdgpu mesa-amdgpu-dri-drivers`
 
 * CMake `3.5` or later
 
@@ -204,4 +209,6 @@ page.
 * ROCm:
   * rocm-core - `6.1.0.60100-62`
   * amdgpu-core - `1:6.1.60100-1741643`
-* rocJPEG Setup Script - `V1.0`
+* libva-dev - `2.7.0-2` / `2.14.0-1`
+* mesa-amdgpu-va-drivers - `1:24.1.0`
+* rocJPEG Setup Script - `V1.1`

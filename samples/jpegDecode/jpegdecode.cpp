@@ -468,9 +468,8 @@ int main(int argc, char **argv) {
         auto start_time = std::chrono::high_resolution_clock::now();
         CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, output_format, &output_image));
         auto end_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> decoder_time = end_time - start_time;
-        double time_per_image = decoder_time.count() * 1000;
-        double mpixels = ((double)widths[0] * (double)heights[0] / 1000000);
+        double time_per_image_in_milli_sec = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+        double image_size_in_mpixels = (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         image_count++;
 
         if (dump_output_frames) {
@@ -512,14 +511,14 @@ int main(int argc, char **argv) {
             }
         }
 
-        std::cout << "info: average processing time per image (ms): " << time_per_image << std::endl;
-        std::cout << "info: average images per sec: " << 1000 / time_per_image << std::endl;
+        std::cout << "info: average processing time per image (ms): " << time_per_image_in_milli_sec << std::endl;
+        std::cout << "info: average images per sec: " << 1000 / time_per_image_in_milli_sec << std::endl;
 
         if (is_dir) {
             std::cout << std::endl;
             total_images += image_count;
-            time_per_image_all += time_per_image;
-            mpixels_all += mpixels;
+            time_per_image_all += time_per_image_in_milli_sec;
+            mpixels_all += image_size_in_mpixels;
         }
         counter++;
     }
@@ -532,7 +531,7 @@ int main(int argc, char **argv) {
         if (total_images) {
             std::cout << "info: average processing time per image (ms): " << time_per_image_all << std::endl;
             std::cout << "info: average decoded images per sec: " << images_per_sec << std::endl;
-            std::cout << "info: average decoded mpixels per sec: " << mpixels_per_sec << std::endl;
+            std::cout << "info: average decoded image_size_in_mpixels per sec: " << mpixels_per_sec << std::endl;
         }
         std::cout << std::endl;
     }

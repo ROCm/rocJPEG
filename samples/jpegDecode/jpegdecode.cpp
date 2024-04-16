@@ -51,7 +51,7 @@ void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Path to single image or directory of images - required" << std::endl
     << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
-    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb]; optional; default: native" << std::endl
+    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar]; optional; default: native" << std::endl
     << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
     << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl;
     exit(0);
@@ -107,6 +107,8 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
                 output_format = ROCJPEG_OUTPUT_Y;
             } else if (selected_output_format == "rgb") {
                 output_format = ROCJPEG_OUTPUT_RGB;
+            } else if (selected_output_format == "rgb_planar") {
+                output_format = ROCJPEG_OUTPUT_RGB_PLANAR;
             } else {
                 ShowHelpAndExit(argv[i]);
             }
@@ -187,6 +189,10 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
         case ROCJPEG_OUTPUT_RGB:
             widths[0] = img_width * 3;
             heights[0] = img_height;
+            break;
+        case ROCJPEG_OUTPUT_RGB_PLANAR:
+            widths[2] = widths[1] = widths[0] = img_width;
+            heights[2] = heights[1] = heights[0] = img_height;
             break;
         default:
             std::cout << "Unknown output format!" << std::endl;
@@ -297,10 +303,10 @@ int main(int argc, char **argv) {
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t num_channels = 0;
-    int total_images_all = 0;
+    int total_images = 0;
     double time_per_image_all = 0;
-    double m_pixels_all = 0;
-    double image_per_sec_all = 0;
+    double mpixels_all = 0;
+    double images_per_sec = 0;
     std::string chroma_sub_sampling = "";
     std::string input_path, output_file_path;
     std::vector<std::string> file_paths = {};
@@ -444,6 +450,11 @@ int main(int argc, char **argv) {
                 output_image.pitch[0] = widths[0] * 3;
                 channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
+            case ROCJPEG_OUTPUT_RGB_PLANAR:
+                num_channels = 3;
+                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
                 return EXIT_FAILURE;
@@ -457,10 +468,8 @@ int main(int argc, char **argv) {
         auto start_time = std::chrono::high_resolution_clock::now();
         CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data[counter].data()), file_size, output_format, &output_image));
         auto end_time = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> decoder_time = end_time - start_time;
-        double time_per_image = decoder_time.count() * 1000;
-        double ips = (1 / time_per_image) * 1000;
-        double mpixels = ((double)widths[0] * (double)heights[0] / 1000000) * ips;
+        double time_per_image_in_milli_sec = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+        double image_size_in_mpixels = (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         image_count++;
 
         if (dump_output_frames) {
@@ -479,6 +488,9 @@ int main(int argc, char **argv) {
                     break;
                 case ROCJPEG_OUTPUT_RGB:
                     file_extension = "rgb";
+                    break;
+                case ROCJPEG_OUTPUT_RGB_PLANAR:
+                    file_extension = "rgb_planar";
                     break;
                 default:
                     file_extension = "";
@@ -499,27 +511,27 @@ int main(int argc, char **argv) {
             }
         }
 
-        std::cout << "info: total decoded images: " << image_count << std::endl;
-        std::cout << "info: average processing time per image (ms): " << time_per_image << std::endl;
-        std::cout << "info: average images per sec: " << (1 / time_per_image) * 1000 << std::endl;
-        std::cout << "info: total elapsed time (s): " << decoder_time.count() << std::endl;
+        std::cout << "info: average processing time per image (ms): " << time_per_image_in_milli_sec << std::endl;
+        std::cout << "info: average images per sec: " << 1000 / time_per_image_in_milli_sec << std::endl;
 
         if (is_dir) {
             std::cout << std::endl;
-            total_images_all += image_count;
-            time_per_image_all += time_per_image;
-            image_per_sec_all += ips;
-            m_pixels_all += mpixels;
+            total_images += image_count;
+            time_per_image_all += time_per_image_in_milli_sec;
+            mpixels_all += image_size_in_mpixels;
         }
         counter++;
     }
 
     if (is_dir) {
-        std::cout << "info: total decoded images: " << total_images_all << std::endl;
-        if (total_images_all) {
-            std::cout << "info: average processing time per image (ms): " << time_per_image_all / total_images_all << std::endl;
-            std::cout << "info: average decoded images per sec: " << image_per_sec_all / total_images_all << std::endl;
-            std::cout << "info: average decoded mpixels per sec: " << m_pixels_all / total_images_all << std::endl;
+        time_per_image_all = time_per_image_all / total_images;
+        images_per_sec = 1000 / time_per_image_all;
+        double mpixels_per_sec = mpixels_all * images_per_sec / total_images;
+        std::cout << "info: total decoded images: " << total_images << std::endl;
+        if (total_images) {
+            std::cout << "info: average processing time per image (ms): " << time_per_image_all << std::endl;
+            std::cout << "info: average decoded images per sec: " << images_per_sec << std::endl;
+            std::cout << "info: average decoded image_size_in_mpixels per sec: " << mpixels_per_sec << std::endl;
         }
         std::cout << std::endl;
     }

@@ -52,7 +52,7 @@ endif()
 
 add_test(
   NAME
-    jpeg-decode-fmt-unchanged
+    jpeg-decode-fmt-native
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
@@ -64,7 +64,7 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-fmt-yuv
+    jpeg-decode-fmt-yuv-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
@@ -88,12 +88,24 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-fmt-rgbi
+    jpeg-decode-fmt-rgb
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgbi
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgb
+)
+
+add_test(
+  NAME
+    jpeg-decode-fmt-rgb-planar
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgb_planar
 )

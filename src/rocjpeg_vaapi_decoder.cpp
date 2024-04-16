@@ -224,9 +224,14 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
     // set the RGB surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
     // otherwise set the appropriate surface format and attributes based on the chroma subsampling of the image.
-    if (output_format == ROCJPEG_OUTPUT_RGB && current_vcn_jpeg_spec_.can_convert_to_rgb) {
-        surface_format = VA_RT_FORMAT_RGB32;
-        surface_attrib.value.value.i = VA_FOURCC_RGBA;
+    if ((output_format == ROCJPEG_OUTPUT_RGB || output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+        if (output_format == ROCJPEG_OUTPUT_RGB) {
+            surface_format = VA_RT_FORMAT_RGB32;
+            surface_attrib.value.value.i = VA_FOURCC_RGBA;
+        } else if (output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
+            surface_format = VA_RT_FORMAT_RGBP;
+            surface_attrib.value.value.i = VA_FOURCC_RGBP;
+        }
     } else {
         switch (jpeg_stream_params->chroma_subsampling) {
             case CSS_444:

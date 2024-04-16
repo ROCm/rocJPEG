@@ -24,7 +24,7 @@ cmake_minimum_required(VERSION 3.5)
 
 add_test(
   NAME
-  jpeg-decode-fmt-unchanged
+  jpeg-decode-fmt-native
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
@@ -36,7 +36,7 @@ add_test(
 
 add_test(
   NAME
-  jpeg-decode-fmt-yuv
+  jpeg-decode-fmt-yuv-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
@@ -60,12 +60,24 @@ add_test(
 
 add_test(
   NAME
-  jpeg-decode-fmt-rgbi
+  jpeg-decode-fmt-rgb
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgbi
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgb
+)
+
+add_test(
+  NAME
+  jpeg-decode-fmt-rgb-planar
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgb_planar
 )

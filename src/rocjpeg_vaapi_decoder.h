@@ -33,6 +33,7 @@ THE SOFTWARE.
 #include <unistd.h>
 #include <filesystem>
 #include <unordered_map>
+#include <memory>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -57,15 +58,49 @@ typedef struct {
     bool can_roi_decode;
 } VcnJpegSpec;
 
+struct HipInteropDeviceMem {
+    hipExternalMemory_t hip_ext_mem; // Interface to the vaapi-hip interop
+    uint8_t* hip_mapped_device_mem; // Mapped device memory for the YUV plane
+    uint32_t surface_format; // Pixel format fourcc of the whole surface
+    uint32_t width; // Width of the surface in pixels.
+    uint32_t height; // Height of the surface in pixels.
+    uint32_t offset[3]; // Offset of each plane
+    uint32_t pitch[3]; // Pitch of each plane
+    uint32_t num_layers; // Number of layers making up the surface
+};
+
+struct RocJpegVappiMemPoolEntry {
+    uint32_t image_width;
+    uint32_t image_height;
+    VASurfaceID va_surface_id;
+    VAContextID va_context_id;
+    HipInteropDeviceMem hip_interop;
+};
+
+class RocJpegVappiMemoryPool {
+    public:
+        RocJpegVappiMemoryPool();
+        void ReleaseResources();
+        void SetPoolSize(int32_t max_pool_size);
+        void SetVaapiDisplay(const VADisplay& va_display);
+        bool FindSurfaceId(VASurfaceID surface_id);
+        RocJpegVappiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height);
+        RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry);
+        RocJpegStatus DeleteSurfaceId(VASurfaceID surface_id);
+        RocJpegStatus GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop);
+    private:
+        VADisplay va_display_;
+        std::unordered_map<uint32_t, std::vector<RocJpegVappiMemPoolEntry>> mem_pool_;
+};
+
 class RocJpegVappiDecoder {
 public:
     RocJpegVappiDecoder(int device_id = 0);
     ~RocJpegVappiDecoder();
     RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id);
     RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format);
-    RocJpegStatus ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
     RocJpegStatus SyncSurface(VASurfaceID surface_id);
-    RocJpegStatus ReleaseSurface(VASurfaceID surface_id);
+    RocJpegStatus GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop);
 private:
     int device_id_;
     int drm_fd_;
@@ -77,9 +112,8 @@ private:
     std::vector<VAConfigAttrib> va_config_attrib_;
     VAConfigID va_config_id_;
     VAProfile va_profile_;
-    VAContextID va_context_id_;
-    std::vector<VASurfaceID> va_surface_ids_;
     std::unordered_map<std::string, VcnJpegSpec> vcn_jpeg_spec_;
+    std::unique_ptr<RocJpegVappiMemoryPool> vaapi_mem_pool_;
     VcnJpegSpec current_vcn_jpeg_spec_;
     VABufferID va_picture_parameter_buf_id_;
     VABufferID va_quantization_matrix_buf_id_;

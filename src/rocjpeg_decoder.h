@@ -25,7 +25,6 @@ THE SOFTWARE.
 
 #include <unistd.h>
 #include <vector>
-#include <hip/hip_runtime.h>
 #include <mutex>
 #include <queue>
 #include "../api/rocjpeg.h"
@@ -33,17 +32,6 @@ THE SOFTWARE.
 #include "rocjpeg_commons.h"
 #include "rocjpeg_vaapi_decoder.h"
 #include "rocjpeg_hip_kernels.h"
-
-struct HipInteropDeviceMem {
-    hipExternalMemory_t hip_ext_mem; // Interface to the vaapi-hip interop
-    uint8_t* hip_mapped_device_mem; // Mapped device memory for the YUV plane
-    uint32_t surface_format; // Pixel format fourcc of the whole surface
-    uint32_t width; // Width of the surface in pixels.
-    uint32_t height; // Height of the surface in pixels.
-    uint32_t offset[3]; // Offset of each plane
-    uint32_t pitch[3]; // Pitch of each plane
-    uint32_t num_layers; // Number of layers making up the surface
-};
 
 class ROCJpegDecoder {
     public:
@@ -54,14 +42,12 @@ class ROCJpegDecoder {
        RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
-       RocJpegStatus GetHipInteropMem(VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc);
-       RocJpegStatus ReleaseHipInteropMem(VASurfaceID current_surface_id);
-       RocJpegStatus GetChromaHeight(uint16_t picture_height, uint16_t &chroma_height);
-       RocJpegStatus CopyChannel(RocJpegImage *destination, uint16_t channel_height, uint8_t channel_index);
-       RocJpegStatus ColorConvertToRGB(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
-       RocJpegStatus ColorConvertToRGBPlanar(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
-       RocJpegStatus GetPlanarYUVOutputFormat(uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination);
-       RocJpegStatus GetYOutputFormat(uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+       RocJpegStatus GetChromaHeight(uint32_t surface_format, uint16_t picture_height, uint16_t &chroma_height);
+       RocJpegStatus CopyChannel(HipInteropDeviceMem& hip_interop, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination);
+       RocJpegStatus ColorConvertToRGB(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+       RocJpegStatus ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+       RocJpegStatus GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination);
+       RocJpegStatus GetYOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
        int num_devices_;
        int device_id_;
        hipDeviceProp_t hip_dev_prop_;
@@ -70,7 +56,6 @@ class ROCJpegDecoder {
        JpegParser jpeg_parser_;
        RocJpegBackend backend_;
        RocJpegVappiDecoder jpeg_vaapi_decoder_;
-       HipInteropDeviceMem hip_interop_;
 };
 
 #endif //ROC_JPEG_DECODER_H_

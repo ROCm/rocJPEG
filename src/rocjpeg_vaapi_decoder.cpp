@@ -22,10 +22,182 @@ THE SOFTWARE.
 
 #include "rocjpeg_vaapi_decoder.h"
 
+RocJpegVappiMemoryPool::RocJpegVappiMemoryPool() {
+std::vector<uint32_t> surface_formats = {VA_RT_FORMAT_RGB32, VA_RT_FORMAT_RGBP, VA_RT_FORMAT_YUV444,
+                                         VA_RT_FORMAT_YUV422, VA_RT_FORMAT_YUV420, VA_RT_FORMAT_YUV400};
+    for (auto surface_format : surface_formats) {
+        mem_pool_[surface_format] = std::vector<RocJpegVappiMemPoolEntry>();
+    }
+}
+
+void RocJpegVappiMemoryPool::ReleaseResources() {
+    VAStatus va_status;
+    hipError_t hip_status;
+    for (auto& pair : mem_pool_) {
+        for (auto& entry : pair.second) {
+            if (entry.va_context_id != 0) {
+                va_status = vaDestroyContext(va_display_, entry.va_context_id);
+                if (va_status != VA_STATUS_SUCCESS) {
+                    ERR("ERROR: vaDestroyContext failed!");
+                }
+            }
+            if (entry.va_surface_id != 0) {
+                va_status = vaDestroySurfaces(va_display_, &entry.va_surface_id, 1);
+                if (va_status != VA_STATUS_SUCCESS) {
+                    ERR("ERROR: vaDestroySurfaces failed!");
+                }
+            }
+            if (entry.hip_interop.hip_mapped_device_mem != nullptr) {
+                hip_status = hipFree(entry.hip_interop.hip_mapped_device_mem);
+                 if (hip_status != hipSuccess) {
+                    ERR("ERROR: hipFree failed!");
+                 }
+            }
+            if (entry.hip_interop.hip_ext_mem != nullptr) {
+                hip_status = hipDestroyExternalMemory(entry.hip_interop.hip_ext_mem);
+                 if (hip_status != hipSuccess) {
+                    ERR("ERROR: hipDestroyExternalMemory failed!");
+                 }
+            }
+            memset((void*)&entry.hip_interop, 0, sizeof(entry.hip_interop));
+        }
+    }
+}
+
+void RocJpegVappiMemoryPool::SetPoolSize(int32_t max_pool_size) {
+    for (auto& pair : mem_pool_) {
+        pair.second.reserve(max_pool_size);
+    }
+}
+
+void RocJpegVappiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
+    va_display_ = va_display;
+}
+
+RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry) {
+    auto& entires = mem_pool_[surface_format];
+    if (entires.size() < entires.capacity()) {
+        entires.push_back(pool_entry);
+    } else {
+        if (entires.front().va_context_id != 0) {
+            CHECK_VAAPI(vaDestroyContext(va_display_, entires.front().va_context_id));
+            entires.front().va_context_id = 0;
+        }
+        if (entires.front().va_surface_id != 0) {
+            CHECK_VAAPI(vaDestroySurfaces(va_display_, &entires.front().va_surface_id, 1));
+            entires.front().va_surface_id = 0;
+        }
+        if (entires.front().hip_interop.hip_mapped_device_mem != nullptr) {
+            CHECK_HIP(hipFree(entires.front().hip_interop.hip_mapped_device_mem));
+        }
+        if (entires.front().hip_interop.hip_ext_mem != nullptr) {
+            CHECK_HIP(hipDestroyExternalMemory(entires.front().hip_interop.hip_ext_mem));
+        }
+        memset((void*)&entires.front().hip_interop, 0, sizeof(entires.front().hip_interop));
+        entires.erase(entires.begin());
+        entires.push_back(pool_entry);
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height) {
+    for (const auto& entry : mem_pool_[surface_format]) {
+        if (entry.image_width == image_width && entry.image_height == image_height) {
+            return entry;
+        }
+    }
+    return {0, 0, 0 , 0, {0}};
+}
+
+bool RocJpegVappiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
+    for (auto& pair : mem_pool_) {
+        for (auto& entry : pair.second) {
+            if (entry.va_surface_id == surface_id) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+RocJpegStatus RocJpegVappiMemoryPool::DeleteSurfaceId(VASurfaceID surface_id) {
+    for (auto& pair : mem_pool_) {
+        auto& entries = pair.second;
+        auto it = std::find_if(entries.begin(), entries.end(),
+                              [surface_id](const RocJpegVappiMemPoolEntry& entry) {return entry.va_surface_id == surface_id;});
+        if (it != entries.end()) {
+            if (it->va_context_id != 0) {
+                CHECK_VAAPI(vaDestroyContext(va_display_, it->va_context_id));
+                it->va_context_id = 0;
+            }
+            if (it->va_surface_id != 0) {
+                CHECK_VAAPI(vaDestroySurfaces(va_display_, &it->va_surface_id, 1));
+                it->va_surface_id = 0;
+            }
+            if (it->hip_interop.hip_mapped_device_mem != nullptr) {
+                CHECK_HIP(hipFree(it->hip_interop.hip_mapped_device_mem));
+            }
+            if (it->hip_interop.hip_ext_mem != nullptr) {
+                CHECK_HIP(hipDestroyExternalMemory(it->hip_interop.hip_ext_mem));
+            }
+            memset((void*)&it->hip_interop, 0, sizeof(it->hip_interop));
+
+            entries.erase(it);
+            break;
+        }
+    }
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
+    for (auto& pair : mem_pool_) {
+        auto& entries = pair.second;
+        auto it = std::find_if(entries.begin(), entries.end(),
+                              [surface_id](const RocJpegVappiMemPoolEntry& entry) {return entry.va_surface_id == surface_id;});
+        if (it != entries.end()) {
+            if (it->hip_interop.hip_mapped_device_mem == nullptr) {
+                VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
+                CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                    VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                    &va_drm_prime_surface_desc));
+
+                hipExternalMemoryHandleDesc external_mem_handle_desc = {};
+                hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
+                external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
+                external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
+                external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
+
+                CHECK_HIP(hipImportExternalMemory(&it->hip_interop.hip_ext_mem, &external_mem_handle_desc));
+                external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
+                CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interop.hip_mapped_device_mem, it->hip_interop.hip_ext_mem, &external_mem_buffer_desc));
+
+                it->hip_interop.surface_format = va_drm_prime_surface_desc.fourcc;
+                it->hip_interop.width = va_drm_prime_surface_desc.width;
+                it->hip_interop.height = va_drm_prime_surface_desc.height;
+                it->hip_interop.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+                it->hip_interop.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+                it->hip_interop.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+                it->hip_interop.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+                it->hip_interop.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+                it->hip_interop.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+                it->hip_interop.num_layers = va_drm_prime_surface_desc.num_layers;
+
+                for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
+                    close(va_drm_prime_surface_desc.objects[i].fd);
+                }
+            }
+            hip_interop = it->hip_interop;
+            return ROCJPEG_STATUS_SUCCESS;
+        }
+    }
+    // it shouldn't reach here unless the requested surface_id is not in the memory pool.
+    ERR("the surface_id: " + TOSTR(surface_id) + " was not found in the memory pool!");
+    return ROCJPEG_STATUS_INVALID_PARAMETER;
+}
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
     max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
-    va_context_id_{0}, va_surface_ids_{}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
-    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0}, current_vcn_jpeg_spec_{0} {
+    vaapi_mem_pool_(std::make_unique<RocJpegVappiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
+    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {
         vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
                           {"gfx90a", {2, false, false}},
                           {"gfx940", {24, true, true}},
@@ -44,23 +216,12 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
         close(drm_fd_);
     }
     if (va_display_) {
+        vaapi_mem_pool_->ReleaseResources();
         RocJpegStatus rocjpeg_status = DestroyDataBuffers();
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
             ERR("Error: Failed to destroy VAAPI buffer");
         }
         VAStatus va_status;
-        if (va_surface_ids_.size() > 0) {
-            va_status = vaDestroySurfaces(va_display_, va_surface_ids_.data(), va_surface_ids_.size());
-            if (va_status != VA_STATUS_SUCCESS) {
-                ERR("ERROR: vaDestroySurfaces failed!");
-            }
-        }
-        if (va_context_id_) {
-            va_status = vaDestroyContext(va_display_, va_context_id_);
-            if (va_status != VA_STATUS_SUCCESS) {
-                ERR("ERROR: vaDestroyContext failed!");
-            }
-        }
         if (va_config_id_) {
             va_status = vaDestroyConfig(va_display_, va_config_id_);
             if (va_status != VA_STATUS_SUCCESS) {
@@ -113,6 +274,9 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     }
     CHECK_ROCJPEG(InitVAAPI(drm_node));
     CHECK_ROCJPEG(CreateDecoderConfig());
+
+    vaapi_mem_pool_->SetVaapiDisplay(va_display_);
+    vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores * 2);
 
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -257,71 +421,44 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         }
     }
 
-    VASurfaceID va_surface_id;
-    CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &va_surface_id, 1, &surface_attrib, 1));
-    va_surface_ids_.push_back(va_surface_id);
-    surface_id = va_surface_id;
-
-    if (va_context_id_) {
-        vaDestroyContext(va_display_, va_context_id_);
-        va_context_id_ = 0;
+    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height);
+    VAContextID va_context_id;
+    if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_id == 0) {
+        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &surface_id, 1, &surface_attrib, 1));
+        CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, &surface_id, 1, &va_context_id));
+        mem_pool_entry.image_width = jpeg_stream_params->picture_parameter_buffer.picture_width;
+        mem_pool_entry.image_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
+        mem_pool_entry.va_surface_id = surface_id;
+        mem_pool_entry.va_context_id = va_context_id;
+        mem_pool_entry.hip_interop = {};
+        CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_format, mem_pool_entry));
+    } else {
+        surface_id = mem_pool_entry.va_surface_id;
+        va_context_id = mem_pool_entry.va_context_id;
     }
-    CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, &va_surface_id, 1, &va_context_id_));
 
     CHECK_ROCJPEG(DestroyDataBuffers());
 
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->picture_parameter_buffer, &va_picture_parameter_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->huffman_table_buffer, &va_huffmantable_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->slice_parameter_buffer, &va_slice_param_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceDataBufferType, jpeg_stream_params->slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_stream_params->slice_data_buffer, &va_slice_data_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->picture_parameter_buffer, &va_picture_parameter_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->huffman_table_buffer, &va_huffmantable_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->slice_parameter_buffer, &va_slice_param_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceDataBufferType, jpeg_stream_params->slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_stream_params->slice_data_buffer, &va_slice_data_buf_id_));
 
-    CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id_, va_surface_id));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_picture_parameter_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_quantization_matrix_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_huffmantable_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_param_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_data_buf_id_, 1));
-    CHECK_VAAPI(vaEndPicture(va_display_, va_context_id_));
-
-    return ROCJPEG_STATUS_SUCCESS;
-}
-
-RocJpegStatus RocJpegVappiDecoder::ExportSurface(VASurfaceID surface_id, VADRMPRIMESurfaceDescriptor &va_drm_prime_surface_desc) {
-
-    bool is_surface_id_found = false;
-    int idx = 0;
-    for (idx = 0; idx < va_surface_ids_.size(); idx++) {
-        if (va_surface_ids_[idx] == surface_id) {
-            is_surface_id_found = true;
-            break;
-        }
-    }
-    if (!is_surface_id_found) {
-        return ROCJPEG_STATUS_INVALID_PARAMETER;
-    }
-    CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id,
-                    VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-                    VA_EXPORT_SURFACE_READ_ONLY |
-                    VA_EXPORT_SURFACE_SEPARATE_LAYERS,
-                    &va_drm_prime_surface_desc));
+    CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id,  surface_id));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_picture_parameter_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_quantization_matrix_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_huffmantable_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
+    CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
 
     return ROCJPEG_STATUS_SUCCESS;
 }
 
 RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
     VASurfaceStatus surface_status;
-    bool is_surface_id_found = false;
-    int idx = 0;
-
-    for (idx = 0; idx < va_surface_ids_.size(); idx++) {
-        if (va_surface_ids_[idx] == surface_id) {
-            is_surface_id_found = true;
-            break;
-        }
-    }
-
-    if (!is_surface_id_found) {
+    if (!vaapi_mem_pool_->FindSurfaceId(surface_id)) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
 
@@ -343,25 +480,8 @@ RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
-RocJpegStatus RocJpegVappiDecoder::ReleaseSurface(VASurfaceID surface_id) {
-    bool is_surface_id_found = false;
-    int idx = 0;
-
-    for (idx = 0; idx < va_surface_ids_.size(); idx++) {
-        if (va_surface_ids_[idx] == surface_id) {
-            is_surface_id_found = true;
-            break;
-        }
-    }
-
-    if (!is_surface_id_found) {
-        return ROCJPEG_STATUS_INVALID_PARAMETER;
-    }
-
-    CHECK_VAAPI(vaDestroySurfaces(va_display_, &va_surface_ids_[idx], 1));
-    va_surface_ids_.erase(va_surface_ids_.begin() + idx);
-
-    return ROCJPEG_STATUS_SUCCESS;
+RocJpegStatus RocJpegVappiDecoder::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
+    return vaapi_mem_pool_->GetHipInteropMem(surface_id, hip_interop);
 }
 
 void RocJpegVappiDecoder::GetVisibleDevices(std::vector<int>& visible_devices_vetor) {

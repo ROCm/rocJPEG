@@ -588,12 +588,12 @@ int main(int argc, char **argv) {
 
     double average_decoding_time_in_milli_sec = total_time_in_milli_sec / total_decoded_images;
     double avg_images_per_sec = 1000 / average_decoding_time_in_milli_sec;
-    double mpixels_per_sec = total_image_size_in_mpixels * avg_images_per_sec / total_decoded_images;
+    double avg_image_size_in_mpixels_per_sec = total_image_size_in_mpixels * avg_images_per_sec / total_decoded_images;
     std::cout << "info: Total elapsed time (ms): " << total_time_in_milli_sec << std::endl;
     std::cout << "info: total decoded images: " << total_decoded_images << std::endl;
     std::cout << "info: average processing time per image (ms): " << average_decoding_time_in_milli_sec << std::endl;
     std::cout << "info: average decoded images per sec (Images/Sec): " << avg_images_per_sec << std::endl;
-    std::cout << "info: average decoded images size (Mpixels/Sec): " << mpixels_per_sec << std::endl;
+    std::cout << "info: average decoded images size (Mpixels/Sec): " << avg_image_size_in_mpixels_per_sec << std::endl;
 
     for (auto& handle : rocjpeg_handles) {
         CHECK_ROCJPEG(rocJpegDestroy(handle));

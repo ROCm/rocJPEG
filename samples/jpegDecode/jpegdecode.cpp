@@ -302,6 +302,7 @@ int main(int argc, char **argv) {
     uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
+    uint32_t prior_channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t num_channels = 0;
     int total_images = 0;
     double time_per_image_all = 0;
@@ -459,9 +460,16 @@ int main(int argc, char **argv) {
                 std::cout << "Unknown output format!" << std::endl;
                 return EXIT_FAILURE;
         }
-        // allocate memory for each channel
+
+        // allocate memory for each channel and reuse them if the sizes remain unchanged for a new image.
         for (int i = 0; i < num_channels; i++) {
-            CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
+            if (prior_channel_sizes[i] != channel_sizes[i]) {
+                if (output_image.channel[i] != nullptr) {
+                    CHECK_HIP(hipFree((void *)output_image.channel[i]));
+                    output_image.channel[i] = nullptr;
+                }
+                CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
+            }
         }
 
         std::cout << "info: decoding started, please wait! ... " << std::endl;
@@ -503,14 +511,6 @@ int main(int argc, char **argv) {
             SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
         }
 
-        for (int i = 0; i < num_channels; i++) {
-            if (output_image.channel[i] != nullptr) {
-                CHECK_HIP(hipFree((void*)output_image.channel[i]));
-                output_image.channel[i] = nullptr;
-                output_image.pitch[i] = 0;
-            }
-        }
-
         std::cout << "info: average processing time per image (ms): " << time_per_image_in_milli_sec << std::endl;
         std::cout << "info: average images per sec: " << 1000 / time_per_image_in_milli_sec << std::endl;
 
@@ -521,6 +521,16 @@ int main(int argc, char **argv) {
             mpixels_all += image_size_in_mpixels;
         }
         counter++;
+        for (int i = 0; i < ROCJPEG_MAX_COMPONENT; i++) {
+            prior_channel_sizes[i] = channel_sizes[i];
+        }
+    }
+
+    for (int i = 0; i < num_channels; i++) {
+        if (output_image.channel[i] != nullptr) {
+            CHECK_HIP(hipFree((void *)output_image.channel[i]));
+            output_image.channel[i] = nullptr;
+        }
     }
 
     if (is_dir) {
@@ -530,8 +540,8 @@ int main(int argc, char **argv) {
         std::cout << "info: total decoded images: " << total_images << std::endl;
         if (total_images) {
             std::cout << "info: average processing time per image (ms): " << time_per_image_all << std::endl;
-            std::cout << "info: average decoded images per sec: " << images_per_sec << std::endl;
-            std::cout << "info: average decoded image_size_in_mpixels per sec: " << mpixels_per_sec << std::endl;
+            std::cout << "info: average decoded images per sec (Images/Sec): " << images_per_sec << std::endl;
+            std::cout << "info: average decoded images size (Mpixels/Sec): " << mpixels_per_sec << std::endl;
         }
         std::cout << std::endl;
     }

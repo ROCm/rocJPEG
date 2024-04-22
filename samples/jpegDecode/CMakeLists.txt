@@ -56,7 +56,7 @@ if(HIP_FOUND AND ROCJPEG_FOUND)
     # HIP
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::device)
     # rocJPEG
-    include_directories (${ROCJPEG_INCLUDE_DIR})
+    include_directories (${ROCJPEG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${ROCJPEG_LIBRARY})
     list(APPEND SOURCES ${PROJECT_SOURCE_DIR} jpegdecode.cpp)
     add_executable(${PROJECT_NAME} ${SOURCES})

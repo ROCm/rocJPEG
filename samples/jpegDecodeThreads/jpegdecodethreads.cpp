@@ -57,7 +57,7 @@ void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Path to single image or directory of images - required" << std::endl
     << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
-    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb]; optional; default: native" << std::endl
+    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar]; optional; default: native" << std::endl
     << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
     << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl
     << "-t Number of threads - optional; default: 4" << std::endl;
@@ -114,6 +114,8 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
                 output_format = ROCJPEG_OUTPUT_Y;
             } else if (selected_output_format == "rgb") {
                 output_format = ROCJPEG_OUTPUT_RGB;
+            } else if (selected_output_format == "rgb_planar") {
+                output_format = ROCJPEG_OUTPUT_RGB_PLANAR;
             } else {
                 ShowHelpAndExit(argv[i]);
             }
@@ -202,6 +204,10 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
         case ROCJPEG_OUTPUT_RGB:
             widths[0] = img_width * 3;
             heights[0] = img_height;
+            break;
+        case ROCJPEG_OUTPUT_RGB_PLANAR:
+            widths[2] = widths[1] = widths[0] = img_width;
+            heights[2] = heights[1] = heights[0] = img_height;
             break;
         default:
             std::cout << "Unknown output format!" << std::endl;
@@ -306,7 +312,7 @@ bool InitHipDevice(int device_id) {
 }
 
 void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::mutex& mutex, RocJpegOutputFormat output_format, int dump_output_frames, std::string &output_file_path,
-                    uint64_t *num_decoded_images, double *mpixels, std::atomic_bool &decoding_complete) {
+                    uint64_t *num_decoded_images, double *image_size_in_mpixels, std::atomic_bool &decoding_complete) {
         std::vector<char> file_data;
         uint8_t num_components;
         uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
@@ -336,7 +342,7 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
             return;
         }
 
-        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, &num_components, &subsampling, widths, heights));
+        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, &num_components, &subsampling, widths, heights));
         if (subsampling == ROCJPEG_CSS_440 || subsampling == ROCJPEG_CSS_411) {
             std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             std::cout << "Skipping decoding file " << base_file_name << std::endl;
@@ -397,6 +403,11 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
                 output_image.pitch[0] = widths[0] * 3;
                 channel_sizes[0] = output_image.pitch[0] * heights[0];
                 break;
+            case ROCJPEG_OUTPUT_RGB_PLANAR:
+                num_channels = 3;
+                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
                 break;
@@ -406,13 +417,12 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
             if (output_image.channel[i] != nullptr) {
                 CHECK_HIP(hipFree((void*)output_image.channel[i]));
                 output_image.channel[i] = nullptr;
-                output_image.pitch[i] = 0;
             }
             CHECK_HIP(hipMalloc(&output_image.channel[i], channel_sizes[i]));
         }
 
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, output_format, &output_image));
-        *mpixels += (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, output_format, &output_image));
+        *image_size_in_mpixels += (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         *num_decoded_images += 1;
 
         if (dump_output_frames) {
@@ -431,6 +441,9 @@ void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, std::m
                     break;
                 case ROCJPEG_OUTPUT_RGB:
                     file_extension = "rgb";
+                    break;
+                case ROCJPEG_OUTPUT_RGB_PLANAR:
+                    file_extension = "rgb_planar";
                     break;
                 default:
                     file_extension = "";
@@ -512,8 +525,7 @@ int main(int argc, char **argv) {
     std::vector<RocJpegHandle> rocjpeg_handles;
     std::mutex mutex;
     std::vector<uint64_t> num_decoded_images_per_thread;
-    std::vector<double> total_decode_time_per_thread;
-    std::vector<double> mpixels_per_thread;
+    std::vector<double> image_size_in_mpixels_per_thread;
     struct DecodingStatus {
         std::atomic<bool> decoding_complete;
         DecodingStatus () : decoding_complete(false) {};
@@ -543,8 +555,7 @@ int main(int argc, char **argv) {
         rocjpeg_handles.push_back(std::move(rocjpeg_handle));
     }
     num_decoded_images_per_thread.resize(num_threads, 0);
-    total_decode_time_per_thread.resize(num_threads, 0);
-    mpixels_per_thread.resize(num_threads, 0);
+    image_size_in_mpixels_per_thread.resize(num_threads, 0);
     for (auto i = 0; i < num_threads; i++) {
         decoding_status_per_thread.emplace_back(std::make_unique<DecodingStatus>());
     }
@@ -560,29 +571,29 @@ int main(int argc, char **argv) {
             }
         }
         thread_pool.ExecuteJob(std::bind(ThreadFunction, file_paths[i], rocjpeg_handles[thread_idx], std::ref(mutex), output_format, dump_output_frames, std::ref(output_file_path),
-            &num_decoded_images_per_thread[thread_idx], &mpixels_per_thread[thread_idx], std::ref(decoding_status_per_thread[thread_idx]->decoding_complete)));
+            &num_decoded_images_per_thread[thread_idx], &image_size_in_mpixels_per_thread[thread_idx], std::ref(decoding_status_per_thread[thread_idx]->decoding_complete)));
     }
 
     // Wait for all threads to finish
     thread_pool.JoinThreads();
     auto end_time = std::chrono::high_resolution_clock::now();
-    auto total_time_duration = std::chrono::duration<double, std::milli>(end_time - start_time).count();
+    auto total_time_in_milli_sec = std::chrono::duration<double, std::milli>(end_time - start_time).count();
 
     uint64_t total_decoded_images = 0;
-    double total_mpixels = 0;
+    double total_image_size_in_mpixels = 0;
     for (auto i = 0 ; i < num_threads; i++) {
         total_decoded_images += num_decoded_images_per_thread[i];
-        total_mpixels += mpixels_per_thread[i];
+        total_image_size_in_mpixels += image_size_in_mpixels_per_thread[i];
     }
 
-    double average_decoding_time = total_time_duration / total_decoded_images;
-    double avg_image_per_sec = 1000 / average_decoding_time;
-    double mpixels_per_sec = total_mpixels * avg_image_per_sec / total_decoded_images;
-    std::cout << "info: Total elapsed time (ms): " << total_time_duration << std::endl;
+    double average_decoding_time_in_milli_sec = total_time_in_milli_sec / total_decoded_images;
+    double avg_images_per_sec = 1000 / average_decoding_time_in_milli_sec;
+    double mpixels_per_sec = total_image_size_in_mpixels * avg_images_per_sec / total_decoded_images;
+    std::cout << "info: Total elapsed time (ms): " << total_time_in_milli_sec << std::endl;
     std::cout << "info: total decoded images: " << total_decoded_images << std::endl;
-    std::cout << "info: average processing time per image (ms): " << average_decoding_time << std::endl;
-    std::cout << "info: average decoded images per sec: " << avg_image_per_sec << std::endl;
-    std::cout << "info: average decoded mpixels per sec: " << mpixels_per_sec << std::endl;
+    std::cout << "info: average processing time per image (ms): " << average_decoding_time_in_milli_sec << std::endl;
+    std::cout << "info: average decoded images per sec (Images/Sec): " << avg_images_per_sec << std::endl;
+    std::cout << "info: average decoded images size (Mpixels/Sec): " << mpixels_per_sec << std::endl;
 
     for (auto& handle : rocjpeg_handles) {
         CHECK_ROCJPEG(rocJpegDestroy(handle));

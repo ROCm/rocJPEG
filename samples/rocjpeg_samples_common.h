@@ -59,7 +59,8 @@ THE SOFTWARE.
 void ShowHelpAndExit(const char *option = NULL) {
     std::cout << "Options:" << std::endl
     << "-i Path to single image or directory of images - required" << std::endl
-    << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
+    << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, " <<
+        "using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
     << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar]; optional; default: native" << std::endl
     << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
     << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl
@@ -67,7 +68,8 @@ void ShowHelpAndExit(const char *option = NULL) {
     exit(0);
 }
 
-void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id, RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
+void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
+    RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit();
     }
@@ -132,13 +134,12 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
                 *num_threads = atoi(argv[i]);
             continue;
         }
-
         ShowHelpAndExit(argv[i]);
     }
 }
 
-void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height, RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
-
+void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height,
+    RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
     uint8_t *hst_ptr = nullptr;
     FILE *fp;
     hipError_t hip_status = hipSuccess;
@@ -344,7 +345,10 @@ void GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &
     }
 }
 
-void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &file_extension) {
+void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
+    std::string file_extension;
+    std::string::size_type const p(base_file_name.find_last_of('.'));
+    std::string file_name_no_ext = base_file_name.substr(0, p);
     switch (output_format) {
         case ROCJPEG_OUTPUT_NATIVE:
             file_extension = "native";
@@ -365,9 +369,12 @@ void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &file_ex
             file_extension = "";
             break;
     }
+    file_name_for_saving += "//" + file_name_no_ext + "_" + std::to_string(image_width) + "x"
+        + std::to_string(image_height) + "." + file_extension;
 }
 
-int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights, uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
+int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
+    uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
     switch (output_format) {
         case ROCJPEG_OUTPUT_NATIVE:
             switch (subsampling) {

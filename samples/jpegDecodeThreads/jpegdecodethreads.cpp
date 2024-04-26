@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "../rocjpeg_samples_common.h"
+#include "../rocjpeg_samples_utils.h"
 
 void ThreadFunction(std::string &file_path, RocJpegHandle rocjpeg_handle, RocJpegImage &output_image, std::mutex& mutex, RocJpegOutputFormat output_format, int save_images, std::string &output_file_path,
     uint64_t *num_decoded_images, double *image_size_in_mpixels, std::atomic_bool &decoding_complete) {

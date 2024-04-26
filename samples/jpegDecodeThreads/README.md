@@ -1,6 +1,6 @@
 # JPEG decode threads sample
 
-The jpeg decode threads sample illustrates decoding JPEG images using rocJPEG library with multiple threads to get the individual decoded images in one of the supported output format (i.e., unchanged, yuv, y, rgbi). This sample can be configured with a device ID and optionally able to dump the output to a file.
+The jpeg decode threads sample illustrates decoding JPEG images using rocJPEG library with multiple threads to get the individual decoded images in one of the supported output format (i.e., native, yuv, y, rgb, rgb_planar). This sample can be configured with a device ID and optionally able to dump the output to a file.
 
 ## Prerequisites:
 
@@ -17,10 +17,11 @@ make -j
 ## Run
 
 ```shell
-    ./jpegdecode -i <Path to single image or directory of images - [required]>
-                 -be <Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, using CPU and GPU HIP kernles for JPEG decoding) [optional]>
-                 -fmt <Select rocJPEG output format for decoding, one of the [native, yuv, y, rgbi] [optional - default: native]>
-                 -o <Output file path or directory - Write decoded images based on the selected outfut format to this file or directory [optional]>
-                 -d <GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.) [optional - default: 0]>
-                 -t <Number of threads [optional - default: 4]>
+    ./jpegdecode -i     <[input path] - input path to a single JPEG image or a directory containing JPEG images - [required]>
+                 -be    <[backend] - select rocJPEG backend (0 for hardware-accelerated JPEG decoding using VCN,
+                                               1 for hybrid JPEG decoding using CPU and GPU HIP kernels (currently not supported)) [optional - default: 0]>
+                 -fmt   <[output format] - select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar] [optional - default: native]>
+                 -o     <[output path] - path to an output file or a path to a directory - write decoded images to a file or directory based on selected output format [optional]>
+                 -d     <[device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]>
+                 -t     <[threads] - number of threads for parallel JPEG decoding [optional - default: 2]>
 ```

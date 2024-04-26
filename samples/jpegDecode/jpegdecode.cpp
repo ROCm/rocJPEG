@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#include "../rocjpeg_samples_common.h"
+#include "../rocjpeg_samples_utils.h"
 
 int main(int argc, char **argv) {
     int device_id = 0;

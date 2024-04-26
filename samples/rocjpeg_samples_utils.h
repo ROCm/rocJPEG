@@ -56,37 +56,39 @@ THE SOFTWARE.
     }                                                                 \
 }
 
-void ShowHelpAndExit(const char *option = NULL) {
-    std::cout << "Options:" << std::endl
-    << "-i Path to single image or directory of images - required" << std::endl
-    << "-be Select rocJPEG backend (0 for ROCJPEG_BACKEND_HARDWARE, using VCN hardware-accelarated JPEG decoder, 1 ROCJPEG_BACKEND_HYBRID, " <<
-        "using CPU and GPU HIP kernles for JPEG decoding); optional; default: 0" << std::endl
-    << "-fmt Select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar]; optional; default: native" << std::endl
-    << "-o Output file path or directory - Write decoded images based on the selected outfut format to this file or directory; optional;" << std::endl
-    << "-d GPU device id (0 for the first GPU device, 1 for the second GPU device, etc.); optional; default: 0" << std::endl
-    << "-t Number of threads - optional; default: 2" << std::endl;
+void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false) {
+    std::cout  << "Options:\n"
+    "-i     [input path] - input path to a single JPEG image or a directory containing JPEG images - [required]\n"
+    "-be    [backend] - select rocJPEG backend (0 for hardware-accelerated JPEG decoding using VCN,\n"
+    "                                           1 for hybrid JPEG decoding using CPU and GPU HIP kernels (currently not supported)) [optional - default: 0]\n"
+    "-fmt   [output format] - select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar] - [optional - default: native]\n"
+    "-o     [output path] - path to an output file or a path to a directory - write decoded images to a file or directory based on selected output format - [optional]\n"
+    "-d     [device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]\n";
+    if (show_threads) {
+        std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";
+    }
     exit(0);
 }
 
 void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
     RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
     if(argc <= 1) {
-        ShowHelpAndExit();
+        ShowHelpAndExit("", num_threads != nullptr);
     }
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-h")) {
-            ShowHelpAndExit();
+            ShowHelpAndExit("", num_threads != nullptr);
         }
         if (!strcmp(argv[i], "-i")) {
             if (++i == argc) {
-                ShowHelpAndExit("-i");
+                ShowHelpAndExit("-i", num_threads != nullptr);
             }
             input_path = argv[i];
             continue;
         }
         if (!strcmp(argv[i], "-o")) {
             if (++i == argc) {
-                ShowHelpAndExit("-o");
+                ShowHelpAndExit("-o", num_threads != nullptr);
             }
             output_file_path = argv[i];
             dump_output_frames = 1;
@@ -94,21 +96,21 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
         }
         if (!strcmp(argv[i], "-d")) {
             if (++i == argc) {
-                ShowHelpAndExit("-d");
+                ShowHelpAndExit("-d", num_threads != nullptr);
             }
             device_id = atoi(argv[i]);
             continue;
         }
         if (!strcmp(argv[i], "-be")) {
             if (++i == argc) {
-                ShowHelpAndExit("-be");
+                ShowHelpAndExit("-be", num_threads != nullptr);
             }
             rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
             continue;
         }
         if (!strcmp(argv[i], "-fmt")) {
             if (++i == argc) {
-                ShowHelpAndExit("-fmt");
+                ShowHelpAndExit("-fmt", num_threads != nullptr);
             }
             std::string selected_output_format = argv[i];
             if (selected_output_format == "native") {
@@ -122,19 +124,19 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
             } else if (selected_output_format == "rgb_planar") {
                 output_format = ROCJPEG_OUTPUT_RGB_PLANAR;
             } else {
-                ShowHelpAndExit(argv[i]);
+                ShowHelpAndExit(argv[i], num_threads != nullptr);
             }
             continue;
         }
         if (!strcmp(argv[i], "-t")) {
             if (++i == argc) {
-                ShowHelpAndExit("-t");
+                ShowHelpAndExit("-t", num_threads != nullptr);
             }
             if (num_threads != nullptr)
                 *num_threads = atoi(argv[i]);
             continue;
         }
-        ShowHelpAndExit(argv[i]);
+        ShowHelpAndExit(argv[i], num_threads != nullptr);
     }
 }
 

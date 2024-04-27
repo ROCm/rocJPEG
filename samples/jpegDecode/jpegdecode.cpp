@@ -45,13 +45,14 @@ int main(int argc, char **argv) {
     RocJpegHandle rocjpeg_handle = nullptr;
     RocJpegImage output_image = {};
     RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_NATIVE;
+    RocJpegUtils rocjpeg_utils;
 
-    ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, output_format, nullptr, argc, argv);
-    if (!GetFilePaths(input_path, file_paths, is_dir, is_file)) {
+    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, output_format, nullptr, argc, argv);
+    if (!RocJpegUtils::GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "ERROR: Failed to get input file paths!" << std::endl;
         return EXIT_FAILURE;
     }
-    if (!InitHipDevice(device_id)) {
+    if (!RocJpegUtils::InitHipDevice(device_id)) {
         std::cerr << "ERROR: Failed to initialize HIP!" << std::endl;
         return EXIT_FAILURE;
     }
@@ -83,7 +84,7 @@ int main(int argc, char **argv) {
 
         CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, &num_components, &subsampling, widths, heights));
 
-        GetChromaSubsamplingStr(subsampling, chroma_sub_sampling);
+        rocjpeg_utils.GetChromaSubsamplingStr(subsampling, chroma_sub_sampling);
         std::cout << "Input file name: " << base_file_name << std::endl;
         std::cout << "Input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
         std::cout << "Chroma subsampling: " + chroma_sub_sampling  << std::endl;
@@ -96,7 +97,7 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
         }
 
-        if (GetChannelPitchAndSizes(output_format, subsampling, widths, heights, num_channels, output_image, channel_sizes)) {
+        if (rocjpeg_utils.GetChannelPitchAndSizes(output_format, subsampling, widths, heights, num_channels, output_image, channel_sizes)) {
             std::cerr << "ERROR: Failed to get the channel pitch and sizes" << std::endl;
             return EXIT_FAILURE;
         }
@@ -123,9 +124,9 @@ int main(int argc, char **argv) {
         if (save_images) {
             std::string image_save_path = output_file_path;
             if (is_dir) {
-                GetFileExtForSaving(output_format, base_file_name, widths[0], heights[0], image_save_path);
+                rocjpeg_utils.GetFileExtForSaving(output_format, base_file_name, widths[0], heights[0], image_save_path);
             }
-            SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
+            rocjpeg_utils.SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
         }
 
         std::cout << "Average processing time per image (ms): " << time_per_image_in_milli_sec << std::endl;

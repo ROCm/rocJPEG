@@ -135,7 +135,8 @@ if(HIP_FOUND AND Libva_FOUND)
   # install rocJPEG samples -- {ROCM_PATH}/share/rocJPEG
   install(DIRECTORY cmake DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME} COMPONENT dev)
 
-  install(DIRECTORY samples/jpegDecode DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/samples COMPONENT dev)
+  install(FILES samples/jpegDecode/CMakeLists.txt samples/jpegDecode/jpegdecode.cpp samples/jpegDecode/README.md DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/samples/jpegDecode COMPONENT dev)
+  install(FILES samples/jpegDecodeThreads/CMakeLists.txt samples/jpegDecodeThreads/jpegdecodethreads.cpp samples/jpegDecodeThreads/README.md DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/samples/jpegDecodeThreads COMPONENT dev)
   install(FILES samples/rocjpeg_samples_utils.h DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/samples COMPONENT dev)
   install(DIRECTORY data/images DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/ COMPONENT dev)
   # install license information - {ROCM_PATH}/share/doc/rocJPEG

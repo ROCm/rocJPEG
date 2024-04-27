@@ -56,7 +56,24 @@ THE SOFTWARE.
     }                                                                 \
 }
 
-void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false) {
+class RocJpegUtils {
+public:
+    RocJpegUtils() {};
+    static void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
+                                 RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]);
+    static bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file);
+    static bool InitHipDevice(int device_id);
+    void GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &chroma_sub_sampling);
+    int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
+                                uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes);
+    void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving);
+    void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height,
+                   RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format);
+private:
+    static void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false);
+};
+
+void RocJpegUtils::ShowHelpAndExit(const char *option, bool show_threads) {
     std::cout  << "Options:\n"
     "-i     [input path] - input path to a single JPEG image or a directory containing JPEG images - [required]\n"
     "-be    [backend] - select rocJPEG backend (0 for hardware-accelerated JPEG decoding using VCN,\n"
@@ -70,7 +87,7 @@ void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false) {
     exit(0);
 }
 
-void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
+void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
     RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit("", num_threads != nullptr);
@@ -140,7 +157,169 @@ void ParseCommandLine(std::string &input_path, std::string &output_file_path, in
     }
 }
 
-void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height,
+bool RocJpegUtils::GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file) {
+    is_dir = std::filesystem::is_directory(input_path);
+    is_file = std::filesystem::is_regular_file(input_path);
+    if (is_dir) {
+        for (const auto &entry : std::filesystem::directory_iterator(input_path))
+            file_paths.push_back(entry.path());
+    } else if (is_file) {
+        file_paths.push_back(input_path);
+    } else {
+        std::cerr << "ERROR: the input path is not valid!" << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool RocJpegUtils::InitHipDevice(int device_id) {
+    int num_devices;
+    hipDeviceProp_t hip_dev_prop;
+    CHECK_HIP(hipGetDeviceCount(&num_devices));
+    if (num_devices < 1) {
+        std::cerr << "ERROR: didn't find any GPU!" << std::endl;
+        return false;
+    }
+    if (device_id >= num_devices) {
+        std::cerr << "ERROR: the requested device_id is not found!" << std::endl;
+        return false;
+    }
+    CHECK_HIP(hipSetDevice(device_id));
+    CHECK_HIP(hipGetDeviceProperties(&hip_dev_prop, device_id));
+
+    std::cout << "Using GPU device " << device_id << ": " << hip_dev_prop.name << "[" << hip_dev_prop.gcnArchName << "] on PCI bus " <<
+    std::setfill('0') << std::setw(2) << std::right << std::hex << hip_dev_prop.pciBusID << ":" << std::setfill('0') << std::setw(2) <<
+    std::right << std::hex << hip_dev_prop.pciDomainID << "." << hip_dev_prop.pciDeviceID << std::dec << std::endl;
+
+    return true;
+}
+
+void RocJpegUtils::GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &chroma_sub_sampling) {
+    switch (subsampling) {
+        case ROCJPEG_CSS_444:
+            chroma_sub_sampling = "YUV 4:4:4";
+            break;
+        case ROCJPEG_CSS_440:
+            chroma_sub_sampling = "YUV 4:4:0";
+            break;
+        case ROCJPEG_CSS_422:
+            chroma_sub_sampling = "YUV 4:2:2";
+            break;
+        case ROCJPEG_CSS_420:
+            chroma_sub_sampling = "YUV 4:2:0";
+            break;
+        case ROCJPEG_CSS_411:
+            chroma_sub_sampling = "YUV 4:1:1";
+            break;
+        case ROCJPEG_CSS_400:
+            chroma_sub_sampling = "YUV 4:0:0";
+            break;
+        case ROCJPEG_CSS_UNKNOWN:
+            chroma_sub_sampling = "UNKNOWN";
+            break;
+        default:
+            chroma_sub_sampling = "";
+            break;
+    }
+}
+
+int RocJpegUtils::GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
+    uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
+    switch (output_format) {
+        case ROCJPEG_OUTPUT_NATIVE:
+            switch (subsampling) {
+                case ROCJPEG_CSS_444:
+                    num_channels = 3;
+                    output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                    channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                case ROCJPEG_CSS_422:
+                    num_channels = 1;
+                    output_image.pitch[0] = widths[0] * 2;
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                case ROCJPEG_CSS_420:
+                    num_channels = 2;
+                    output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    channel_sizes[1] = output_image.pitch[1] * (heights[0] >> 1);
+                    break;
+                case ROCJPEG_CSS_400:
+                    num_channels = 1;
+                    output_image.pitch[0] = widths[0];
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                default:
+                    std::cout << "Unknown chroma subsampling!" << std::endl;
+                    return EXIT_FAILURE;
+            }
+            break;
+        case ROCJPEG_OUTPUT_YUV_PLANAR:
+            if (subsampling == ROCJPEG_CSS_400) {
+                num_channels = 1;
+                output_image.pitch[0] = widths[0];
+                channel_sizes[0] = output_image.pitch[0] * heights[0];
+            } else {
+                num_channels = 3;
+                output_image.pitch[0] = widths[0];
+                output_image.pitch[1] = widths[1];
+                output_image.pitch[2] = widths[2];
+                channel_sizes[0] = output_image.pitch[0] * heights[0];
+                channel_sizes[1] = output_image.pitch[1] * heights[1];
+                channel_sizes[2] = output_image.pitch[2] * heights[2];
+            }
+            break;
+        case ROCJPEG_OUTPUT_Y:
+            num_channels = 1;
+            output_image.pitch[0] = widths[0];
+            channel_sizes[0] = output_image.pitch[0] * heights[0];
+            break;
+        case ROCJPEG_OUTPUT_RGB:
+            num_channels = 1;
+            output_image.pitch[0] = widths[0] * 3;
+            channel_sizes[0] = output_image.pitch[0] * heights[0];
+            break;
+        case ROCJPEG_OUTPUT_RGB_PLANAR:
+            num_channels = 3;
+            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+            channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+            break;
+        default:
+            std::cout << "Unknown output format!" << std::endl;
+            return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+void RocJpegUtils::GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
+    std::string file_extension;
+    std::string::size_type const p(base_file_name.find_last_of('.'));
+    std::string file_name_no_ext = base_file_name.substr(0, p);
+    switch (output_format) {
+        case ROCJPEG_OUTPUT_NATIVE:
+            file_extension = "native";
+            break;
+        case ROCJPEG_OUTPUT_YUV_PLANAR:
+            file_extension = "yuv";
+            break;
+        case ROCJPEG_OUTPUT_Y:
+            file_extension = "y";
+            break;
+        case ROCJPEG_OUTPUT_RGB:
+            file_extension = "rgb";
+            break;
+        case ROCJPEG_OUTPUT_RGB_PLANAR:
+            file_extension = "rgb_planar";
+            break;
+        default:
+            file_extension = "";
+            break;
+    }
+    file_name_for_saving += "//" + file_name_no_ext + "_" + std::to_string(image_width) + "x"
+        + std::to_string(image_height) + "." + file_extension;
+}
+
+void RocJpegUtils::SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height,
     RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format) {
     uint8_t *hst_ptr = nullptr;
     FILE *fp;
@@ -281,218 +460,56 @@ void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_
     }
 }
 
-bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file) {
-    is_dir = std::filesystem::is_directory(input_path);
-    is_file = std::filesystem::is_regular_file(input_path);
-    if (is_dir) {
-        for (const auto &entry : std::filesystem::directory_iterator(input_path))
-            file_paths.push_back(entry.path());
-    } else if (is_file) {
-        file_paths.push_back(input_path);
-    } else {
-        std::cerr << "ERROR: the input path is not valid!" << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool InitHipDevice(int device_id) {
-    int num_devices;
-    hipDeviceProp_t hip_dev_prop;
-    CHECK_HIP(hipGetDeviceCount(&num_devices));
-    if (num_devices < 1) {
-        std::cerr << "ERROR: didn't find any GPU!" << std::endl;
-        return false;
-    }
-    if (device_id >= num_devices) {
-        std::cerr << "ERROR: the requested device_id is not found!" << std::endl;
-        return false;
-    }
-    CHECK_HIP(hipSetDevice(device_id));
-    CHECK_HIP(hipGetDeviceProperties(&hip_dev_prop, device_id));
-
-    std::cout << "info: Using GPU device " << device_id << ": " << hip_dev_prop.name << "[" << hip_dev_prop.gcnArchName << "] on PCI bus " <<
-    std::setfill('0') << std::setw(2) << std::right << std::hex << hip_dev_prop.pciBusID << ":" << std::setfill('0') << std::setw(2) <<
-    std::right << std::hex << hip_dev_prop.pciDomainID << "." << hip_dev_prop.pciDeviceID << std::dec << std::endl;
-
-    return true;
-}
-
-void GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &chroma_sub_sampling) {
-    switch (subsampling) {
-        case ROCJPEG_CSS_444:
-            chroma_sub_sampling = "YUV 4:4:4";
-            break;
-        case ROCJPEG_CSS_440:
-            chroma_sub_sampling = "YUV 4:4:0";
-            break;
-        case ROCJPEG_CSS_422:
-            chroma_sub_sampling = "YUV 4:2:2";
-            break;
-        case ROCJPEG_CSS_420:
-            chroma_sub_sampling = "YUV 4:2:0";
-            break;
-        case ROCJPEG_CSS_411:
-            chroma_sub_sampling = "YUV 4:1:1";
-            break;
-        case ROCJPEG_CSS_400:
-            chroma_sub_sampling = "YUV 4:0:0";
-            break;
-        case ROCJPEG_CSS_UNKNOWN:
-            chroma_sub_sampling = "UNKNOWN";
-            break;
-        default:
-            chroma_sub_sampling = "";
-            break;
-    }
-}
-
-void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
-    std::string file_extension;
-    std::string::size_type const p(base_file_name.find_last_of('.'));
-    std::string file_name_no_ext = base_file_name.substr(0, p);
-    switch (output_format) {
-        case ROCJPEG_OUTPUT_NATIVE:
-            file_extension = "native";
-            break;
-        case ROCJPEG_OUTPUT_YUV_PLANAR:
-            file_extension = "yuv";
-            break;
-        case ROCJPEG_OUTPUT_Y:
-            file_extension = "y";
-            break;
-        case ROCJPEG_OUTPUT_RGB:
-            file_extension = "rgb";
-            break;
-        case ROCJPEG_OUTPUT_RGB_PLANAR:
-            file_extension = "rgb_planar";
-            break;
-        default:
-            file_extension = "";
-            break;
-    }
-    file_name_for_saving += "//" + file_name_no_ext + "_" + std::to_string(image_width) + "x"
-        + std::to_string(image_height) + "." + file_extension;
-}
-
-int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
-    uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
-    switch (output_format) {
-        case ROCJPEG_OUTPUT_NATIVE:
-            switch (subsampling) {
-                case ROCJPEG_CSS_444:
-                    num_channels = 3;
-                    output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                    channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
-                    break;
-                case ROCJPEG_CSS_422:
-                    num_channels = 1;
-                    output_image.pitch[0] = widths[0] * 2;
-                    channel_sizes[0] = output_image.pitch[0] * heights[0];
-                    break;
-                case ROCJPEG_CSS_420:
-                    num_channels = 2;
-                    output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                    channel_sizes[0] = output_image.pitch[0] * heights[0];
-                    channel_sizes[1] = output_image.pitch[1] * (heights[0] >> 1);
-                    break;
-                case ROCJPEG_CSS_400:
-                    num_channels = 1;
-                    output_image.pitch[0] = widths[0];
-                    channel_sizes[0] = output_image.pitch[0] * heights[0];
-                    break;
-                default:
-                    std::cout << "Unknown chroma subsampling!" << std::endl;
-                    return EXIT_FAILURE;
-            }
-            break;
-        case ROCJPEG_OUTPUT_YUV_PLANAR:
-            if (subsampling == ROCJPEG_CSS_400) {
-                num_channels = 1;
-                output_image.pitch[0] = widths[0];
-                channel_sizes[0] = output_image.pitch[0] * heights[0];
-            } else {
-                num_channels = 3;
-                output_image.pitch[0] = widths[0];
-                output_image.pitch[1] = widths[1];
-                output_image.pitch[2] = widths[2];
-                channel_sizes[0] = output_image.pitch[0] * heights[0];
-                channel_sizes[1] = output_image.pitch[1] * heights[1];
-                channel_sizes[2] = output_image.pitch[2] * heights[2];
-            }
-            break;
-        case ROCJPEG_OUTPUT_Y:
-            num_channels = 1;
-            output_image.pitch[0] = widths[0];
-            channel_sizes[0] = output_image.pitch[0] * heights[0];
-            break;
-        case ROCJPEG_OUTPUT_RGB:
-            num_channels = 1;
-            output_image.pitch[0] = widths[0] * 3;
-            channel_sizes[0] = output_image.pitch[0] * heights[0];
-            break;
-        case ROCJPEG_OUTPUT_RGB_PLANAR:
-            num_channels = 3;
-            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
-            channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
-            break;
-        default:
-            std::cout << "Unknown output format!" << std::endl;
-            return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
 class ThreadPool {
-    public:
-        ThreadPool(int nthreads) : shutdown_(false) {
-            // Create the specified number of threads
-            threads_.reserve(nthreads);
-            for (int i = 0; i < nthreads; ++i)
-                threads_.emplace_back(std::bind(&ThreadPool::ThreadEntry, this, i));
-        }
-        ~ThreadPool() {}
-        void JoinThreads() {
-            {
-                // Unblock any threads and tell them to stop
-                std::unique_lock<std::mutex> lock(mutex_);
-                shutdown_ = true;
-                cond_var_.notify_all();
-            }
-            // Wait for all threads to stop
-            for (auto& thread : threads_)
-                thread.join();
-        }
-        void ExecuteJob(std::function<void()> func) {
-            // Place a job on the queue and unblock a thread
+public:
+    ThreadPool(int nthreads) : shutdown_(false) {
+        // Create the specified number of threads
+        threads_.reserve(nthreads);
+        for (int i = 0; i < nthreads; ++i)
+            threads_.emplace_back(std::bind(&ThreadPool::ThreadEntry, this, i));
+    }
+    ~ThreadPool() {}
+    void JoinThreads() {
+        {
+            // Unblock any threads and tell them to stop
             std::unique_lock<std::mutex> lock(mutex_);
-            decode_jobs_queue_.emplace(std::move(func));
-            cond_var_.notify_one();
+            shutdown_ = true;
+            cond_var_.notify_all();
         }
-    protected:
-        void ThreadEntry(int i) {
-            std::function<void()> execute_decode_job;
-            while (true) {
-                {
-                    std::unique_lock<std::mutex> lock(mutex_);
-                    cond_var_.wait(lock, [&] {return shutdown_ || !decode_jobs_queue_.empty();});
-                    if (decode_jobs_queue_.empty()) {
-                        // No jobs to do; shutting down
-                        return;
-                    }
-
-                    execute_decode_job = std::move(decode_jobs_queue_.front());
-                    decode_jobs_queue_.pop();
+        // Wait for all threads to stop
+        for (auto& thread : threads_)
+            thread.join();
+    }
+    void ExecuteJob(std::function<void()> func) {
+        // Place a job on the queue and unblock a thread
+        std::unique_lock<std::mutex> lock(mutex_);
+        decode_jobs_queue_.emplace(std::move(func));
+        cond_var_.notify_one();
+    }
+protected:
+    void ThreadEntry(int i) {
+        std::function<void()> execute_decode_job;
+        while (true) {
+            {
+                std::unique_lock<std::mutex> lock(mutex_);
+                cond_var_.wait(lock, [&] {return shutdown_ || !decode_jobs_queue_.empty();});
+                if (decode_jobs_queue_.empty()) {
+                    // No jobs to do; shutting down
+                    return;
                 }
-                // Execute the decode job without holding any locks
-                execute_decode_job();
+
+                execute_decode_job = std::move(decode_jobs_queue_.front());
+                decode_jobs_queue_.pop();
             }
+            // Execute the decode job without holding any locks
+            execute_decode_job();
         }
-        std::mutex mutex_;
-        std::condition_variable cond_var_;
-        bool shutdown_;
-        std::queue<std::function<void()>> decode_jobs_queue_;
-        std::vector<std::thread> threads_;
+    }
+    std::mutex mutex_;
+    std::condition_variable cond_var_;
+    bool shutdown_;
+    std::queue<std::function<void()>> decode_jobs_queue_;
+    std::vector<std::thread> threads_;
 };
 
 #endif //ROC_JPEG_SAMPLES_COMMON

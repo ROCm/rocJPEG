@@ -81,3 +81,15 @@ add_test(
             --test-command "jpegdecode"
             -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgb_planar
 )
+
+add_test(
+  NAME
+  jpeg-decode-threads-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecodeThreads"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeThreads"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecodethreads"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -t 2
+)

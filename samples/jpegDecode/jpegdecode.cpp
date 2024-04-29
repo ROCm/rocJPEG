@@ -24,7 +24,7 @@ THE SOFTWARE.
 
 int main(int argc, char **argv) {
     int device_id = 0;
-    int save_images = 0;
+    bool save_images = false;
     uint8_t num_components;
     uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};

@@ -59,7 +59,7 @@ THE SOFTWARE.
 class RocJpegUtils {
 public:
     RocJpegUtils() {};
-    static void ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
+    static void ParseCommandLine(std::string &input_path, std::string &output_file_path, bool &save_images, int &device_id,
                                  RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]);
     static bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file);
     static bool InitHipDevice(int device_id);
@@ -87,7 +87,7 @@ void RocJpegUtils::ShowHelpAndExit(const char *option, bool show_threads) {
     exit(0);
 }
 
-void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output_file_path, int &dump_output_frames, int &device_id,
+void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output_file_path, bool &save_images, int &device_id,
     RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit("", num_threads != nullptr);
@@ -108,7 +108,7 @@ void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output
                 ShowHelpAndExit("-o", num_threads != nullptr);
             }
             output_file_path = argv[i];
-            dump_output_frames = 1;
+            save_images = true;
             continue;
         }
         if (!strcmp(argv[i], "-d")) {
@@ -459,57 +459,4 @@ void RocJpegUtils::SaveImage(std::string output_file_name, RocJpegImage *output_
         tmp_hst_ptr = nullptr;
     }
 }
-
-class ThreadPool {
-public:
-    ThreadPool(int nthreads) : shutdown_(false) {
-        // Create the specified number of threads
-        threads_.reserve(nthreads);
-        for (int i = 0; i < nthreads; ++i)
-            threads_.emplace_back(std::bind(&ThreadPool::ThreadEntry, this, i));
-    }
-    ~ThreadPool() {}
-    void JoinThreads() {
-        {
-            // Unblock any threads and tell them to stop
-            std::unique_lock<std::mutex> lock(mutex_);
-            shutdown_ = true;
-            cond_var_.notify_all();
-        }
-        // Wait for all threads to stop
-        for (auto& thread : threads_)
-            thread.join();
-    }
-    void ExecuteJob(std::function<void()> func) {
-        // Place a job on the queue and unblock a thread
-        std::unique_lock<std::mutex> lock(mutex_);
-        decode_jobs_queue_.emplace(std::move(func));
-        cond_var_.notify_one();
-    }
-protected:
-    void ThreadEntry(int i) {
-        std::function<void()> execute_decode_job;
-        while (true) {
-            {
-                std::unique_lock<std::mutex> lock(mutex_);
-                cond_var_.wait(lock, [&] {return shutdown_ || !decode_jobs_queue_.empty();});
-                if (decode_jobs_queue_.empty()) {
-                    // No jobs to do; shutting down
-                    return;
-                }
-
-                execute_decode_job = std::move(decode_jobs_queue_.front());
-                decode_jobs_queue_.pop();
-            }
-            // Execute the decode job without holding any locks
-            execute_decode_job();
-        }
-    }
-    std::mutex mutex_;
-    std::condition_variable cond_var_;
-    bool shutdown_;
-    std::queue<std::function<void()>> decode_jobs_queue_;
-    std::vector<std::thread> threads_;
-};
-
 #endif //ROC_JPEG_SAMPLES_COMMON

@@ -52,9 +52,15 @@ if(ROCJPEG_LIBRARY AND ROCJPEG_INCLUDE_DIR)
     message("-- ${White}Using rocJPEG -- \n\tLibraries:${ROCJPEG_LIBRARY} \n\tIncludes:${ROCJPEG_INCLUDE_DIR}${ColourReset}")
 endif()
 
-if(HIP_FOUND AND ROCJPEG_FOUND)
+# threads
+find_package(Threads REQUIRED)
+
+if(HIP_FOUND AND ROCJPEG_FOUND AND Threads_FOUND)
     # HIP
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::device)
+    #threads
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} Threads::Threads)
     # rocJPEG
     include_directories (${ROCJPEG_INCLUDE_DIR})
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${ROCJPEG_LIBRARY})
@@ -69,5 +75,8 @@ else()
     endif()
     if (NOT ROCJPEG_FOUND)
         message(FATAL_ERROR "-- ERROR!: rocJPEG Not Found! - please install rocJPEG!")
+    endif()
+    if (NOT Threads_FOUND)
+        message(FATAL_ERROR "-- ERROR!: Threads Not Found! - please insatll Threads!")
     endif()
 endif()

@@ -1,6 +1,6 @@
 # JPEG decode sample
 
-The jpeg decode sample illustrates decoding a JPEG images using rocJPEG library to get the individual decoded images in one of the supported output format (i.e., unchanged, yuv, y, rgbi). This sample can be configured with a device ID and optionally able to dump the output to a file.
+The jpeg decode sample illustrates decoding a JPEG images using rocJPEG library to get the individual decoded images in one of the supported output format (i.e., native, yuv, y, rgb, rgb_planar). This sample can be configured with a device ID and optionally able to dump the output to a file.
 
 ## Prerequisites:
 

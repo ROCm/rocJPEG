@@ -28,7 +28,7 @@ else:
     import subprocess
 
 __copyright__ = "Copyright (c) 2024, AMD rocJPEG"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
 
@@ -90,7 +90,10 @@ if "centos" in platfromInfo or "redhat" in platfromInfo or os.path.exists('/usr/
         print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
         exit(-1)
     if not "centos" in platfromInfo or not "redhat" in platfromInfo:
-        platfromInfo = platfromInfo+'-redhat'
+        if "8" in platform.version():
+            platfromInfo = platfromInfo+'-redhat-8'
+        if "9" in platform.version():
+            platfromInfo = platfromInfo+'-redhat-9'
 elif "Ubuntu" in platfromInfo or os.path.exists('/usr/bin/apt-get'):
     linuxSystemInstall = 'apt-get -y'
     linuxSystemInstall_check = '--allow-unauthenticated'
@@ -103,7 +106,7 @@ elif os.path.exists('/usr/bin/zypper'):
     platfromInfo = platfromInfo+'-SLES'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-    print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15 SP4\n")
+    print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15 SP5\n")
     exit(-1)
 
 # rocJPEG Setup
@@ -140,12 +143,15 @@ coreDebianU22Packages = [
 ]
 
 # RPM Packages
+libvaNameRPM = "libva"
+if os.path.exists('/usr/bin/zypper'):
+    libvaNameRPM = "libva2"
 coreRPMPackages = [
     'rocm-hip-runtime-devel',
-    'libva',
+    str(libvaNameRPM),
     'libva-devel',
     'libdrm-amdgpu',
-    'mesa-amdgpu-dri-drivers',
+    'mesa-amdgpu-va-drivers',
     'libva-utils'
 ]
 

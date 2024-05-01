@@ -39,8 +39,6 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
    ```shell
    sudo apt install mesa-amdgpu-va-drivers
    ```
- > [!NOTE]
- > RPM Packages for `RHEL`/`SLES` - `libdrm-amdgpu mesa-amdgpu-dri-drivers`
 
 * CMake `3.5` or later
 
@@ -61,6 +59,8 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 >  ```shell
 >  sudo apt install libstdc++-12-dev
 >  ```
+>
+> * Additional RPM Packages required for `RHEL`/`SLES` - `libdrm-amdgpu`
 
 >[!NOTE]
 >
@@ -211,4 +211,4 @@ page.
   * amdgpu-core - `1:6.1.60100-1741643`
 * libva-dev - `2.7.0-2` / `2.14.0-1`
 * mesa-amdgpu-va-drivers - `1:24.1.0`
-* rocJPEG Setup Script - `V1.1`
+* rocJPEG Setup Script - `V1.2.0`

@@ -28,7 +28,7 @@ else:
     import subprocess
 
 __copyright__ = "Copyright (c) 2024, AMD rocJPEG"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
 
@@ -140,12 +140,16 @@ coreDebianU22Packages = [
 ]
 
 # RPM Packages
+libvaNameRPM = "libva"
+if os.path.exists('/usr/bin/zypper'):
+        libvaNameRPM = "libva2"
 coreRPMPackages = [
     'rocm-hip-runtime-devel',
+    str(libvaNameRPM),
     'libva',
     'libva-devel',
     'libdrm-amdgpu',
-    'mesa-amdgpu-dri-drivers',
+    'mesa-amdgpu-va-drivers',
     'libva-utils'
 ]
 

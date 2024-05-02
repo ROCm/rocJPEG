@@ -24,20 +24,18 @@ THE SOFTWARE.
 #pragma once
 
 #include <iostream>
-#include <unistd.h>
-#include <vector>
-#include <string>
-#include <chrono>
-#include <sys/stat.h>
-#include <libgen.h>
-#include <filesystem>
 #include <fstream>
-#include <queue>
+#include <iomanip>
+#include <string>
+#include <vector>
 #include <thread>
 #include <mutex>
-#include <functional>
-#include <condition_variable>
-#include <atomic>
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
+    #include <filesystem>
+#else
+    #include <experimental/filesystem>
+#endif
+#include <chrono>
 #include "rocjpeg.h"
 
 #define CHECK_ROCJPEG(call) {                                             \

@@ -58,6 +58,10 @@ if(HIP_FOUND AND ROCJPEG_FOUND)
     # rocJPEG
     include_directories (${ROCJPEG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${ROCJPEG_LIBRARY})
+    #filesystem: c++ compilers less than equal to 8.5 need explicit link with stdc++fs
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL "8.5")
+      set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
+    endif()
     list(APPEND SOURCES ${PROJECT_SOURCE_DIR} jpegdecode.cpp)
     add_executable(${PROJECT_NAME} ${SOURCES})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")

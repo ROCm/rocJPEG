@@ -61,6 +61,10 @@ if(HIP_FOUND AND ROCJPEG_FOUND AND Threads_FOUND)
     #threads
     set(THREADS_PREFER_PTHREAD_FLAG ON)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} Threads::Threads)
+    #filesystem: c++ compilers less than equal to 8.5 need explicit link with stdc++fs
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL "8.5")
+      set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
+    endif()
     # rocJPEG
     include_directories (${ROCJPEG_INCLUDE_DIR})
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${ROCJPEG_LIBRARY})

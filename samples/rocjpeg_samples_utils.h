@@ -66,7 +66,7 @@ public:
     void GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &chroma_sub_sampling);
     int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
                                 uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes);
-    void GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving);
+    void GetOutputFileExt(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving);
     void SaveImage(std::string output_file_name, RocJpegImage *output_image, uint32_t img_width, uint32_t img_height,
                    RocJpegChromaSubsampling subsampling, RocJpegOutputFormat output_format);
 private:
@@ -291,7 +291,7 @@ int RocJpegUtils::GetChannelPitchAndSizes(RocJpegOutputFormat output_format, Roc
     return EXIT_SUCCESS;
 }
 
-void RocJpegUtils::GetFileExtForSaving(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
+void RocJpegUtils::GetOutputFileExt(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
     std::string file_extension;
     std::string::size_type const p(base_file_name.find_last_of('.'));
     std::string file_name_no_ext = base_file_name.substr(0, p);

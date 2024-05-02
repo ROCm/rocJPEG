@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 #include "../rocjpeg_samples_utils.h"
 
-void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegUtils &rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
+void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
     RocJpegOutputFormat output_format, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
 
     std::vector<char> file_data;
@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
     std::vector<uint64_t> num_decoded_images_per_thread;
     std::vector<double> image_size_in_mpixels_per_thread;
     std::vector<RocJpegImage> rocjpeg_images;
-    std::vector<RocJpegUtils> rocjpeg_utils;
+    RocJpegUtils rocjpeg_utils;
     std::vector<std::thread> threads;
 
     RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, output_format, &num_threads, argc, argv);
@@ -153,12 +153,11 @@ int main(int argc, char **argv) {
     num_decoded_images_per_thread.resize(num_threads, 0);
     image_size_in_mpixels_per_thread.resize(num_threads, 0);
     rocjpeg_images.resize(num_threads, {0});
-    rocjpeg_utils.resize(num_threads);
 
     std::cout << "Decoding started with " << num_threads << " threads, please wait!" << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], std::ref(rocjpeg_utils[i]), &rocjpeg_images[i], std::ref(mutex), output_format, save_images, std::ref(output_file_path),
+        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], rocjpeg_utils, &rocjpeg_images[i], std::ref(mutex), output_format, save_images, std::ref(output_file_path),
             &num_decoded_images_per_thread[i], &image_size_in_mpixels_per_thread[i]);
     }
     for (auto& thread : threads) {

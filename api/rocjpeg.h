@@ -118,6 +118,29 @@ typedef enum {
 } RocJpegOutputFormat;
 
 /*****************************************************/
+//! \struct RocJpegDecodeParams
+//! The RocJpegDecodeParams structure contains the decoding parameters that specify the RocJpegOutputFormat.
+//! It also defines the crop rectangle for the region of interest (ROI) and the target width and height for the decoded picture to be resized.
+//! Note that if both the crop rectangle and target dimensions are defined, cropping is done first, followed by resizing the resulting ROI to
+//! the target dimension.
+//! \ingroup group_amd_rocjpeg
+/*****************************************************/
+typedef struct {
+    RocJpegOutputFormat output_format; // Output data format. See RocJpegOutputFormat for description
+    struct {
+        int16_t left;
+        int16_t top;
+        int16_t right;
+        int16_t bottom;
+    } crop_rectangle; // (future use) Defines the region of interest (ROI) to be copied into the RocJpegImage output buffers.
+    struct {
+        uint32_t width;
+        uint32_t height;
+    } target_dimension; // (future use) Defines the target width and height of the picture to be resized. Both should be even.
+                        // if specified, allocate the RocJpegImage buffers based on these dimensions.
+} RocJpegDecodeParams;
+
+/*****************************************************/
 //! \enum RocJpegBackend
 //! \ingroup group_amd_rocjpeg
 //! RocJpegBackend enum specifies what type of backend to use for JPEG decoding
@@ -185,11 +208,11 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 //! IN handle : rocJpeg handle
 //! IN data : Pointer to the buffer containing the jpeg stream to be decoded.
 //! IN length : Length of the jpeg image buffer.
-//! IN output_format : Output data format. See RocJpegOutputFormat for description
+//! IN decode_params : Decode parameters. See RocJpegDecodeParams for description
 //! IN/OUT destination : Pointer to structure with information about output buffers. See RocJpegImage description.
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
+RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);

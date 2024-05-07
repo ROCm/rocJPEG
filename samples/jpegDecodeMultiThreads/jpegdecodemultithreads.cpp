@@ -23,7 +23,7 @@ THE SOFTWARE.
 #include "../rocjpeg_samples_utils.h"
 
 void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
-    RocJpegOutputFormat output_format, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
+    RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
 
     std::vector<char> file_data;
     uint8_t num_components;
@@ -76,7 +76,7 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
             return;
         }
 
-        if (rocjpeg_util.GetChannelPitchAndSizes(output_format, subsampling, widths, heights, num_channels, *output_image, channel_sizes)) {
+        if (rocjpeg_util.GetChannelPitchAndSizes(decode_params.output_format, subsampling, widths, heights, num_channels, *output_image, channel_sizes)) {
                 std::cerr << "ERROR: Failed to get the channel pitch and sizes" << std::endl;
                 return;
         }
@@ -92,14 +92,14 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
             }
         }
 
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, output_format, output_image));
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, &decode_params, output_image));
         *image_size_in_mpixels += (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         *num_decoded_images += 1;
 
         if (save_images) {
             std::string image_save_path = output_file_path;
-            rocjpeg_util.GetOutputFileExt(output_format, base_file_name, widths[0], heights[0], image_save_path);
-            rocjpeg_util.SaveImage(image_save_path, output_image, widths[0], heights[0], subsampling, output_format);
+            rocjpeg_util.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], image_save_path);
+            rocjpeg_util.SaveImage(image_save_path, output_image, widths[0], heights[0], subsampling, decode_params.output_format);
         }
 
         for (int i = 0; i < ROCJPEG_MAX_COMPONENT; i++) {
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
     bool is_file = false;
     RocJpegChromaSubsampling subsampling;
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
-    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_NATIVE;
+    RocJpegDecodeParams decode_params = {};
     std::vector<RocJpegHandle> rocjpeg_handles;
     std::mutex mutex;
     std::vector<uint64_t> num_decoded_images_per_thread;
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
     RocJpegUtils rocjpeg_utils;
     std::vector<std::thread> threads;
 
-    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, output_format, &num_threads, argc, argv);
+    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, &num_threads, argc, argv);
     if (!RocJpegUtils::GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "ERROR: Failed to get input file paths!" << std::endl;
         return EXIT_FAILURE;
@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
     std::cout << "Decoding started with " << num_threads << " threads, please wait!" << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], rocjpeg_utils, &rocjpeg_images[i], std::ref(mutex), output_format, save_images, std::ref(output_file_path),
+        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], rocjpeg_utils, &rocjpeg_images[i], std::ref(mutex), std::ref(decode_params), save_images, std::ref(output_file_path),
             &num_decoded_images_per_thread[i], &image_size_in_mpixels_per_thread[i]);
     }
     for (auto& thread : threads) {

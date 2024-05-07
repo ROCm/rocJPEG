@@ -67,7 +67,7 @@ RocJpegStatus ROCJpegDecoder::InitializeDecoder() {
     return rocjpeg_status;
 }
 
-RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination) {
+RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
 
@@ -78,53 +78,52 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, RocJpeg
 
     const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
     VASurfaceID current_surface_id;
-    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, output_format));
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, decode_params->output_format));
 
-    if (destination != nullptr) {
-        HipInteropDeviceMem hip_interop_dev_mem = {};
-        CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
-        CHECK_ROCJPEG(jpeg_vaapi_decoder_.GetHipInteropMem(current_surface_id, hip_interop_dev_mem));
+    HipInteropDeviceMem hip_interop_dev_mem = {};
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.GetHipInteropMem(current_surface_id, hip_interop_dev_mem));
 
-        uint16_t chroma_height = 0;
+    uint16_t chroma_height = 0;
 
-        switch (output_format) {
-            case ROCJPEG_OUTPUT_NATIVE:
-                // Copy the native decoded output buffers from interop memory directly to the destination buffers
-                CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
-                // Copy Luma (first channel) for any surface format
-                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_height, 0, destination));
-                if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
-                    // Copy the second channel (UV interleaved) for NV12
-                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
-                } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P) {
-                    // Copy the second and third channels for YUV444
-                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
-                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination));
-                }
-                break;
-            case ROCJPEG_OUTPUT_YUV_PLANAR:
-                CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
-                CHECK_ROCJPEG(GetPlanarYUVOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                    jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, destination));
-                break;
-            case ROCJPEG_OUTPUT_Y:
-                CHECK_ROCJPEG(GetYOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                  jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
-                break;
-            case ROCJPEG_OUTPUT_RGB:
-                CHECK_ROCJPEG(ColorConvertToRGB(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+    switch (decode_params->output_format) {
+        case ROCJPEG_OUTPUT_NATIVE:
+            // Copy the native decoded output buffers from interop memory directly to the destination buffers
+            CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
+            // Copy Luma (first channel) for any surface format
+            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_height, 0, destination));
+            if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
+                // Copy the second channel (UV interleaved) for NV12
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
+            } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P) {
+                // Copy the second and third channels for YUV444
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination));
+            }
+            break;
+        case ROCJPEG_OUTPUT_YUV_PLANAR:
+            CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
+            CHECK_ROCJPEG(GetPlanarYUVOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                   jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, destination));
+            break;
+        case ROCJPEG_OUTPUT_Y:
+            CHECK_ROCJPEG(GetYOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                           jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
+            break;
+        case ROCJPEG_OUTPUT_RGB:
+            CHECK_ROCJPEG(ColorConvertToRGB(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                     jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
-                break;
-            case ROCJPEG_OUTPUT_RGB_PLANAR:
-                CHECK_ROCJPEG(ColorConvertToRGBPlanar(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+            break;
+        case ROCJPEG_OUTPUT_RGB_PLANAR:
+            CHECK_ROCJPEG(ColorConvertToRGBPlanar(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
                                                     jpeg_stream_params->picture_parameter_buffer.picture_height, destination));
-                break;
-            default:
-                break;
-        }
-
-        CHECK_HIP(hipStreamSynchronize(hip_stream_));
+            break;
+        default:
+            break;
     }
+
+    CHECK_HIP(hipStreamSynchronize(hip_stream_));
+
 
     return ROCJPEG_STATUS_SUCCESS;
 

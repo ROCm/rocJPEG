@@ -88,13 +88,14 @@ See the signature of this function below:
       RocJpegHandle handle,
       const uint8_t *data,
       size_t length,
-      RocJpegOutputFormat output_format,
+      const RocJpegDecodeParams *decode_params,
       RocJpegImage *destination);
 
-In the above ``rocJpegDecode()`` function, you can use the parameters ``RocJpegOutputFormat`` and ``RocJpegImage`` to set
+In the above ``rocJpegDecode()`` function, you can use the parameters ``RocJpegDecodeParams`` and ``RocJpegImage`` to set
 the output behavior of the ``rocJpegDecode()`` function. The ``RocJpegImage`` structure is JPEG image descriptor used to
 return the decoded output image. User must allocate device memories for each channel for this structure and pass it to the
-``rocJpegDecode()`` API. This API then copies the decoded image to this struct based on the requested output format ``RocJpegOutputFormat``.
+``rocJpegDecode()`` API. This API then copies the decoded image to this struct based on the requested output format ``RocJpegOutputFormat``
+defined in the ``RocJpegDecodeParams``.
 Below is the ``RocJpegImage`` structure.
 
 .. code:: cpp
@@ -104,7 +105,7 @@ Below is the ``RocJpegImage`` structure.
       uint32_t pitch[ROCJPEG_MAX_COMPONENT];
     } RocJpegImage;
 
-You can set the ``RocJpegOutputFormat`` parameter to one of the ``output_format`` settings below:
+You can set the ``RocJpegOutputFormat`` parameter of the ``RocJpegDecodeParams`` to one of the ``output_format`` settings below:
 
 .. csv-table::
   :header: "output_format", "Meaning"

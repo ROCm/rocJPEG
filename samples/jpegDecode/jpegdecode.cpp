@@ -44,10 +44,10 @@ int main(int argc, char **argv) {
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegHandle rocjpeg_handle = nullptr;
     RocJpegImage output_image = {};
-    RocJpegOutputFormat output_format = ROCJPEG_OUTPUT_NATIVE;
+    RocJpegDecodeParams decode_params = {};
     RocJpegUtils rocjpeg_utils;
 
-    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, output_format, nullptr, argc, argv);
+    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, nullptr, argc, argv);
     if (!RocJpegUtils::GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "ERROR: Failed to get input file paths!" << std::endl;
         return EXIT_FAILURE;
@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
                 return EXIT_FAILURE;
         }
 
-        if (rocjpeg_utils.GetChannelPitchAndSizes(output_format, subsampling, widths, heights, num_channels, output_image, channel_sizes)) {
+        if (rocjpeg_utils.GetChannelPitchAndSizes(decode_params.output_format, subsampling, widths, heights, num_channels, output_image, channel_sizes)) {
             std::cerr << "ERROR: Failed to get the channel pitch and sizes" << std::endl;
             return EXIT_FAILURE;
         }
@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 
         std::cout << "Decoding started, please wait! ... " << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, output_format, &output_image));
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, &decode_params, &output_image));
         auto end_time = std::chrono::high_resolution_clock::now();
         double time_per_image_in_milli_sec = std::chrono::duration<double, std::milli>(end_time - start_time).count();
         double image_size_in_mpixels = (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
@@ -124,9 +124,9 @@ int main(int argc, char **argv) {
         if (save_images) {
             std::string image_save_path = output_file_path;
             if (is_dir) {
-                rocjpeg_utils.GetOutputFileExt(output_format, base_file_name, widths[0], heights[0], image_save_path);
+                rocjpeg_utils.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], image_save_path);
             }
-            rocjpeg_utils.SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, output_format);
+            rocjpeg_utils.SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, decode_params.output_format);
         }
 
         std::cout << "Average processing time per image (ms): " << time_per_image_in_milli_sec << std::endl;

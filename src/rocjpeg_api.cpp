@@ -80,7 +80,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 //! \ingroup group_amd_rocjpeg
 //! Decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API.
 //! Destination buffers should be large enough to be able to store output of specified format. These buffers should be pre-allocted by the user in the device memories.
@@ -88,16 +88,16 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 //! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
 //! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format,
+RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params,
     RocJpegImage *destination) {
 
-    if (handle == nullptr || data == nullptr) {
+    if (handle == nullptr || data == nullptr || decode_params == nullptr || destination == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
-        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(data, length, output_format, destination);
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(data, length, decode_params, destination);
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());

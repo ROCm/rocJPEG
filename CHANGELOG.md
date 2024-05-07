@@ -3,7 +3,7 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](TBD)
 
-## rocJPEG 0.2.0 (Unreleased)
+## rocJPEG 0.3.0 (Unreleased)
 
 ## Additions
 
@@ -18,6 +18,7 @@ Documentation for rocJPEG is available at
 * Dependencies - Updates to core dependencies
 * LibVA Headers - Use public headers
 * mesa-amdgpu-va-drivers - RPM Package available on RPM from ROCm 6.2
+* add the RocJpegDecodeParams struct for passing the decode parameters
 
 ### Fixes
 

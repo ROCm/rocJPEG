@@ -58,7 +58,7 @@ class RocJpegUtils {
 public:
     RocJpegUtils() {};
     static void ParseCommandLine(std::string &input_path, std::string &output_file_path, bool &save_images, int &device_id,
-                                 RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]);
+                                 RocJpegBackend &rocjpeg_backend, RocJpegDecodeParams &decode_params, int *num_threads, int argc, char *argv[]);
     static bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file);
     static bool InitHipDevice(int device_id);
     void GetChromaSubsamplingStr(RocJpegChromaSubsampling subsampling, std::string &chroma_sub_sampling);
@@ -86,7 +86,7 @@ void RocJpegUtils::ShowHelpAndExit(const char *option, bool show_threads) {
 }
 
 void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output_file_path, bool &save_images, int &device_id,
-    RocJpegBackend &rocjpeg_backend, RocJpegOutputFormat &output_format, int *num_threads, int argc, char *argv[]) {
+    RocJpegBackend &rocjpeg_backend, RocJpegDecodeParams &decode_params, int *num_threads, int argc, char *argv[]) {
     if(argc <= 1) {
         ShowHelpAndExit("", num_threads != nullptr);
     }
@@ -129,15 +129,15 @@ void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output
             }
             std::string selected_output_format = argv[i];
             if (selected_output_format == "native") {
-                output_format = ROCJPEG_OUTPUT_NATIVE;
+                decode_params.output_format = ROCJPEG_OUTPUT_NATIVE;
             } else if (selected_output_format == "yuv") {
-                output_format = ROCJPEG_OUTPUT_YUV_PLANAR;
+                decode_params.output_format = ROCJPEG_OUTPUT_YUV_PLANAR;
             } else if (selected_output_format == "y") {
-                output_format = ROCJPEG_OUTPUT_Y;
+                decode_params.output_format = ROCJPEG_OUTPUT_Y;
             } else if (selected_output_format == "rgb") {
-                output_format = ROCJPEG_OUTPUT_RGB;
+                decode_params.output_format = ROCJPEG_OUTPUT_RGB;
             } else if (selected_output_format == "rgb_planar") {
-                output_format = ROCJPEG_OUTPUT_RGB_PLANAR;
+                decode_params.output_format = ROCJPEG_OUTPUT_RGB_PLANAR;
             } else {
                 ShowHelpAndExit(argv[i], num_threads != nullptr);
             }

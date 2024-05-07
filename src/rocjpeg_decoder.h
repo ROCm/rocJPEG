@@ -39,7 +39,7 @@ class ROCJpegDecoder {
        ~ROCJpegDecoder();
        RocJpegStatus InitializeDecoder();
        RocJpegStatus GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
-       RocJpegStatus Decode(const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination);
+       RocJpegStatus Decode(const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
        RocJpegStatus GetChromaHeight(uint32_t surface_format, uint16_t picture_height, uint16_t &chroma_height);

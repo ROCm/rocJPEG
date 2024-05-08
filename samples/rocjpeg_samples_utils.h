@@ -156,10 +156,19 @@ void RocJpegUtils::ParseCommandLine(std::string &input_path, std::string &output
 }
 
 bool RocJpegUtils::GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file) {
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
     is_dir = std::filesystem::is_directory(input_path);
     is_file = std::filesystem::is_regular_file(input_path);
+#else
+    is_dir = std::experimental::filesystem::is_directory(input_path);
+    is_file = std::experimental::filesystem::is_regular_file(input_path);
+#endif
     if (is_dir) {
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
         for (const auto &entry : std::filesystem::directory_iterator(input_path))
+#else
+        for (const auto &entry : std::experimental::filesystem::directory_iterator(input_path))
+#endif
             file_paths.push_back(entry.path());
     } else if (is_file) {
         file_paths.push_back(input_path);

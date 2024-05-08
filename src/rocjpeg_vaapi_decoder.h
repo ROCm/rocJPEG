@@ -31,7 +31,11 @@ THE SOFTWARE.
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
-#include <filesystem>
+#if __cplusplus >= 201703L && __has_include(<filesystem>)
+    #include <filesystem>
+#else
+    #include <experimental/filesystem>
+#endif
 #include <unordered_map>
 #include <memory>
 #include <va/va.h>

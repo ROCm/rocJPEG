@@ -67,16 +67,15 @@ RocJpegStatus ROCJpegDecoder::InitializeDecoder() {
     return rocjpeg_status;
 }
 
-RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
+RocJpegStatus ROCJpegDecoder::Decode(RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
-
-    if (!jpeg_parser_.ParseJpegStream(data, length)) {
-        ERR("ERROR: Failed to parse the jpeg stream!");
-        return ROCJPEG_STATUS_BAD_JPEG;
+    if (jpeg_stream == nullptr || decode_params == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
 
-    const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
     VASurfaceID current_surface_id;
     CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, decode_params->output_format));
 
@@ -129,16 +128,14 @@ RocJpegStatus ROCJpegDecoder::Decode(const uint8_t *data, size_t length, const R
 
 }
 
-RocJpegStatus ROCJpegDecoder::GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
+RocJpegStatus ROCJpegDecoder::GetImageInfo(RocJpegStream jpeg_stream, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
     std::lock_guard<std::mutex> lock(mutex_);
-    if (widths == nullptr || heights == nullptr || num_components == nullptr) {
+    if (jpeg_stream == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    if (!jpeg_parser_.ParseJpegStream(data, length)) {
-        ERR("ERROR: jpeg parser failed!");
-        return ROCJPEG_STATUS_BAD_JPEG;
-    }
-    const JpegStreamParameters *jpeg_stream_params = jpeg_parser_.GetJpegStreamParameters();
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
+
     *num_components = jpeg_stream_params->picture_parameter_buffer.num_components;
     widths[0] = jpeg_stream_params->picture_parameter_buffer.picture_width;
     heights[0] = jpeg_stream_params->picture_parameter_buffer.picture_height;

@@ -152,10 +152,43 @@ typedef enum {
     ROCJPEG_BACKEND_HYBRID = 1
 } RocJpegBackend;
 
+
+/*****************************************************/
+//! The "opaque JPEG stream identifier" is a handle that is used to parse and store a JPEG stream.
+//! This handle is created by calling "rocjpegStreamCreate" and can be used in subsequent API calls, such as
+//! "rocJpegGetImageInfo" and "rocJpegDecode" (see below). By using this handle, we only need to parse the JPEG stream
+//! once and can retrieve the stream's information in subsequent API calls.
+/*****************************************************/
+typedef void* RocJpegStream;
+
+/*****************************************************/
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStream *jpeg_stream);
+//! \ingroup group_amd_rocjpeg
+//! Create the rocJPEG stream parser handle. This handle is used to parse and retrieve the information from the JPEG stream.
+//! IN/OUT jpeg_stream: the rocjpeg stream handle.
+/*****************************************************/
+RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStream *jpeg_stream);
+
+/*****************************************************/
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStream jpeg_stream);
+//! \ingroup group_amd_rocjpeg
+//! Parses a jpeg stream and stores the information from the stream to be used in subsequent API calls for retrieving the image information and decoding it.
+//! IN data: Pointer to the buffer containing the jpeg stream data to be decoded.
+//! IN length: Length of the jpeg image buffer.
+//! IN/OUT jpeg_stream: The jpeg stream parser handle that is used to parse and store the information from the input data buffer.
+/*****************************************************/
+RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStream jpeg_stream);
+
+/*****************************************************/
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStream jpeg_stream);
+//! \ingroup group_amd_rocjpeg
+//! Release the stream parser object and resources.
+//! IN/OUT jpeg_stream: instance handle to release
+/*****************************************************/
+RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStream jpeg_stream);
+
 /*****************************************************/
 // Opaque library handle identifier.
-//struct RocJpegDecoderHandle;
-//typedef struct RocJpegDecoderHandle* RocJpegHandle;
 //! Used in subsequent API calls after rocJpegCreate
 /*****************************************************/
 typedef void *RocJpegHandle;
@@ -168,7 +201,7 @@ typedef void *RocJpegHandle;
 //! IN backend : Backend to use.
 //! IN device_id : the GPU device id for which a decoder should be created. For example, use 0 for the first GPU device,
 //!                 and 1 for the second GPU device on the system, etc.
-//! IN/OUT handle : rocjpeg handle, jpeg decoder instance to use for 
+//! IN/OUT handle : rocjpeg handle, jpeg decoder instance to use for.
 /*****************************************************************************************************/
 RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
 
@@ -187,15 +220,14 @@ RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle);
 //! If less than ROCJPEG_MAX_COMPONENT channels are encoded, then zeros would be set to absent channels information
 //! If the image is 3-channel, all three groups are valid.
 //! IN handle : rocJpeg handle
-//! IN data : Pointer to the buffer containing the jpeg stream data to be decoded.
-//! IN length : Length of the jpeg image buffer.
+//! IN jpeg_stream: The handle for the jpeg stream parser to retrieve information from a previously parsed jpeg stream.
 //! OUT num_component : Number of channels in the decoded output image
 //! OUT subsampling : Chroma subsampling used in this JPEG, see RocJpegChromaSubsampling.
 //! OUT widths : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns width of each channel.
 //! OUT heights : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns height of each channel.
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
+RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream jpeg_stream, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
@@ -206,13 +238,12 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t
 //! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
 //! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
 //! IN handle : rocJpeg handle
-//! IN data : Pointer to the buffer containing the jpeg stream to be decoded.
-//! IN length : Length of the jpeg image buffer.
+//! IN jpeg_stream: The handle for the jpeg stream parser to retrieve information from a previously parsed jpeg stream and decode it.
 //! IN decode_params : Decode parameters. See RocJpegDecodeParams for description
 //! IN/OUT destination : Pointer to structure with information about output buffers. See RocJpegImage description.
 //! \return ROCJPEG_STATUS_SUCCESS if successful
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
+RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
 /*****************************************************************************************************/
 //! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);

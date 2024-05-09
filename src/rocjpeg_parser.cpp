@@ -21,17 +21,18 @@ THE SOFTWARE.
 */
 #include "rocjpeg_parser.h"
 
-JpegParser::JpegParser() : stream_{nullptr}, stream_end_{nullptr}, stream_length_{0},
+RocJpegStreamParser::RocJpegStreamParser() : stream_{nullptr}, stream_end_{nullptr}, stream_length_{0},
     jpeg_stream_parameters_{{}} {
 }
 
-JpegParser::~JpegParser() {
+RocJpegStreamParser::~RocJpegStreamParser() {
     stream_ = nullptr;
     stream_end_ = nullptr;
     stream_length_ = 0;
 }
 
-bool JpegParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t jpeg_stream_size) {
+bool RocJpegStreamParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t jpeg_stream_size) {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (jpeg_stream == nullptr) {
         ERR("invalid argument!");
         return false;
@@ -113,7 +114,7 @@ bool JpegParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t jpeg_strea
     return true;
 }
 
-bool JpegParser::ParseSOI() {
+bool RocJpegStreamParser::ParseSOI() {
     if (stream_ == nullptr) {
         return false;
     }
@@ -129,7 +130,7 @@ bool JpegParser::ParseSOI() {
     return true;
 }
 
-bool JpegParser::ParseSOF() {
+bool RocJpegStreamParser::ParseSOF() {
     uint32_t component_id, sampling_factor;
     uint8_t quantiser_table_selector;
 
@@ -178,7 +179,7 @@ bool JpegParser::ParseSOF() {
     return true;
 }
 
-bool JpegParser::ParseDQT() {
+bool RocJpegStreamParser::ParseDQT() {
     int32_t quantization_table_index = 0;
     const uint8_t *dqt_block_end;
 
@@ -209,7 +210,7 @@ bool JpegParser::ParseDQT() {
     return true;
 }
 
-bool JpegParser::ParseDHT() {
+bool RocJpegStreamParser::ParseDHT() {
     uint32_t count, i;
     int32_t length, index;
     uint8_t ac_huffman_table, huffman_table_id;
@@ -268,7 +269,7 @@ bool JpegParser::ParseDHT() {
     return true;
 }
 
-bool JpegParser::ParseSOS() {
+bool RocJpegStreamParser::ParseSOS() {
     uint32_t component_id, table;
 
     if (stream_ == nullptr) {
@@ -310,7 +311,7 @@ bool JpegParser::ParseSOS() {
 }
 
 
-bool JpegParser::ParseDRI() {
+bool RocJpegStreamParser::ParseDRI() {
     uint32_t length;
 
     if (stream_ == nullptr) {
@@ -328,7 +329,7 @@ bool JpegParser::ParseDRI() {
     return true;
 }
 
-bool JpegParser::ParseEOI() {
+bool RocJpegStreamParser::ParseEOI() {
 
     if (stream_ == nullptr) {
         return false;
@@ -346,7 +347,7 @@ bool JpegParser::ParseEOI() {
     return true;
 }
 
-ChromaSubsampling JpegParser::GetChromaSubsampling(uint8_t c1_h_sampling_factor, uint8_t c2_h_sampling_factor, uint8_t c3_h_sampling_factor,
+ChromaSubsampling RocJpegStreamParser::GetChromaSubsampling(uint8_t c1_h_sampling_factor, uint8_t c2_h_sampling_factor, uint8_t c3_h_sampling_factor,
                                                    uint8_t c1_v_sampling_factor, uint8_t c2_v_sampling_factor, uint8_t c3_v_sampling_factor) {
 
     ChromaSubsampling subsampling;

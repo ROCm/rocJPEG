@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 #include "../rocjpeg_samples_utils.h"
 
-void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
+void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegStream rocjpeg_stream, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
     RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
 
     std::vector<char> file_data;
@@ -69,7 +69,8 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
             return;
         }
 
-        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, &num_components, &subsampling, widths, heights));
+        CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t *>(file_data.data()), file_size, rocjpeg_stream));
+        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream, &num_components, &subsampling, widths, heights));
         if (subsampling == ROCJPEG_CSS_440 || subsampling == ROCJPEG_CSS_411) {
             std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             std::cout << "Skipping decoding file " << base_file_name << std::endl;
@@ -92,7 +93,7 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
             }
         }
 
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t *>(file_data.data()), file_size, &decode_params, output_image));
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, rocjpeg_stream, &decode_params, output_image));
         *image_size_in_mpixels += (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
         *num_decoded_images += 1;
 
@@ -123,6 +124,7 @@ int main(int argc, char **argv) {
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegDecodeParams decode_params = {};
     std::vector<RocJpegHandle> rocjpeg_handles;
+    std::vector<RocJpegStream> rocjpeg_streams;
     std::mutex mutex;
     std::vector<uint64_t> num_decoded_images_per_thread;
     std::vector<double> image_size_in_mpixels_per_thread;
@@ -146,9 +148,12 @@ int main(int argc, char **argv) {
 
     std::cout << "Creating decoder objects, please wait!" << std::endl;
     for (int i = 0; i < num_threads; i++) {
+        RocJpegStream rocjpeg_stream;
         RocJpegHandle rocjpeg_handle;
         CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, device_id, &rocjpeg_handle));
         rocjpeg_handles.push_back(std::move(rocjpeg_handle));
+        CHECK_ROCJPEG(rocJpegStreamCreate(&rocjpeg_stream));
+        rocjpeg_streams.push_back(std::move(rocjpeg_stream));
     }
     num_decoded_images_per_thread.resize(num_threads, 0);
     image_size_in_mpixels_per_thread.resize(num_threads, 0);
@@ -157,7 +162,7 @@ int main(int argc, char **argv) {
     std::cout << "Decoding started with " << num_threads << " threads, please wait!" << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], rocjpeg_utils, &rocjpeg_images[i], std::ref(mutex), std::ref(decode_params), save_images, std::ref(output_file_path),
+        threads.emplace_back(ThreadFunction, std::ref(file_paths), rocjpeg_handles[i], rocjpeg_streams[i], rocjpeg_utils, &rocjpeg_images[i], std::ref(mutex), std::ref(decode_params), save_images, std::ref(output_file_path),
             &num_decoded_images_per_thread[i], &image_size_in_mpixels_per_thread[i]);
     }
     for (auto& thread : threads) {
@@ -190,6 +195,9 @@ int main(int argc, char **argv) {
 
     for (auto& handle : rocjpeg_handles) {
         CHECK_ROCJPEG(rocJpegDestroy(handle));
+    }
+    for (auto& rocjpecg_stream : rocjpeg_streams) {
+        CHECK_ROCJPEG(rocJpegStreamDestroy(rocjpecg_stream));
     }
     std::cout << "Decoding completed!" << std::endl;
     return EXIT_SUCCESS;

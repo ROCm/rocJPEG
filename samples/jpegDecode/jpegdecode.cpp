@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
     RocJpegChromaSubsampling subsampling;
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegHandle rocjpeg_handle = nullptr;
+    RocJpegStream rocjpeg_stream = nullptr;
     RocJpegImage output_image = {};
     RocJpegDecodeParams decode_params = {};
     RocJpegUtils rocjpeg_utils;
@@ -57,6 +58,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    CHECK_ROCJPEG(rocJpegStreamCreate(&rocjpeg_stream));
     CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, device_id, &rocjpeg_handle));
 
     std::vector<char> file_data;
@@ -82,7 +84,8 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
 
-        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, &num_components, &subsampling, widths, heights));
+        CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t*>(file_data.data()), file_size, rocjpeg_stream));
+        CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream, &num_components, &subsampling, widths, heights));
 
         rocjpeg_utils.GetChromaSubsamplingStr(subsampling, chroma_sub_sampling);
         std::cout << "Input file name: " << base_file_name << std::endl;
@@ -115,7 +118,7 @@ int main(int argc, char **argv) {
 
         std::cout << "Decoding started, please wait! ... " << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
-        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, reinterpret_cast<uint8_t*>(file_data.data()), file_size, &decode_params, &output_image));
+        CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, rocjpeg_stream, &decode_params, &output_image));
         auto end_time = std::chrono::high_resolution_clock::now();
         double time_per_image_in_milli_sec = std::chrono::duration<double, std::milli>(end_time - start_time).count();
         double image_size_in_mpixels = (static_cast<double>(widths[0]) * static_cast<double>(heights[0]) / 1000000);
@@ -164,6 +167,7 @@ int main(int argc, char **argv) {
     }
 
     CHECK_ROCJPEG(rocJpegDestroy(rocjpeg_handle));
+    CHECK_ROCJPEG(rocJpegStreamDestroy(rocjpeg_stream));
     std::cout << "Decoding completed!" << std::endl;
     return EXIT_SUCCESS;
 }

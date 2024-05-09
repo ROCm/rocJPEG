@@ -28,6 +28,7 @@ THE SOFTWARE.
 #include <mutex>
 #include <queue>
 #include "../api/rocjpeg.h"
+#include "rocjpeg_api_stream_handle.h"
 #include "rocjpeg_parser.h"
 #include "rocjpeg_commons.h"
 #include "rocjpeg_vaapi_decoder.h"
@@ -38,8 +39,8 @@ class ROCJpegDecoder {
        ROCJpegDecoder(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
        ~ROCJpegDecoder();
        RocJpegStatus InitializeDecoder();
-       RocJpegStatus GetImageInfo(const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
-       RocJpegStatus Decode(const uint8_t *data, size_t length, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
+       RocJpegStatus GetImageInfo(RocJpegStream jpeg_stream, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
+       RocJpegStatus Decode(RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
     private:
        RocJpegStatus InitHIP(int device_id);
        RocJpegStatus GetChromaHeight(uint32_t surface_format, uint16_t picture_height, uint16_t &chroma_height);
@@ -53,7 +54,6 @@ class ROCJpegDecoder {
        hipDeviceProp_t hip_dev_prop_;
        hipStream_t hip_stream_;
        std::mutex mutex_;
-       JpegParser jpeg_parser_;
        RocJpegBackend backend_;
        RocJpegVappiDecoder jpeg_vaapi_decoder_;
 };

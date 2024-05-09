@@ -20,22 +20,22 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef ROC_JPEG_HANDLE_H
-#define ROC_JPEG_HANDLE_H
+#ifndef ROC_JPEG_STREAM_HANDLE_H
+#define ROC_JPEG_STREAM_HANDLE_H
 
 #pragma once
 
-#include "rocjpeg_decoder.h"
+#include <memory>
+#include "rocjpeg_parser.h"
 
 /**
- * @brief RocJpegHandle class
- * 
+ * @brief RocJpegStreamHandle class
  */
-class RocJpegDecoderHandle {
+class RocJpegStreamHandle {
     public:
-        explicit RocJpegDecoderHandle(RocJpegBackend backend, int device_id) : rocjpeg_decoder(std::make_shared<ROCJpegDecoder>(backend, device_id)) {};
-        ~RocJpegDecoderHandle() { ClearErrors(); }
-        std::shared_ptr<ROCJpegDecoder> rocjpeg_decoder;
+        explicit RocJpegStreamHandle() : rocjpeg_stream(std::make_shared<RocJpegStreamParser>()) {};
+        ~RocJpegStreamHandle() { ClearErrors(); }
+        std::shared_ptr<RocJpegStreamParser> rocjpeg_stream;
         bool NoError() { return error_.empty(); }
         const char* ErrorMsg() { return error_.c_str(); }
         void CaptureError(const std::string& err_msg) { error_ = err_msg; }
@@ -44,4 +44,4 @@ class RocJpegDecoderHandle {
         std::string error_;
 };
 
-#endif //ROC_JPEG_HANDLE_H
+#endif //ROC_JPEG_STREAM_HANDLE_H

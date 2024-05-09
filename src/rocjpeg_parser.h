@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include <stdint.h>
 #include <iostream>
 #include <cstring>
+#include <mutex>
 #include "rocjpeg_commons.h"
 
 #pragma once
@@ -152,10 +153,10 @@ typedef struct JpegParameterBuffersType {
     const uint8_t* slice_data_buffer;
 } JpegStreamParameters;
 
-class JpegParser {
+class RocJpegStreamParser {
     public:
-        JpegParser();
-        ~JpegParser();
+        RocJpegStreamParser();
+        ~RocJpegStreamParser();
         bool ParseJpegStream(const uint8_t* jpeg_stream, uint32_t jpeg_stream_size);
         const JpegStreamParameters* GetJpegStreamParameters() const {return &jpeg_stream_parameters_;};
     private:
@@ -172,6 +173,7 @@ class JpegParser {
         const uint8_t *stream_end_;
         uint32_t stream_length_;
         JpegStreamParameters jpeg_stream_parameters_;
+        std::mutex mutex_;
 };
 
 #endif  // ROC_JPEG_PARSER_H_

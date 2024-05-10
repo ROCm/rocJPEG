@@ -30,6 +30,7 @@ THE SOFTWARE.
 
 /**
  * @brief RocJpegStreamParserHandle class
+ * This class wraps around RocJpegStreamParser to parse and store information from a JPEG stream.
  */
 class RocJpegStreamParserHandle {
     public:

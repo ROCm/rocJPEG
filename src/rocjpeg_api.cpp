@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 
 #include "rocjpeg_api_stream_handle.h"
-#include "rocjpeg_api_handle.h"
+#include "rocjpeg_api_decoder_handle.h"
 #include "rocjpeg_commons.h"
 
 /*****************************************************************************************************/

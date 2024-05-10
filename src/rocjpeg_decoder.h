@@ -34,10 +34,10 @@ THE SOFTWARE.
 #include "rocjpeg_vaapi_decoder.h"
 #include "rocjpeg_hip_kernels.h"
 
-class ROCJpegDecoder {
+class RocJpegDecoder {
     public:
-       ROCJpegDecoder(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
-       ~ROCJpegDecoder();
+       RocJpegDecoder(RocJpegBackend backend = ROCJPEG_BACKEND_HARDWARE, int device_id = 0);
+       ~RocJpegDecoder();
        RocJpegStatus InitializeDecoder();
        RocJpegStatus GetImageInfo(RocJpegStreamHandle jpeg_stream, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
        RocJpegStatus Decode(RocJpegStreamHandle jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);

@@ -29,12 +29,12 @@ THE SOFTWARE.
 #include "rocjpeg_parser.h"
 
 /**
- * @brief RocJpegStreamHandle class
+ * @brief RocJpegStreamParserHandle class
  */
-class RocJpegStreamHandle {
+class RocJpegStreamParserHandle {
     public:
-        explicit RocJpegStreamHandle() : rocjpeg_stream(std::make_shared<RocJpegStreamParser>()) {};
-        ~RocJpegStreamHandle() { ClearErrors(); }
+        explicit RocJpegStreamParserHandle() : rocjpeg_stream(std::make_shared<RocJpegStreamParser>()) {};
+        ~RocJpegStreamParserHandle() { ClearErrors(); }
         std::shared_ptr<RocJpegStreamParser> rocjpeg_stream;
         bool NoError() { return error_.empty(); }
         const char* ErrorMsg() { return error_.c_str(); }

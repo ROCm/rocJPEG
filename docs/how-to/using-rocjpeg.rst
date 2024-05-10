@@ -37,7 +37,39 @@ The API takes in the following arguments:
 * A decoder handle, which is returned by ``rocJpegCreate()`` and must be retained for the entire decode session,
   as it is passed along with the other decoding APIs.
 
-3. Retrieve the image info
+3. Create a JPEG stream parser
+====================================================
+
+The ``rocJpegStreamCreate`` function creates a JPEG stream parser object and returns a handle upon successful creation. This handle is used to parse and retrieve the information from the JPEG stream.
+
+Below is the signature of the ``rocJpegStreamCreate`` function:
+
+.. code:: cpp
+
+    RocJpegStatus rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
+
+The API takes in the following arguments:
+
+* A JPEG stream handle, which is returned by ``rocJpegStreamCreate``. This handle can be used by the user to parse the JPEG stream and retrieve the information from the stream.
+
+4. Parse a JPEG stream and store its information
+====================================================
+
+The ``rocJpegStreamParse`` function parses a jpeg stream and stores the information from the stream to be used in subsequent API calls for retrieving the image information and decoding it.
+
+Below is the signature of the ``rocJpegStreamParse`` function:
+
+.. code:: cpp
+
+    RocJpegStatus rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle);
+
+The API takes in the following arguments:
+
+* A pointer to the JPEG data buffer.
+* The length of the JPEG data buffer.
+* The JPEG stream handle, which is returned by ``rocJpegStreamCreate``. This handle is used to parse the JPEG stream and retrieve the information from the stream.
+
+5. Retrieve the image info
 ====================================================
 ``rocJpegGetImageInfo()`` retrieves the image info, including number of components, width and height of each component, and chroma subsampling.
 For each image to be decoded, pass the JPEG data pointer and data length to the ``rocJpegGetImageInfo()`` function. This function is thread safe.
@@ -48,8 +80,7 @@ Below is the signature of ``rocJpegGetImageInfo()`` function:
 
     RocJpegStatus rocJpegGetImageInfo(
       RocJpegHandle handle,
-      const uint8_t *data,
-      size_t length,
+      RocJpegStreamHandle jpeg_stream_handle,
       uint8_t *num_components,
       RocJpegChromaSubsampling *subsampling,
       uint32_t *widths,
@@ -75,7 +106,7 @@ list is composed of the chroma subsampling property retrieved from the JPEG imag
   The VCN hardware-accelerated JPEG decoder in AMD GPUs only supports decoding JPEG images with ``ROCJPEG_CSS_444``, ``ROCJPEG_CSS_422``,
   ``ROCJPEG_CSS_420``, and ``ROCJPEG_CSS_400`` chroma subsampling.
 
-4. Decode a JPEG stream
+6. Decode a JPEG stream
 ====================================================
 ``rocJpegDecode()`` decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API. For each image to be decoded,
 pass the JPEG data pointer and data length to the ``rocJpegDecode()`` function. This function is thread safe.
@@ -86,8 +117,7 @@ See the signature of this function below:
 
     RocJpegStatus rocJpegDecode(
       RocJpegHandle handle,
-      const uint8_t *data,
-      size_t length,
+      RocJpegStreamHandle jpeg_stream_handle,
       const RocJpegDecodeParams *decode_params,
       RocJpegImage *destination);
 
@@ -146,12 +176,17 @@ the required size for the output buffers for a single decode JPEG. To optimally 
   "ROCJPEG_OUTPUT_Y", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_RGB", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0] * 3", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_RGB_PLANAR", "Any of the supported chroma subsampling", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
-5. Destroy the decoder
+7. Destroy the decoder
 ====================================================
 
 You must call the ``rocJpegDestroy()`` to destroy the session and free up resources.
 
-6. Get Error name
+8. Destroy the JPEG stream handle
+====================================================
+
+You must call the ``rocJpegStreamDestroy()`` to release the stream parser object and resources.
+
+9. Get Error name
 ====================================================
 
 You can call ``rocJpegGetErrorName`` to retrieve the name of the specified error code in text form returned from rocJPEG APIs.

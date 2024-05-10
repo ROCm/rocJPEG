@@ -25,36 +25,36 @@ THE SOFTWARE.
 #include "rocjpeg_commons.h"
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStream *jpeg_stream)
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle)
 //! \ingroup group_amd_rocjpeg
 //! Create the rocJPEG stream parser handle. This handle is used to parse and retrieve the information from the JPEG stream.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStream *jpeg_stream) {
-    if (jpeg_stream == nullptr) {
+RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle) {
+    if (jpeg_stream_handle == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    RocJpegStream rocjpeg_stream_handle = nullptr;
+    RocJpegStreamHandle rocjpeg_stream_handle = nullptr;
     try {
-        rocjpeg_stream_handle = new RocJpegStreamHandle();
+        rocjpeg_stream_handle = new RocJpegStreamParserHandle();
     }
     catch(const std::exception& e) {
         ERR(STR("Failed to init the rocJPEG stream handle, ") + STR(e.what()));
         return ROCJPEG_STATUS_NOT_INITIALIZED;
     }
-    *jpeg_stream = rocjpeg_stream_handle;
+    *jpeg_stream_handle = rocjpeg_stream_handle;
     return ROCJPEG_STATUS_SUCCESS;
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStream jpeg_stream)
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle)
 //! \ingroup group_amd_rocjpeg
 //! Parses a jpeg stream and stores the information from the stream to be used in subsequent API calls for retrieving the image information and decoding it.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStream jpeg_stream) {
-    if (data == nullptr || jpeg_stream == nullptr) {
+RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle) {
+    if (data == nullptr || jpeg_stream_handle == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     if (!rocjpeg_stream_handle->rocjpeg_stream->ParseJpegStream(data, length)) {
         return ROCJPEG_STATUS_BAD_JPEG;
     }
@@ -62,15 +62,15 @@ RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t le
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStream jpeg_stream)
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle)
 //! \ingroup group_amd_rocjpeg
 //! Release the jpeg parser object and resources.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStream jpeg_stream) {
-    if (jpeg_stream == nullptr) {
+RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle) {
+    if (jpeg_stream_handle == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     delete rocjpeg_stream_handle;
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -110,12 +110,12 @@ RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle) {
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream jpeg_stream,
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle,
 //!                     int *num_components, RocJpegChromaSubsampling *subsampling, int *widths, int *heights)
 //! \ingroup group_amd_rocjpeg
 //! Retrieve the image info, including channel, width and height of each component, and chroma subsampling.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream jpeg_stream, uint8_t *num_components,
+RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, uint8_t *num_components,
     RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights) {
     if (handle == nullptr || num_components == nullptr ||
         subsampling == nullptr || widths == nullptr || heights == nullptr) {
@@ -124,7 +124,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
-        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->GetImageInfo(jpeg_stream, num_components, subsampling, widths, heights);
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->GetImageInfo(jpeg_stream_handle, num_components, subsampling, widths, heights);
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());
@@ -135,7 +135,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream
 }
 
 /*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
+//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 //! \ingroup group_amd_rocjpeg
 //! Decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API.
 //! Destination buffers should be large enough to be able to store output of specified format.
@@ -144,7 +144,7 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream
 //! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
 //! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
 /*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params,
+RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params,
     RocJpegImage *destination) {
 
     if (handle == nullptr || decode_params == nullptr || destination == nullptr) {
@@ -153,7 +153,7 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStream jpeg_
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
     try {
-        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(jpeg_stream, decode_params, destination);
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->Decode(jpeg_stream_handle, decode_params, destination);
     } catch (const std::exception& e) {
         rocjpeg_handle->CaptureError(e.what());
         ERR(e.what());

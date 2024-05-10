@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 #include "../rocjpeg_samples_utils.h"
 
-void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegStream rocjpeg_stream, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
+void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegStreamHandle rocjpeg_stream, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
     RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
 
     std::vector<char> file_data;
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
     RocJpegBackend rocjpeg_backend = ROCJPEG_BACKEND_HARDWARE;
     RocJpegDecodeParams decode_params = {};
     std::vector<RocJpegHandle> rocjpeg_handles;
-    std::vector<RocJpegStream> rocjpeg_streams;
+    std::vector<RocJpegStreamHandle> rocjpeg_streams;
     std::mutex mutex;
     std::vector<uint64_t> num_decoded_images_per_thread;
     std::vector<double> image_size_in_mpixels_per_thread;
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Creating decoder objects, please wait!" << std::endl;
     for (int i = 0; i < num_threads; i++) {
-        RocJpegStream rocjpeg_stream;
+        RocJpegStreamHandle rocjpeg_stream;
         RocJpegHandle rocjpeg_handle;
         CHECK_ROCJPEG(rocJpegCreate(rocjpeg_backend, device_id, &rocjpeg_handle));
         rocjpeg_handles.push_back(std::move(rocjpeg_handle));

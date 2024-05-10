@@ -67,13 +67,13 @@ RocJpegStatus ROCJpegDecoder::InitializeDecoder() {
     return rocjpeg_status;
 }
 
-RocJpegStatus ROCJpegDecoder::Decode(RocJpegStream jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
+RocJpegStatus ROCJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
-    if (jpeg_stream == nullptr || decode_params == nullptr || destination == nullptr) {
+    if (jpeg_stream_handle == nullptr || decode_params == nullptr || destination == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
 
     VASurfaceID current_surface_id;
@@ -128,12 +128,12 @@ RocJpegStatus ROCJpegDecoder::Decode(RocJpegStream jpeg_stream, const RocJpegDec
 
 }
 
-RocJpegStatus ROCJpegDecoder::GetImageInfo(RocJpegStream jpeg_stream, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
+RocJpegStatus ROCJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handle, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
     std::lock_guard<std::mutex> lock(mutex_);
-    if (jpeg_stream == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
+    if (jpeg_stream_handle == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-    auto rocjpeg_stream_handle = static_cast<RocJpegStreamHandle*>(jpeg_stream);
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
 
     *num_components = jpeg_stream_params->picture_parameter_buffer.num_components;

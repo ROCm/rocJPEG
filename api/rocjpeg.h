@@ -180,9 +180,8 @@ typedef enum {
 /**
  * @brief A handle representing a RocJpeg stream.
  *
- * This handle is used to interact with RocJpeg streams in the API.
- * It is an opaque pointer type, meaning that the actual implementation
- * details are hidden from the user.
+ * The `RocJpegStreamHandle` is a pointer type used to represent a RocJpegStream instance.
+ * It is used as a handle to parse and store various parameters from a JPEG stream.
  */
 typedef void* RocJpegStreamHandle;
 

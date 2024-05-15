@@ -221,6 +221,20 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
     }
 }
 
+/**
+ * @brief Converts YUV444 image to RGB image.
+ *
+ * This function takes a YUV444 image and converts it to an RGB image using the ColorConvertYUV444ToRGBKernel HIP kernel.
+ *
+ * @param stream The HIP stream used for asynchronous execution of the kernel.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image Pointer to the destination RGB image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB image buffer.
+ * @param src_yuv_image Pointer to the source YUV444 image buffer.
+ * @param src_yuv_image_stride_in_bytes The stride (in bytes) of the source YUV444 image buffer.
+ * @param src_u_image_offset The offset (in bytes) to the U component in the source YUV444 image buffer.
+ */
 void ColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
@@ -435,6 +449,22 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
 }
 
 
+/**
+ * @brief Converts YUV444 image to RGB planar format.
+ *
+ * This function takes a YUV444 image and converts it to RGB planar format using the ColorConvertYUV444ToRGBPlanarKernel HIP kernel.
+ *
+ * @param stream The HIP stream to be used for the kernel launch.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image_r Pointer to the destination red channel image.
+ * @param dst_image_g Pointer to the destination green channel image.
+ * @param dst_image_b Pointer to the destination blue channel image.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination image.
+ * @param src_yuv_image Pointer to the source YUV image.
+ * @param src_yuv_image_stride_in_bytes The stride (in bytes) of the source YUV image.
+ * @param src_u_image_offset The offset (in bytes) to the U channel in the source YUV image.
+ */
 void ColorConvertYUV444ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
     uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
@@ -639,6 +669,19 @@ __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_hei
     }
 }
 
+/**
+ * @brief Converts YUYV image format to RGB image format.
+ *
+ * This function takes a YUYV image and converts it to RGB image format using ColorConvertYUYVToRGBKernel HIP kernel
+ *
+ * @param stream The HIP stream to associate the kernel launch with.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image Pointer to the destination RGB image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB image buffer.
+ * @param src_image Pointer to the source YUYV image buffer.
+ * @param src_image_stride_in_bytes The stride (in bytes) of the source YUYV image buffer.
+ */
 void ColorConvertYUYVToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
@@ -860,6 +903,26 @@ __global__ void ColorConvertYUYVToRGBPlanarKernel(uint32_t dst_width, uint32_t d
     }
 }
 
+/**
+ * @brief Converts YUYV image format to RGB planar image format.
+ *
+ * This function takes a YUYV image and converts it to RGB planar image format
+ * using ColorConvertYUYVToRGBPlanarKernel HIP kernel.
+ * The YUYV image is represented as a packed format where each pixel consists of
+ * one luminance (Y) component and two chrominance (U and V) components. The RGB
+ * planar image format represents each color component (R, G, and B) in separate
+ * planes.
+ *
+ * @param stream The HIP stream to execute the kernel on.
+ * @param dst_width The width of the destination RGB planar image.
+ * @param dst_height The height of the destination RGB planar image.
+ * @param dst_image_r Pointer to the destination red (R) component image plane.
+ * @param dst_image_g Pointer to the destination green (G) component image plane.
+ * @param dst_image_b Pointer to the destination blue (B) component image plane.
+ * @param dst_image_stride_in_bytes The stride (in bytes) between consecutive rows of the destination image.
+ * @param src_image Pointer to the source YUYV image.
+ * @param src_image_stride_in_bytes The stride (in bytes) between consecutive rows of the source image.
+ */
 void ColorConvertYUYVToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
@@ -1081,6 +1144,21 @@ __global__ void ColorConvertNV12ToRGBKernel(uint32_t dst_width, uint32_t dst_hei
     }
 }
 
+/**
+ * @brief Converts an NV12 image to RGB format.
+ *
+ * This function takes an NV12 image and converts it to RGB format using the ColorConvertNV12ToRGBKernel HIP kernel.
+ *
+ * @param stream The CUDA stream to use for the kernel execution.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image Pointer to the destination RGB image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB image buffer.
+ * @param src_luma_image Pointer to the source luma (Y) image buffer.
+ * @param src_luma_image_stride_in_bytes The stride (in bytes) of the source luma (Y) image buffer.
+ * @param src_chroma_image Pointer to the source chroma (UV) image buffer.
+ * @param src_chroma_image_stride_in_bytes The stride (in bytes) of the source chroma (UV) image buffer.
+ */
 void ColorConvertNV12ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
@@ -1322,6 +1400,24 @@ __global__ void ColorConvertNV12ToRGBPlanarKernel(uint32_t dst_width, uint32_t d
     }
 }
 
+/**
+ * @brief Converts an NV12 image to RGB planar format.
+ *
+ * This function takes an NV12 image and converts it to RGB planar format using the ColorConvertNV12ToRGBPlanarKernel HIP kernel.
+ * The resulting RGB planar image is stored in separate R, G, and B channels.
+ *
+ * @param stream The HIP stream to use for the kernel execution.
+ * @param dst_width The width of the destination RGB planar image.
+ * @param dst_height The height of the destination RGB planar image.
+ * @param dst_image_r Pointer to the destination R channel of the RGB planar image.
+ * @param dst_image_g Pointer to the destination G channel of the RGB planar image.
+ * @param dst_image_b Pointer to the destination B channel of the RGB planar image.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB planar image.
+ * @param src_luma_image Pointer to the source luma (Y) channel of the NV12 image.
+ * @param src_luma_image_stride_in_bytes The stride (in bytes) of the source luma (Y) channel.
+ * @param src_chroma_image Pointer to the source chroma (UV) channel of the NV12 image.
+ * @param src_chroma_image_stride_in_bytes The stride (in bytes) of the source chroma (UV) channel.
+ */
 void ColorConvertNV12ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes,
@@ -1404,6 +1500,19 @@ __global__ void ColorConvertYUV400ToRGBKernel(uint32_t dst_width, uint32_t dst_h
     }
 }
 
+/**
+ * @brief Converts a YUV400 image to RGB format.
+ *
+ * This function takes a YUV400 image and converts it to RGB format using the ColorConvertYUV400ToRGBKernel HIP kernel.
+ *
+ * @param stream The HIP stream to be used for the kernel execution.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image Pointer to the destination RGB image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB image buffer.
+ * @param src_luma_image Pointer to the source YUV400 luma image buffer.
+ * @param src_luma_image_stride_in_bytes The stride (in bytes) of the source YUV400 luma image buffer.
+ */
 void ColorConvertYUV400ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes){
@@ -1452,6 +1561,21 @@ __global__ void ColorConvertYUV400ToRGBPlanarKernel(uint32_t dst_width, uint32_t
     }
 }
 
+/**
+ * @brief Converts a YUV400 image to RGB planar format.
+ *
+ * This function takes a YUV400 image and converts it to RGB planar format using the ColorConvertYUV400ToRGBPlanarKernel HIP kernel.
+ *
+ * @param stream The HIP stream on which the kernel function will be executed.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image_r Pointer to the destination red channel image.
+ * @param dst_image_g Pointer to the destination green channel image.
+ * @param dst_image_b Pointer to the destination blue channel image.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination image.
+ * @param src_luma_image Pointer to the source YUV400 luma image.
+ * @param src_luma_image_stride_in_bytes The stride (in bytes) of the source luma image.
+ */
 void ColorConvertYUV400ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_luma_image, uint32_t src_luma_image_stride_in_bytes) {
@@ -1499,6 +1623,19 @@ __global__ void ColorConvertRGBAToRGBKernel(uint32_t dst_width, uint32_t dst_hei
     *((DUINT6 *)(&dst_image[dst_idx])) = dst;
 }
 
+/**
+ * @brief Converts an RGBA image to an RGB image.
+ *
+ * This function takes an RGBA image and converts it to an RGB image using the ColorConvertRGBAToRGBKernel HIP kernel
+ *
+ * @param stream The HIP stream to execute the kernel on.
+ * @param dst_width The width of the destination image.
+ * @param dst_height The height of the destination image.
+ * @param dst_image Pointer to the destination image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination image buffer.
+ * @param src_image Pointer to the source image buffer.
+ * @param src_image_stride_in_bytes The stride (in bytes) of the source image buffer.
+ */
 void ColorConvertRGBAToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
     int localThreads_x = 16;
@@ -1537,6 +1674,21 @@ __global__ void ConvertInterleavedUVToPlanarUVKernel(uint32_t dst_width, uint32_
     *((uint2 *)(&dst_image2[dst_idx])) = dst2;
 
 }
+/**
+ * @brief Converts interleaved UV data to planar UV data.
+ *
+ * This function takes interleaved UV data and converts it to planar UV data
+ * using the ConvertInterleavedUVToPlanarUVKernel HIP kernel.
+ *
+ * @param stream The HIP stream to use for the kernel execution.
+ * @param dst_width The width of the destination image.
+ * @param dst_height The height of the destination image.
+ * @param dst_image1 Pointer to the destination image buffer for the first plane.
+ * @param dst_image2 Pointer to the destination image buffer for the second plane.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination image buffer.
+ * @param src_image1 Pointer to the source image buffer containing interleaved UV data.
+ * @param src_image1_stride_in_bytes The stride (in bytes) of the source image buffer.
+ */
 void ConvertInterleavedUVToPlanarUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image1, uint8_t *dst_image2, uint32_t dst_image_stride_in_bytes,
     const uint8_t *src_image1, uint32_t src_image1_stride_in_bytes) {
@@ -1571,6 +1723,21 @@ __global__ void ExtractYFromPackedYUYVKernel(uint32_t dst_width, uint32_t dst_he
     }
 }
 
+/**
+ * @brief Extracts the Y component from a packed YUYV image and stores it in a separate buffer.
+ *
+ * This function takes a packed YUYV image and extracts the Y component (luma) from it. The extracted Y component is then
+ * stored in a separate buffer. The function operates on the GPU using HIP
+ * and requires a HIP stream for asynchronous execution.
+ *
+ * @param stream The HIP stream to be used for the kernel execution.
+ * @param dst_width The width of the destination buffer (in pixels).
+ * @param dst_height The height of the destination buffer (in pixels).
+ * @param destination_y Pointer to the destination buffer where the extracted Y component will be stored.
+ * @param dst_luma_stride_in_bytes The stride (in bytes) of the destination buffer.
+ * @param src_image Pointer to the source packed YUYV image.
+ * @param src_image_stride_in_bytes The stride (in bytes) of the source image.
+ */
 void ExtractYFromPackedYUYV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint32_t dst_luma_stride_in_bytes, const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {
     int32_t local_threads_x = 16;
@@ -1613,6 +1780,25 @@ __global__ void ConvertPackedYUYVToPlanarYUVKernel(uint32_t dst_width, uint32_t 
     }
 }
 
+/**
+ * @brief Converts a packed YUYV image to planar YUV format.
+ *
+ * This function takes a packed YUYV image and converts it to planar YUV format
+ * using the ConvertPackedYUYVToPlanarYUVKernel HIP kernel.
+ * The packed YUYV image consists of interleaved Y, U, Y, V samples, while the
+ * planar YUV format separates the Y, U, and V samples into separate planes.
+ *
+ * @param stream The HIP stream to associate the kernel launch with.
+ * @param dst_width The width of the destination image in pixels.
+ * @param dst_height The height of the destination image in pixels.
+ * @param destination_y Pointer to the destination Y plane.
+ * @param destination_u Pointer to the destination U plane.
+ * @param destination_v Pointer to the destination V plane.
+ * @param dst_luma_stride_in_bytes The stride (in bytes) of the destination luma plane.
+ * @param dst_chroma_stride_in_bytes The stride (in bytes) of the destination chroma planes.
+ * @param src_image Pointer to the source packed YUYV image.
+ * @param src_image_stride_in_bytes The stride (in bytes) of the source image.
+ */
 void ConvertPackedYUYVToPlanarYUV(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *destination_y, uint8_t *destination_u, uint8_t *destination_v, uint32_t dst_luma_stride_in_bytes, uint32_t dst_chroma_stride_in_bytes,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes) {

@@ -31,6 +31,18 @@ RocJpegDecoder::~RocJpegDecoder() {
     }
 }
 
+/**
+ * @brief Initializes the HIP environment for the RocJpegDecoder.
+ *
+ * This function initializes the HIP environment for the RocJpegDecoder by setting the device, 
+ * creating a HIP stream, and retrieving device properties.
+ *
+ * @param device_id The ID of the device to be used for decoding.
+ * @return The status of the initialization process.
+ *         - ROCJPEG_STATUS_SUCCESS if the initialization is successful.
+ *         - ROCJPEG_STATUS_NOT_INITIALIZED if no GPU device is found.
+ *         - ROCJPEG_STATUS_INVALID_PARAMETER if the requested device_id is not found.
+ */
 RocJpegStatus RocJpegDecoder::InitHIP(int device_id) {
     hipError_t hip_status = hipSuccess;
     CHECK_HIP(hipGetDeviceCount(&num_devices_));
@@ -48,6 +60,17 @@ RocJpegStatus RocJpegDecoder::InitHIP(int device_id) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Initializes the RocJpegDecoder.
+ *
+ * This function initializes the RocJpegDecoder by performing the following steps:
+ * 1. Initializes the HIP device.
+ * 2. If the backend is ROCJPEG_BACKEND_HARDWARE, initializes the VA-API JPEG decoder.
+ *
+ * @return The status of the initialization process.
+ *         - ROCJPEG_STATUS_SUCCESS if the initialization is successful.
+ *         - An error code if the initialization fails.
+ */
 RocJpegStatus RocJpegDecoder::InitializeDecoder() {
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
     rocjpeg_status = InitHIP(device_id_);
@@ -67,6 +90,17 @@ RocJpegStatus RocJpegDecoder::InitializeDecoder() {
     return rocjpeg_status;
 }
 
+/**
+ * @brief Decodes a JPEG image using the RocJpegDecoder.
+ *
+ * This function decodes a JPEG image from the provided JPEG stream handle and decode parameters,
+ * and stores the decoded image in the destination buffer.
+ *
+ * @param jpeg_stream_handle The handle to the JPEG stream.
+ * @param decode_params The decode parameters for the JPEG image.
+ * @param destination The destination buffer to store the decoded image.
+ * @return The status of the JPEG decoding operation.
+ */
 RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
     std::lock_guard<std::mutex> lock(mutex_);
     RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
@@ -123,11 +157,23 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
 
     CHECK_HIP(hipStreamSynchronize(hip_stream_));
 
-
     return ROCJPEG_STATUS_SUCCESS;
-
 }
 
+/**
+ * @brief Retrieves the image information from the JPEG stream.
+ *
+ * This function retrieves the number of components, chroma subsampling, widths, and heights
+ * of the image from the given JPEG stream.
+ *
+ * @param jpeg_stream_handle The handle to the JPEG stream.
+ * @param num_components Pointer to store the number of components in the image.
+ * @param subsampling Pointer to store the chroma subsampling of the image.
+ * @param widths Array to store the widths of the image components.
+ * @param heights Array to store the heights of the image components.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful,
+ *         or ROCJPEG_STATUS_INVALID_PARAMETER if any of the input parameters are invalid.
+ */
 RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handle, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights){
     std::lock_guard<std::mutex> lock(mutex_);
     if (jpeg_stream_handle == nullptr || num_components == nullptr || subsampling == nullptr || widths == nullptr || heights == nullptr) {
@@ -181,6 +227,18 @@ RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handl
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Copies a channel from the `hip_interop_dev_mem` to the `destination` image.
+ *
+ * This function copies the channel specified by `channel_index` from the `hip_interop_dev_mem` to the `destination` image.
+ * The `channel_height` parameter specifies the height of the channel.
+ *
+ * @param hip_interop_dev_mem The `HipInteropDeviceMem` object containing the source channel data.
+ * @param channel_height The height of the channel to be copied.
+ * @param channel_index The index of the channel to be copied.
+ * @param destination The `RocJpegImage` object representing the destination image.
+ * @return The status of the operation. Returns `ROCJPEG_STATUS_SUCCESS` if the channel was copied successfully.
+ */
 RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_mem, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination) {
     if (hip_interop_dev_mem.pitch[channel_index] != 0 && destination->pitch[channel_index] != 0 && destination->channel[channel_index] != nullptr) {
         if (destination->pitch[channel_index] == hip_interop_dev_mem.pitch[channel_index]) {
@@ -194,6 +252,18 @@ RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_m
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Calculates the chroma height based on the surface format and picture height.
+ *
+ * This function takes the surface format, picture height, and a reference to the chroma height.
+ * It calculates the chroma height based on the surface format and assigns the result to the chroma_height parameter.
+ *
+ * @param surface_format The surface format of the image.
+ * @param picture_height The height of the picture.
+ * @param chroma_height  A reference to the variable where the calculated chroma height will be stored.
+ *
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful, or ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the surface format is not supported.
+ */
 RocJpegStatus RocJpegDecoder::GetChromaHeight(uint32_t surface_format, uint16_t picture_height, uint16_t &chroma_height) {
     switch (surface_format) {
         case VA_FOURCC_NV12: /*NV12: two-plane 8-bit YUV 4:2:0*/
@@ -214,6 +284,20 @@ RocJpegStatus RocJpegDecoder::GetChromaHeight(uint32_t surface_format, uint16_t 
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Converts the color format of the input image to RGB format.
+ *
+ * This function converts the color format of the input image to RGB format based on the surface format
+ * specified in the `hip_interop_dev_mem` parameter. The converted image is stored in the `destination`
+ * parameter.
+ *
+ * @param hip_interop_dev_mem The HipInteropDeviceMem object containing the input image data.
+ * @param picture_width The width of the input image.
+ * @param picture_height The height of the input image.
+ * @param destination Pointer to the RocJpegImage object where the converted image will be stored.
+ * @return The status of the color conversion operation. Returns ROCJPEG_STATUS_SUCCESS if the conversion
+ *         is successful. Returns ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the surface format is not supported.
+ */
 RocJpegStatus RocJpegDecoder::ColorConvertToRGB(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
     switch (hip_interop_dev_mem.surface_format) {
         case VA_FOURCC_444P:
@@ -244,6 +328,21 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGB(HipInteropDeviceMem& hip_interop
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Converts the color format of the input image to RGB planar format.
+ *
+ * This function converts the color format of the input image to RGB planar format.
+ * The conversion is performed based on the surface format specified in the `hip_interop_dev_mem`.
+ * The converted image is stored in the `destination` RocJpegImage object.
+ *
+ * @param hip_interop_dev_mem The HipInteropDeviceMem object containing the input image data.
+ * @param picture_width The width of the input image.
+ * @param picture_height The height of the input image.
+ * @param destination Pointer to the RocJpegImage object where the converted image will be stored.
+ * @return RocJpegStatus The status of the color conversion operation.
+ *         Returns ROCJPEG_STATUS_SUCCESS if the conversion is successful.
+ *         Returns ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the surface format is not supported.
+ */
 RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
     switch (hip_interop_dev_mem.surface_format) {
         case VA_FOURCC_444P:
@@ -276,6 +375,23 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_i
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Retrieves the planar YUV output format from the input image.
+ *
+ * This function converts the input image data to planar YUV format based on the surface format of the input data.
+ * If the surface format is ROCJPEG_FOURCC_YUYV, the function extracts the packed YUYV data and copies them into the
+ * first, second, and third channels of the destination image. If the surface format is VA_FOURCC_NV12, the function
+ * extracts the interleaved UV channels and copies them into the second and third channels of the destination image.
+ * If the surface format is VA_FOURCC_444P, the function copies the luma channel and both chroma channels into the
+ * destination image.
+ *
+ * @param hip_interop_dev_mem The HipInteropDeviceMem object containing the input image data.
+ * @param picture_width The width of the input picture.
+ * @param picture_height The height of the input picture.
+ * @param chroma_height The height of the chroma channels.
+ * @param destination Pointer to the RocJpegImage object where the converted image data will be stored.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful.
+ */
 RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination) {
     if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
         // Extract the packed YUYV and copy them into the first, second, and thrid channels of the destination.
@@ -296,6 +412,19 @@ RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Retrieves the Y output format from the input YUV image.
+ *
+ * This function extracts the Y output format from the RocJpegDecoder based on the provided parameters.
+ * If the surface format is ROCJPEG_FOURCC_YUYV, it calls the ExtractYFromPackedYUYV function to extract the Y component
+ * from the packed YUYV format. Otherwise, it calls the CopyChannel function to copy the luma channel.
+ *
+ * @param hip_interop_dev_mem The HipInteropDeviceMem object containing the surface format and device memory.
+ * @param picture_width The width of the picture.
+ * @param picture_height The height of the picture.
+ * @param destination Pointer to the RocJpegImage object where the extracted Y component will be stored.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful.
+ */
 RocJpegStatus RocJpegDecoder::GetYOutputFormat(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination) {
     if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
         ExtractYFromPackedYUYV(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],

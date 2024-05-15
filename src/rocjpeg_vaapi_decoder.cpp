@@ -22,6 +22,15 @@ THE SOFTWARE.
 
 #include "rocjpeg_vaapi_decoder.h"
 
+/**
+ * @brief Default constructor for RocJpegVappiMemoryPool class.
+ *
+ * This constructor initializes the memory pool for different surface formats used in RocJpegVappiDecoder.
+ * It creates an empty vector for each surface format and stores it in the mem_pool_ map.
+ *
+ * @param None
+ * @return None
+ */
 RocJpegVappiMemoryPool::RocJpegVappiMemoryPool() {
 std::vector<uint32_t> surface_formats = {VA_RT_FORMAT_RGB32, VA_RT_FORMAT_RGBP, VA_RT_FORMAT_YUV444,
                                          VA_RT_FORMAT_YUV422, VA_RT_FORMAT_YUV420, VA_RT_FORMAT_YUV400};
@@ -30,6 +39,15 @@ std::vector<uint32_t> surface_formats = {VA_RT_FORMAT_RGB32, VA_RT_FORMAT_RGBP, 
     }
 }
 
+/**
+ * @brief Releases the resources used by the RocJpegVappiMemoryPool.
+ *
+ * This function releases the VA-API contexts, surfaces, HIP device memory, and HIP external memory
+ * associated with the memory pool. It iterates over each entry in the memory pool and checks if
+ * the VA-API context ID, VA-API surface ID, HIP mapped device memory, or HIP external memory is
+ * non-zero. If so, it destroys the corresponding resource using the appropriate API function.
+ * Finally, it resets the HIP interop structure for each entry in the memory pool.
+ */
 void RocJpegVappiMemoryPool::ReleaseResources() {
     VAStatus va_status;
     hipError_t hip_status;
@@ -74,6 +92,18 @@ void RocJpegVappiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
     va_display_ = va_display;
 }
 
+/**
+ * @brief Adds a pool entry to the memory pool for a specific surface format.
+ *
+ * This function adds a pool entry to the memory pool for a specific surface format.
+ * If the memory pool for the given surface format is not full, the new entry is added to the pool.
+ * If the memory pool is full, the oldest entry is removed from the pool and replaced with the new entry.
+ * If the removed entry has associated resources (VA context, VA surface, HIP memory), they are destroyed and freed.
+ *
+ * @param surface_format The surface format for which the pool entry is being added.
+ * @param pool_entry The pool entry to be added.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the operation is successful.
+ */
 RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry) {
     auto& entires = mem_pool_[surface_format];
     if (entires.size() < entires.capacity()) {
@@ -100,6 +130,14 @@ RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Retrieves a `RocJpegVappiMemPoolEntry` from the memory pool based on the specified surface format, image width, and image height.
+ *
+ * @param surface_format The surface format of the entry to retrieve.
+ * @param image_width The width of the image of the entry to retrieve.
+ * @param image_height The height of the image of the entry to retrieve.
+ * @return The matching `RocJpegVappiMemPoolEntry` if found, or a default-initialized entry if not found.
+ */
 RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height) {
     for (const auto& entry : mem_pool_[surface_format]) {
         if (entry.image_width == image_width && entry.image_height == image_height) {
@@ -120,6 +158,20 @@ bool RocJpegVappiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
     return false;
 }
 
+/**
+ * @brief Deletes a surface ID from the memory pool.
+ *
+ * This function deletes the specified surface ID from the memory pool. It performs the following actions:
+ * 1. If the surface ID has a valid context ID, it destroys the context associated with the surface ID.
+ * 2. It destroys the surface ID itself.
+ * 3. If the surface ID has a valid HIP mapped device memory, it frees the memory.
+ * 4. If the surface ID has a valid HIP external memory, it destroys the memory.
+ * 5. It clears the HIP interop structure associated with the surface ID.
+ * 6. It removes the entry from the memory pool.
+ *
+ * @param surface_id The surface ID to be deleted.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the surface ID was successfully deleted.
+ */
 RocJpegStatus RocJpegVappiMemoryPool::DeleteSurfaceId(VASurfaceID surface_id) {
     for (auto& pair : mem_pool_) {
         auto& entries = pair.second;
@@ -149,6 +201,21 @@ RocJpegStatus RocJpegVappiMemoryPool::DeleteSurfaceId(VASurfaceID surface_id) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Retrieves the HipInteropDeviceMem associated with a given VASurfaceID from the memory pool.
+ *
+ * This function searches the memory pool for the entry that matches the provided VASurfaceID.
+ * If a matching entry is found and the associated HipInteropDeviceMem is not already initialized,
+ * it initializes the HipInteropDeviceMem by exporting the VASurfaceID as a DRM prime surface handle,
+ * importing it as an external memory object, and getting the mapped buffer for the external memory.
+ * The function then updates the HipInteropDeviceMem with the surface format, width, height, offsets,
+ * pitches, and number of layers from the exported surface descriptor.
+ *
+ * @param surface_id The VASurfaceID to retrieve the HipInteropDeviceMem for.
+ * @param hip_interop [out] The retrieved HipInteropDeviceMem.
+ * @return RocJpegStatus Returns ROCJPEG_STATUS_SUCCESS if the HipInteropDeviceMem is successfully retrieved,
+ *         ROCJPEG_STATUS_INVALID_PARAMETER if the requested surface_id is not found in the memory pool.
+ */
 RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
     for (auto& pair : mem_pool_) {
         auto& entries = pair.second;
@@ -194,6 +261,13 @@ RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
     ERR("the surface_id: " + TOSTR(surface_id) + " was not found in the memory pool!");
     return ROCJPEG_STATUS_INVALID_PARAMETER;
 }
+/**
+ * @brief Constructs a RocJpegVappiDecoder object.
+ *
+ * This constructor initializes a RocJpegVappiDecoder object with the specified device ID and default values for other member variables.
+ *
+ * @param device_id The ID of the device to be used for decoding.
+ */
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
     max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
     vaapi_mem_pool_(std::make_unique<RocJpegVappiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
@@ -209,8 +283,17 @@ RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id},
                           {"gfx1100", {2, false, false}},
                           {"gfx1101", {1, false, false}},
                           {"gfx1102", {2, false, false}}};
-    };
+};
 
+/**
+ * @brief Destructor for the RocJpegVappiDecoder class.
+ *
+ * This destructor is responsible for cleaning up the resources used by the RocJpegVappiDecoder object.
+ * It closes the DRM file descriptor, releases the VAAPI memory pool resources, destroys the VAAPI data buffers,
+ * destroys the VAAPI configuration, and terminates the VAAPI display.
+ *
+ * @note If any of the cleanup operations fail, an error message will be printed.
+ */
 RocJpegVappiDecoder::~RocJpegVappiDecoder() {
     if (drm_fd_ != -1) {
         close(drm_fd_);
@@ -236,6 +319,17 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
     }
 }
 
+/**
+ * @brief Initializes the VAAPI decoder for RocJpeg.
+ *
+ * This function initializes the VAAPI decoder for RocJpeg by setting the device ID, GCN architecture name,
+ * and other necessary parameters. It also sets up the VAAPI display and creates the decoder configuration.
+ *
+ * @param device_name The name of the device.
+ * @param gcn_arch_name The name of the GCN architecture.
+ * @param device_id The ID of the device.
+ * @return The status of the initialization process.
+ */
 RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id) {
     device_id_ = device_id;
     std::size_t pos = gcn_arch_name.find_first_of(":");
@@ -281,6 +375,17 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Initializes the VAAPI decoder.
+ *
+ * This function initializes the VAAPI decoder by opening the DRM node, creating the va_display,
+ * setting the info callback, and initializing the va_display.
+ *
+ * @param drm_node The path to the DRM node.
+ * @return The status of the initialization process.
+ *         - ROCJPEG_STATUS_SUCCESS if the initialization is successful.
+ *         - ROCJPEG_STATUS_NOT_INITIALIZED if the initialization fails.
+ */
 RocJpegStatus RocJpegVappiDecoder::InitVAAPI(std::string drm_node) {
     drm_fd_ = open(drm_node.c_str(), O_RDWR);
     if (drm_fd_ < 0) {
@@ -298,6 +403,17 @@ RocJpegStatus RocJpegVappiDecoder::InitVAAPI(std::string drm_node) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Creates the decoder configuration for the RocJpegVappiDecoder.
+ *
+ * This function creates the decoder configuration by querying the VA API for supported entrypoints
+ * and checking if the hardware JPEG decoder is supported. If the hardware JPEG decoder is supported,
+ * it retrieves the maximum picture width and height attributes from the VA API and creates the configuration.
+ *
+ * @return The status of the decoder configuration creation.
+ *         - ROCJPEG_STATUS_SUCCESS if the configuration is created successfully.
+ *         - ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED if the hardware JPEG decoder is not supported.
+ */
 RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
     int max_num_entrypoints = vaMaxNumEntrypoints(va_display_);
     std::vector<VAEntrypoint> jpeg_entrypoint_list;
@@ -335,6 +451,14 @@ RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
     }
 }
 
+/**
+ * @brief Destroys the data buffers used by the RocJpegVappiDecoder.
+ *
+ * This function destroys the data buffers used by the RocJpegVappiDecoder, including the picture parameter buffer,
+ * quantization matrix buffer, Huffman table buffer, slice parameter buffer, and slice data buffer.
+ *
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the data buffers were successfully destroyed.
+ */
 RocJpegStatus RocJpegVappiDecoder::DestroyDataBuffers() {
     if (va_picture_parameter_buf_id_) {
         CHECK_VAAPI(vaDestroyBuffer(va_display_, va_picture_parameter_buf_id_));
@@ -359,6 +483,21 @@ RocJpegStatus RocJpegVappiDecoder::DestroyDataBuffers() {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Submits a JPEG decode operation to the VAAPI decoder.
+ *
+ * This function submits a JPEG decode operation to the VAAPI decoder using the provided JPEG stream parameters.
+ * It checks for invalid parameters and unsupported image resolutions before proceeding with the decode operation.
+ * The output format is determined based on the requested format and the capabilities of the hardware decoder.
+ *
+ * @param jpeg_stream_params The JPEG stream parameters for the decode operation.
+ * @param surface_id [out] The ID of the output surface where the decoded image will be stored.
+ * @param output_format The desired output format for the decoded image.
+ * @return The status of the decode operation.
+ *         - ROCJPEG_STATUS_SUCCESS if the decode operation was successful.
+ *         - ROCJPEG_STATUS_INVALID_PARAMETER if the provided parameters are invalid.
+ *         - ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the JPEG image resolution or chroma subsampling is not supported.
+ */
 RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format) {
     if (jpeg_stream_params == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
@@ -456,6 +595,16 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Synchronizes the specified VASurfaceID.
+ *
+ * This function synchronizes the specified VASurfaceID by querying its status and waiting until it becomes ready.
+ * If the surface ID is not found in the VAAPI memory pool, it returns ROCJPEG_STATUS_INVALID_PARAMETER.
+ * If any error occurs during synchronization, it returns ROCJPEG_STATUS_RUNTIME_ERROR.
+ *
+ * @param surface_id The VASurfaceID to synchronize.
+ * @return The status of the synchronization operation.
+ */
 RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
     VASurfaceStatus surface_status;
     if (!vaapi_mem_pool_->FindSurfaceId(surface_id)) {
@@ -480,10 +629,28 @@ RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Retrieves the HipInteropDeviceMem associated with the specified VASurfaceID.
+ *
+ * This function retrieves the HipInteropDeviceMem associated with the specified VASurfaceID
+ * from the vaapi_mem_pool_ and stores it in the provided `hip_interop` parameter.
+ *
+ * @param surface_id The VASurfaceID of the surface to retrieve the HipInteropDeviceMem for.
+ * @param hip_interop The reference to a HipInteropDeviceMem object where the retrieved memory will be stored.
+ * @return The RocJpegStatus indicating the success or failure of the operation.
+ */
 RocJpegStatus RocJpegVappiDecoder::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
     return vaapi_mem_pool_->GetHipInteropMem(surface_id, hip_interop);
 }
 
+/**
+ * @brief Retrieves the visible devices for the RocJpegVappiDecoder.
+ *
+ * This function retrieves the visible devices for the RocJpegVappiDecoder by reading the value of the environment variable "HIP_VISIBLE_DEVICES".
+ * The visible devices are stored in the provided vector `visible_devices_vector`.
+ *
+ * @param visible_devices_vector The vector to store the visible devices.
+ */
 void RocJpegVappiDecoder::GetVisibleDevices(std::vector<int>& visible_devices_vetor) {
     char *visible_devices = std::getenv("HIP_VISIBLE_DEVICES");
     if (visible_devices != nullptr) {
@@ -496,6 +663,15 @@ void RocJpegVappiDecoder::GetVisibleDevices(std::vector<int>& visible_devices_ve
     }
 }
 
+/**
+ * Retrieves the current compute partitions from the system.
+ *
+ * This function searches for the "current_compute_partition" file in the "/sys/devices/" directory
+ * and reads the partition value from each file found. The partition value is then compared to known
+ * partition names and the corresponding ComputePartition enum value is added to the provided vector.
+ *
+ * @param current_compute_partitions A vector to store the current compute partitions.
+ */
 void RocJpegVappiDecoder::GetCurrentComputePartition(std::vector<ComputePartition> &current_compute_partitions) {
     std::string search_path = "/sys/devices/";
     std::string partition_file = "current_compute_partition";
@@ -526,6 +702,16 @@ void RocJpegVappiDecoder::GetCurrentComputePartition(std::vector<ComputePartitio
     }
 }
 
+/**
+ * @brief Calculates the offset for the DRM node based on the device name, device ID, visible devices,
+ *        current compute partitions, and the selected compute partition.
+ *
+ * @param device_name The name of the device.
+ * @param device_id The ID of the device.
+ * @param visible_devices A vector containing the IDs of the visible devices.
+ * @param current_compute_partitions A vector containing the current compute partitions.
+ * @param offset The calculated offset for the DRM node.
+ */
 void RocJpegVappiDecoder::GetDrmNodeOffset(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
                                                    std::vector<ComputePartition> &current_compute_partitions,
                                                    int &offset) {

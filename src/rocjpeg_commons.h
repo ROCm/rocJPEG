@@ -77,12 +77,33 @@ static inline int align(int value, int alignment) {
    return (value + alignment - 1) & ~(alignment - 1);
 }
 
+/**
+ * @brief Custom exception class for RocJpeg.
+ *
+ * This exception class is used to handle errors and exceptions that occur during RocJpeg operations.
+ * It inherits from the std::exception class and provides an implementation for the what() function.
+ */
 class RocJpegException : public std::exception {
     public:
+        /**
+         * @brief Constructs a RocJpegException object with the specified error message.
+         *
+         * @param message The error message associated with the exception.
+         */
         explicit RocJpegException(const std::string& message):message_(message){}
+
+        /**
+         * @brief Returns a C-style string describing the exception.
+         *
+         * This function overrides the what() function from the std::exception class and returns
+         * the error message associated with the exception.
+         *
+         * @return A C-style string describing the exception.
+         */
         virtual const char* what() const throw() override {
             return message_.c_str();
         }
+
     private:
         std::string message_;
 };

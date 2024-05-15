@@ -28,20 +28,61 @@ THE SOFTWARE.
 #include "rocjpeg_decoder.h"
 
 /**
- * @brief RocJpegDecoderHandle class
- * This class wraps around RocJpegDecoder to decode a JPEG stream.
+ * @brief The RocJpegDecoderHandle class represents a handle to the RocJpegDecoder object.
+ *
+ * This class provides a convenient way to manage the lifetime of a RocJpegDecoder object.
+ * It encapsulates the RocJpegDecoder object and provides error handling functionality.
  */
 class RocJpegDecoderHandle {
-    public:
-        explicit RocJpegDecoderHandle(RocJpegBackend backend, int device_id) : rocjpeg_decoder(std::make_shared<RocJpegDecoder>(backend, device_id)) {};
-        ~RocJpegDecoderHandle() { ClearErrors(); }
-        std::shared_ptr<RocJpegDecoder> rocjpeg_decoder;
-        bool NoError() { return error_.empty(); }
-        const char* ErrorMsg() { return error_.c_str(); }
-        void CaptureError(const std::string& err_msg) { error_ = err_msg; }
-    private:
-        void ClearErrors() { error_ = "";}
-        std::string error_;
+public:
+    /**
+     * @brief Constructs a RocJpegDecoderHandle object with the specified backend and device ID.
+     *
+     * @param backend The backend to use for decoding.
+     * @param device_id The ID of the device to use for decoding.
+     */
+    explicit RocJpegDecoderHandle(RocJpegBackend backend, int device_id) : rocjpeg_decoder(std::make_shared<RocJpegDecoder>(backend, device_id)) {};
+
+    /**
+     * @brief Destructor for the RocJpegDecoderHandle class.
+     *
+     * Clears any errors associated with the handle.
+     */
+    ~RocJpegDecoderHandle() { ClearErrors(); }
+
+    /**
+     * @brief The RocJpegDecoder object associated with the handle.
+     */
+    std::shared_ptr<RocJpegDecoder> rocjpeg_decoder;
+
+    /**
+     * @brief Checks if there are no errors associated with the handle.
+     *
+     * @return true if there are no errors, false otherwise.
+     */
+    bool NoError() { return error_.empty(); }
+
+    /**
+     * @brief Gets the error message associated with the handle.
+     *
+     * @return The error message as a C-style string.
+     */
+    const char* ErrorMsg() { return error_.c_str(); }
+
+    /**
+     * @brief Captures an error message for the handle.
+     *
+     * @param err_msg The error message to capture.
+     */
+    void CaptureError(const std::string& err_msg) { error_ = err_msg; }
+
+private:
+    /**
+     * @brief Clears any errors associated with the handle.
+     */
+    void ClearErrors() { error_ = ""; }
+
+    std::string error_;
 };
 
 #endif //ROC_JPEG_DECODER_HANDLE_H

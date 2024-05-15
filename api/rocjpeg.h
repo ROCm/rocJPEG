@@ -27,49 +27,61 @@ THE SOFTWARE.
 #pragma once
 #include "hip/hip_runtime.h"
 
-/*****************************************************************************************************************/
-//! \file rocjpeg.h
-//! \brief The AMD rocJPEG Library.
-//! \defgroup group_amd_rocjepg rocJPEG: AMD ROCm JPEG Decode API
-//! \brief  rocJPEG API is a toolkit to decode JPEG images using a hardware-accelerated JPEG decoder on AMD’s GPUs.
-/******************************************************************************************************************/
+/**
+ * @file rocjpeg.h
+ * @brief The AMD rocJPEG Library.
+ * @defgroup group_amd_rocjepg rocJPEG: AMD ROCm JPEG Decode API
+ * @brief rocJPEG API is a toolkit to decode JPEG images using a hardware-accelerated JPEG decoder on AMD’s GPUs.
+*/
 
 #if defined(__cplusplus)
 extern "C" {
 #endif // __cplusplus
-
-//! \def
-//! \ingroup group_amd_rocjpeg
-//! Maximum number of channels rocJPEG supports
+/**
+ * @def
+ * @ingroup group_amd_rocjpeg
+ * Maximum number of channels rocJPEG supports
+*/
 #define ROCJPEG_MAX_COMPONENT 4
 
-/*****************************************************/
-//! \enum RocJpegStatus
-//! \ingroup group_amd_rocjpeg
-//! rocJPEG return status enums
-//! These enums are used in all API calls to rocJPEG
-/*****************************************************/
+/**
+ * \enum RocJpegStatus
+ * \ingroup group_amd_rocjpeg
+ * @brief Enumeration representing the status codes for the rocJPEG library.
+ */
 typedef enum {
-    ROCJPEG_STATUS_SUCCESS = 0,
-    ROCJPEG_STATUS_NOT_INITIALIZED = -1,
-    ROCJPEG_STATUS_INVALID_PARAMETER = -2,
-    ROCJPEG_STATUS_BAD_JPEG = -3,
-    ROCJPEG_STATUS_JPEG_NOT_SUPPORTED = -4,
-    ROCJPEG_STATUS_OUTOF_MEMORY = -5,
-    ROCJPEG_STATUS_EXECUTION_FAILED = -6,
-    ROCJPEG_STATUS_ARCH_MISMATCH = -7,
-    ROCJPEG_STATUS_INTERNAL_ERROR = -8,
-    ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED = -9,
-    ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED = -10,
-    ROCJPEG_STATUS_RUNTIME_ERROR = -11,
-    ROCJPEG_STATUS_NOT_IMPLEMENTED = -12,
+    ROCJPEG_STATUS_SUCCESS = 0, /**< The operation completed successfully. */
+    ROCJPEG_STATUS_NOT_INITIALIZED = -1, /**< The rocJPEG library is not initialized. */
+    ROCJPEG_STATUS_INVALID_PARAMETER = -2, /**< An invalid parameter was passed to a function. */
+    ROCJPEG_STATUS_BAD_JPEG = -3, /**< The input JPEG data is corrupted or invalid. */
+    ROCJPEG_STATUS_JPEG_NOT_SUPPORTED = -4, /**< The JPEG format is not supported. */
+    ROCJPEG_STATUS_OUTOF_MEMORY = -5, /**< Out of memory error. */
+    ROCJPEG_STATUS_EXECUTION_FAILED = -6, /**< The execution of a function failed. */
+    ROCJPEG_STATUS_ARCH_MISMATCH = -7, /**< The architecture is not supported. */
+    ROCJPEG_STATUS_INTERNAL_ERROR = -8, /**< Internal error occurred. */
+    ROCJPEG_STATUS_IMPLEMENTATION_NOT_SUPPORTED = -9, /**< The requested implementation is not supported. */
+    ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED = -10, /**< Hardware JPEG decoder is not supported. */
+    ROCJPEG_STATUS_RUNTIME_ERROR = -11, /**< Runtime error occurred. */
+    ROCJPEG_STATUS_NOT_IMPLEMENTED = -12, /**< The requested feature is not implemented. */
 } RocJpegStatus;
 
-/*****************************************************/
-//! \enum RocJpegChromaSubsampling
-//! \ingroup group_amd_rocjpeg
-//! RocJpegChromaSubsampling enum identifies image chroma subsampling values stored inside JPEG input stream
-/*****************************************************/
+/**
+ * @enum RocJpegChromaSubsampling
+ * @ingroup group_amd_rocjpeg
+ * @brief Enum representing the chroma subsampling options for JPEG encoding/decoding.
+ *
+ * The `RocJpegChromaSubsampling` enum defines the available chroma subsampling options for JPEG encoding/decoding.
+ * Chroma subsampling refers to the reduction of color information in an image to reduce file size.
+ *
+ * The possible values are:
+ * - `ROCJPEG_CSS_444`: Full chroma resolution (4:4:4).
+ * - `ROCJPEG_CSS_440`: Chroma resolution reduced by half vertically (4:4:0).
+ * - `ROCJPEG_CSS_422`: Chroma resolution reduced by half horizontally (4:2:2).
+ * - `ROCJPEG_CSS_420`: Chroma resolution reduced by half both horizontally and vertically (4:2:0).
+ * - `ROCJPEG_CSS_411`: Chroma resolution reduced by a quarter horizontally (4:1:1).
+ * - `ROCJPEG_CSS_400`: No chroma information (4:0:0).
+ * - `ROCJPEG_CSS_UNKNOWN`: Unknown chroma subsampling.
+ */
 typedef enum {
     ROCJPEG_CSS_444 = 0,
     ROCJPEG_CSS_440 = 1,
@@ -80,205 +92,237 @@ typedef enum {
     ROCJPEG_CSS_UNKNOWN = -1
 } RocJpegChromaSubsampling;
 
-/*****************************************************/
-//! \struct RocJpegImage
-//! \ingroup group_amd_rocjpeg
-//! this structure is jpeg image descriptor used to return the decoded output image. User must allocate device
-//! memories for each channel for this structure and pass it to the decoder API.
-//! the decoder APIs then copies the decode image to this struct based on the requested output format (see RocJpegOutputFormat).
-/*****************************************************/
+/**
+ * @struct RocJpegImage
+ * @ingroup group_amd_rocjpeg
+ * @brief Structure representing a JPEG image.
+ *
+ * This structure holds the information about a JPEG image, including the pointers to the image channels
+ * and the pitch (stride) of each channel.
+ */
 typedef struct {
-    uint8_t* channel[ROCJPEG_MAX_COMPONENT];
-    uint32_t pitch[ROCJPEG_MAX_COMPONENT]; // pitch of each channel
+    uint8_t* channel[ROCJPEG_MAX_COMPONENT]; /**< Pointers to the image channels. */
+    uint32_t pitch[ROCJPEG_MAX_COMPONENT]; /**< Pitch (stride) of each channel. */
 } RocJpegImage;
 
-/*****************************************************/
-//! \enum RocJpegOutputFormat
-//! \ingroup group_amd_rocjpeg
-//! RocJpegOutputFormat enum specifies what type of output user wants for image decoding
-/*****************************************************/
+/**
+ * @enum RocJpegOutputFormat
+ * @ingroup group_amd_rocjpeg
+ * @brief Enum representing the output format options for the RocJpegImage.
+ *
+ * The `RocJpegOutputFormat` enum specifies the different output formats that can be used when decoding a JPEG image using the VCN JPEG decoder.
+ *
+ * The available output formats are:
+ * - `ROCJPEG_OUTPUT_NATIVE`: Returns the native unchanged decoded YUV image from the VCN JPEG decoder. The channel arrangement depends on the chroma subsampling format.
+ * - `ROCJPEG_OUTPUT_YUV_PLANAR`: Extracts the Y, U, and V channels from the decoded YUV image and writes them into separate channels of the RocJpegImage.
+ * - `ROCJPEG_OUTPUT_Y`: Returns only the luma component (Y) and writes it to the first channel of the RocJpegImage.
+ * - `ROCJPEG_OUTPUT_RGB`: Converts the decoded image to interleaved RGB format using the VCN JPEG decoder or HIP kernels and writes it to the first channel of the RocJpegImage.
+ * - `ROCJPEG_OUTPUT_RGB_PLANAR`: Converts the decoded image to RGB PLANAR format using the VCN JPEG decoder or HIP kernels and writes the RGB channels to separate channels of the RocJpegImage.
+ * - `ROCJPEG_OUTPUT_FORMAT_MAX`: Maximum allowed value for the output format.
+ */
 typedef enum {
-    // return native unchanged decoded YUV image from the VCN JPEG deocder.
-    // For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
-    // For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
-    // For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
-    // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
+    /**< return native unchanged decoded YUV image from the VCN JPEG deocder.
+         For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
+         For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
+         For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
+         For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_NATIVE = 0,
-    // extract Y, U, and V channels from the decoded YUV image from the VCN JPEG deocder and write into first, second, and thrid channel of RocJpegImage.
-    // For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage
+    /**< extract Y, U, and V channels from the decoded YUV image from the VCN JPEG deocder and write into first, second, and thrid channel of RocJpegImage.
+         For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_YUV_PLANAR = 1,
-    // return luma component (Y) and write to first channel of RocJpegImage
+    /**< return luma component (Y) and write to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_Y = 2,
-    // convert to interleaved RGB using VCN JPEG decoder (on MI300+) or using HIP kernels and write to first channel of RocJpegImage
+    /**< convert to interleaved RGB using VCN JPEG decoder (on MI300+) or using HIP kernels and write to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_RGB = 3,
-    // convert to RGB PLANAR using VCN JPEG decoder (on MI300+) or HIP kernels and write to first, second, and thrid channel of RocJpegImage.
+    /**< convert to RGB PLANAR using VCN JPEG decoder (on MI300+) or HIP kernels and write to first, second, and thrid channel of RocJpegImage. */
     ROCJPEG_OUTPUT_RGB_PLANAR = 4,
-    // maximum allowed value
-    ROCJPEG_OUTPUT_FORMAT_MAX = 5
+    ROCJPEG_OUTPUT_FORMAT_MAX = 5 /**< maximum allowed value */
 } RocJpegOutputFormat;
 
-/*****************************************************/
-//! \struct RocJpegDecodeParams
-//! The RocJpegDecodeParams structure contains the decoding parameters that specify the RocJpegOutputFormat.
-//! It also defines the crop rectangle for the region of interest (ROI) and the target width and height for the decoded picture to be resized.
-//! Note that if both the crop rectangle and target dimensions are defined, cropping is done first, followed by resizing the resulting ROI to
-//! the target dimension.
-//! \ingroup group_amd_rocjpeg
-/*****************************************************/
+/**
+ * @struct RocJpegDecodeParams
+ * @ingroup group_amd_rocjpeg
+ * @brief Structure containing parameters for JPEG decoding.
+ *
+ * This structure defines the parameters for decoding a JPEG image using the RocJpeg library.
+ * It specifies the output format, crop rectangle, and target dimensions for the decoded image.
+ * Note that if both the crop rectangle and target dimensions are defined, cropping is done first,
+ * followed by resizing the resulting ROI to the target dimension.
+ */
 typedef struct {
-    RocJpegOutputFormat output_format; // Output data format. See RocJpegOutputFormat for description
+    RocJpegOutputFormat output_format; /**< Output data format. See RocJpegOutputFormat for description. */
     struct {
-        int16_t left;
-        int16_t top;
-        int16_t right;
-        int16_t bottom;
-    } crop_rectangle; // (future use) Defines the region of interest (ROI) to be copied into the RocJpegImage output buffers.
+        int16_t left; /**< Left coordinate of the crop rectangle. */
+        int16_t top; /**< Top coordinate of the crop rectangle. */
+        int16_t right; /**< Right coordinate of the crop rectangle. */
+        int16_t bottom; /**< Bottom coordinate of the crop rectangle. */
+    } crop_rectangle; /**< (future use) Defines the region of interest (ROI) to be copied into the RocJpegImage output buffers. */
     struct {
-        uint32_t width;
-        uint32_t height;
-    } target_dimension; // (future use) Defines the target width and height of the picture to be resized. Both should be even.
-                        // if specified, allocate the RocJpegImage buffers based on these dimensions.
+        uint32_t width; /**< Target width of the picture to be resized. */
+        uint32_t height; /**< Target height of the picture to be resized. */
+    } target_dimension; /**< (future use) Defines the target width and height of the picture to be resized. Both should be even.
+                            If specified, allocate the RocJpegImage buffers based on these dimensions. */
 } RocJpegDecodeParams;
 
-/*****************************************************/
-//! \enum RocJpegBackend
-//! \ingroup group_amd_rocjpeg
-//! RocJpegBackend enum specifies what type of backend to use for JPEG decoding
-//! ROCJPEG_BACKEND_HARDWARE : supports baseline JPEG bitstream using VCN hardware-accelarted JPEG decoder
-//! ROCJPEG_BACKEND_HYBRID : uses CPU for Huffman decode and GPU for IDCT using HIP kernesl. This mode doesn't use VCN JPEG hardware decoder
-/*****************************************************/
+/**
+ * @enum RocJpegBackend
+ * @ingroup group_amd_rocjpeg
+ * @brief The backend options for the RocJpeg library.
+ *
+ * This enum defines the available backend options for the RocJpeg library.
+ * The backend can be either hardware or hybrid.
+ */
 typedef enum {
-    ROCJPEG_BACKEND_HARDWARE = 0,
-    ROCJPEG_BACKEND_HYBRID = 1
+    ROCJPEG_BACKEND_HARDWARE = 0, /**< Hardware backend option. */
+    ROCJPEG_BACKEND_HYBRID = 1    /**< Hybrid backend option. */
 } RocJpegBackend;
 
-
-/*****************************************************/
-//! The "opaque JPEG stream identifier" is a handle that is used to parse and store a JPEG stream.
-//! This handle is created by calling "rocjpegStreamCreate". By using this handle, we only need to parse a JPEG stream
-//! once by calling "rocJpegStreamParse" and can retrieve the stream's information in subsequent API calls such as "rocJpegGetImageInfo" and "rocJpegDecode" (see below).
-/*****************************************************/
+/**
+ * @brief A handle representing a RocJpeg stream.
+ *
+ * This handle is used to interact with RocJpeg streams in the API.
+ * It is an opaque pointer type, meaning that the actual implementation
+ * details are hidden from the user.
+ */
 typedef void* RocJpegStreamHandle;
 
-/*****************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
-//! \ingroup group_amd_rocjpeg
-//! Create the rocJPEG stream parser handle. This handle is used to parse and retrieve the information from the JPEG stream.
-//! IN/OUT jpeg_stream_handle: the rocjpeg stream handle.
-/*****************************************************/
+/**
+ * \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
+ * \ingroup group_amd_rocjpeg
+ * @brief Creates a RocJpegStreamHandle for JPEG stream processing.
+ *
+ * This function creates a RocJpegStreamHandle, which is used for processing JPEG streams.
+ * The created handle is stored in the `jpeg_stream_handle` parameter.
+ *
+ * @param jpeg_stream_handle Pointer to a RocJpegStreamHandle variable that will hold the created handle.
+ * @return RocJpegStatus Returns the status of the operation. Possible values are:
+ *                      - ROCJPEG_STATUS_SUCCESS: The operation was successful.
+ *                      - ROCJPEG_STATUS_INVALID_ARGUMENT: The `jpeg_stream_handle` parameter is NULL.
+ *                      - ROCJPEG_STATUS_OUT_OF_MEMORY: Failed to allocate memory for the handle.
+ *                      - ROCJPEG_STATUS_UNKNOWN_ERROR: An unknown error occurred.
+ */
 RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
 
-/*****************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle);
-//! \ingroup group_amd_rocjpeg
-//! Parses a jpeg stream and stores the information from the stream to be used in subsequent API calls for retrieving the image information and decoding it.
-//! IN data: Pointer to the buffer containing the jpeg stream data to be parsed.
-//! IN length: Length of the jpeg image buffer.
-//! IN/OUT jpeg_stream_handle: The jpeg stream parser handle that is used to parse and store the information from the input data buffer.
-/*****************************************************/
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle);
+ * @ingroup group_amd_rocjpeg
+ * @brief Parses a JPEG stream.
+ *
+ * This function parses a JPEG stream represented by the `data` parameter of length `length`.
+ * The parsed stream is associated with the `jpeg_stream_handle` provided.
+ *
+ * @param data The pointer to the JPEG stream data.
+ * @param length The length of the JPEG stream data.
+ * @param jpeg_stream_handle The handle to the JPEG stream.
+ * @return The status of the JPEG stream parsing operation.
+ */
 RocJpegStatus ROCJPEGAPI rocJpegStreamParse(const unsigned char *data, size_t length, RocJpegStreamHandle jpeg_stream_handle);
 
-/*****************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle);
-//! \ingroup group_amd_rocjpeg
-//! Release the stream parser object and resources.
-//! IN/OUT jpeg_stream_handle: instance handle to release
-/*****************************************************/
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle);
+ * @ingroup group_amd_rocjpeg
+ * @brief Destroys a RocJpegStreamHandle object and releases associated resources.
+ *
+ * This function destroys the RocJpegStreamHandle object specified by `jpeg_stream_handle` and releases any resources
+ * associated with it. After calling this function, the `jpeg_stream_handle` becomes invalid and should not be used
+ * anymore.
+ *
+ * @param jpeg_stream_handle The handle to the RocJpegStreamHandle object to be destroyed.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the operation is successful, or an error code
+ *         if an error occurs.
+ */
 RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle);
 
-/*****************************************************/
-// Opaque library handle identifier.
-//! Used in subsequent API calls after rocJpegCreate
-/*****************************************************/
+/**
+ * @brief A handle representing a RocJpeg instance.
+ *
+ * The `RocJpegHandle` is a pointer type used to represent a RocJpeg instance.
+ * It is used as a handle to perform various operations on the RocJpeg library.
+ */
 typedef void *RocJpegHandle;
 
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
-//! \ingroup group_amd_rocjpeg
-//! Create the decoder object based on backend and device_id. A handle to the created decoder is returned
-//! Initalization of rocjpeg handle. This handle is used for all consecutive calls
-//! IN backend : Backend to use.
-//! IN device_id : the GPU device id for which a decoder should be created. For example, use 0 for the first GPU device,
-//!                 and 1 for the second GPU device on the system, etc.
-//! IN/OUT handle : rocjpeg handle, jpeg decoder instance to use for.
-/*****************************************************************************************************/
+/**
+ * \fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
+ * \ingroup group_amd_rocjpeg
+ * @brief Creates a RocJpegHandle for JPEG decoding.
+ *
+ * This function creates a RocJpegHandle for JPEG decoding using the specified backend and device ID.
+ *
+ * @param backend The backend to be used for JPEG decoding.
+ * @param device_id The ID of the device to be used for JPEG decoding.
+ * @param handle Pointer to a RocJpegHandle variable to store the created handle.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_INVALID_PARAMETER if handle is nullptr,
+ *         ROCJPEG_STATUS_NOT_INITIALIZED if the rocJPEG handle initialization fails, or the status
+ *         returned by the InitializeDecoder function of the rocjpeg_decoder.
+ */
 RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
 
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle);
-//! \ingroup group_amd_rocjpeg
-//! Release the decoder object and resources.
-//! IN/OUT handle: instance handle to release
-/*****************************************************************************************************/
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle);
+ * @ingroup group_amd_rocjpeg
+ * @brief Destroys a RocJpegHandle object.
+ *
+ * This function destroys the RocJpegHandle object pointed to by the given handle.
+ * It releases any resources associated with the handle and frees the memory.
+ *
+ * @param handle The handle to the RocJpegHandle object to be destroyed.
+ * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the handle was successfully destroyed,
+ *         or ROCJPEG_STATUS_INVALID_PARAMETER if the handle is nullptr.
+ */
+
 RocJpegStatus ROCJPEGAPI rocJpegDestroy(RocJpegHandle handle);
 
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, const uint8_t *data, size_t length, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
-//! \ingroup group_amd_rocjpeg
-//! Retrieve the image info, including channel, width and height of each component, and chroma subsampling.
-//! If less than ROCJPEG_MAX_COMPONENT channels are encoded, then zeros would be set to absent channels information
-//! If the image is 3-channel, all three groups are valid.
-//! IN handle : rocJpeg handle
-//! IN jpeg_stream_handle: The handle for the jpeg stream parser to retrieve information from a previously parsed jpeg stream.
-//! OUT num_component : Number of channels in the decoded output image
-//! OUT subsampling : Chroma subsampling used in this JPEG, see RocJpegChromaSubsampling.
-//! OUT widths : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns width of each channel.
-//! OUT heights : pointer to ROCJPEG_MAX_COMPONENT of uint32_t, returns height of each channel.
-//! \return ROCJPEG_STATUS_SUCCESS if successful
-/*****************************************************************************************************/
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
+ * @ingroup group_amd_rocjpeg
+ * @brief Retrieves information about the JPEG image.
+ *
+ * This function retrieves the number of components, chroma subsampling, and dimensions (width and height) of the JPEG image
+ * specified by the `jpeg_stream_handle`. The information is stored in the provided output parameters `num_components`,
+ * `subsampling`, `widths`, and `heights`.
+ *
+ * @param handle The handle to the RocJpegDecoder instance.
+ * @param jpeg_stream_handle The handle to the RocJpegStream instance representing the JPEG image.
+ * @param num_components A pointer to an unsigned 8-bit integer that will store the number of components in the JPEG image.
+ * @param subsampling A pointer to a RocJpegChromaSubsampling enum that will store the chroma subsampling information.
+ * @param widths A pointer to an unsigned 32-bit integer array that will store the width of each component in the JPEG image.
+ * @param heights A pointer to an unsigned 32-bit integer array that will store the height of each component in the JPEG image.
+ *
+ * @return The RocJpegStatus indicating the success or failure of the operation.
+ *         - ROCJPEG_STATUS_SUCCESS: The operation was successful.
+ *         - ROCJPEG_STATUS_INVALID_PARAMETER: One or more input parameters are invalid.
+ *         - ROCJPEG_STATUS_RUNTIME_ERROR: An exception occurred during the operation.
+ */
 RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, uint8_t *num_components, RocJpegChromaSubsampling *subsampling, uint32_t *widths, uint32_t *heights);
 
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, const uint8_t *data, size_t length, RocJpegOutputFormat output_format, RocJpegImage *destination, hipStream_t stream);
-//! \ingroup group_amd_rocjpeg
-//! Decodes single image based on the backend used to create the rocJpeg handle in rocJpegCreate API.
-//! Destination buffers should be large enough to be able to store output of specified format. These buffers should be pre-allocted by the user in the device memories.
-//! For each color plane (channel) sizes could be retrieved for image using rocJpegGetImageInfo API
-//! and minimum required memory buffer for each plane is plane_height * plane_pitch where plane_pitch >= plane_width for
-//! planar output formats and plane_pitch >= plane_width * num_components for interleaved output format.
-//! IN handle : rocJpeg handle
-//! IN jpeg_stream_handle: The handle for the jpeg stream parser to retrieve information from a previously parsed jpeg stream and decode it.
-//! IN decode_params : Decode parameters. See RocJpegDecodeParams for description
-//! IN/OUT destination : Pointer to structure with information about output buffers. See RocJpegImage description.
-//! \return ROCJPEG_STATUS_SUCCESS if successful
-/*****************************************************************************************************/
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
+ * @ingroup group_amd_rocjpeg
+ * @brief Decodes a JPEG image using the rocJPEG library.
+ *
+ * This function decodes a JPEG image using the rocJPEG library. It takes a rocJpegHandle, a rocJpegStreamHandle,
+ * a pointer to RocJpegDecodeParams, and a pointer to RocJpegImage as input parameters. The function returns a
+ * RocJpegStatus indicating the success or failure of the decoding operation.
+ *
+ * @param handle The rocJpegHandle representing the rocJPEG decoder instance.
+ * @param jpeg_stream_handle The rocJpegStreamHandle representing the input JPEG stream.
+ * @param decode_params A pointer to RocJpegDecodeParams containing the decoding parameters.
+ * @param destination A pointer to RocJpegImage where the decoded image will be stored.
+ * @return A RocJpegStatus indicating the success or failure of the decoding operation.
+ */
+
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);
-//! \ingroup group_amd_rocjpeg
-//! Resets and initializes batch decoder for working on the batches of specified size
-//! Should be called once for decoding batches of this specific size, also use to reset failed batches
-//! IN/OUT     handle          : Library handle
-//! IN         batch_size      : Size of the batch
-//! IN         max_cpu_threads : Maximum number of CPU threads that will be processing this batch
-//! IN         output_format   : Output data format. Will be the same for every image in batch
-//! \return ROCJPEG_STATUS_SUCCESS if successful
-/*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecodeBatchedInitialize(RocJpegHandle handle, int batch_size, int max_cpu_threads, RocJpegOutputFormat output_format);
-
-/*****************************************************************************************************/
-//! \fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations, hipStream_t stream);
-//! \ingroup group_amd_rocjpeg
-//! Decodes batch of images. Output buffers should be large enough to be able to store 
-//! outputs of specified format, see single image decoding description for details. Call to 
-//! rocjpegDecodeBatchedInitialize() is required prior to this call, batch size is expected to be the same as 
-//! parameter to this batch initialization function.
-//! 
-//! IN/OUT     handle        : Library handle
-//! INT/OUT    jpeg_handle   : Decoded jpeg image state handle
-//! IN         data          : Array of size batch_size of pointers to the input buffers containing the jpeg images to be decoded. 
-//! IN         lengths       : Array of size batch_size with lengths of the jpeg images' buffers in the batch.
-//! IN/OUT     destinations  : Array of size batch_size with pointers to structure with information about output buffers, 
-//! \return ROCJPEG_STATUS_SUCCESS if successful
-/*****************************************************************************************************/
-RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, const uint8_t *data, const size_t *lengths, RocJpegImage *destinations);
-
-/*****************************************************************************************************/
-//! \fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
-//! \ingroup group_amd_rocjpeg
-//! Return name of the specified error code in text form.
-/*****************************************************************************************************/
+/**
+ * @fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
+ * @ingroup group_amd_rocjpeg
+ * @brief Retrieves the name of the error associated with the given RocJpegStatus.
+ *
+ * This function returns a string representation of the error associated with the given RocJpegStatus.
+ *
+ * @param rocjpeg_status The RocJpegStatus for which to retrieve the error name.
+ * @return A pointer to a constant character string representing the error name.
+ */
 extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
 
 #if defined(__cplusplus)

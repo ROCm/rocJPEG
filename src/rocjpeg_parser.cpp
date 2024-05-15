@@ -31,6 +31,15 @@ RocJpegStreamParser::~RocJpegStreamParser() {
     stream_length_ = 0;
 }
 
+/**
+ * @brief Parses a JPEG stream.
+ *
+ * This function parses a JPEG stream and extracts various markers and parameters from it.
+ *
+ * @param jpeg_stream A pointer to the JPEG stream.
+ * @param jpeg_stream_size The size of the JPEG stream in bytes.
+ * @return True if the JPEG stream was successfully parsed, false otherwise.
+ */
 bool RocJpegStreamParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t jpeg_stream_size) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (jpeg_stream == nullptr) {
@@ -114,6 +123,13 @@ bool RocJpegStreamParser::ParseJpegStream(const uint8_t *jpeg_stream, uint32_t j
     return true;
 }
 
+/**
+ * @brief Parses the Start of Image (SOI) marker in the JPEG stream.
+ *
+ * This function searches for the SOI marker (0xFFD8) in the JPEG stream and updates the stream pointer accordingly.
+ *
+ * @return true if the SOI marker is found and the stream pointer is updated, false otherwise.
+ */
 bool RocJpegStreamParser::ParseSOI() {
     if (stream_ == nullptr) {
         return false;
@@ -130,6 +146,17 @@ bool RocJpegStreamParser::ParseSOI() {
     return true;
 }
 
+/**
+ * @brief Parses the Start of Frame (SOF) marker in the JPEG stream.
+ *
+ * This function reads and processes the SOF marker in the JPEG stream. It extracts
+ * information such as picture height, picture width, number of components, component
+ * IDs, sampling factors, and quantization table selectors. It also calculates the
+ * number of MCU (Minimum Coded Unit) blocks in the image and determines the chroma
+ * subsampling scheme.
+ *
+ * @return true if the SOF marker is successfully parsed, false otherwise.
+ */
 bool RocJpegStreamParser::ParseSOF() {
     uint32_t component_id, sampling_factor;
     uint8_t quantiser_table_selector;
@@ -179,6 +206,14 @@ bool RocJpegStreamParser::ParseSOF() {
     return true;
 }
 
+/**
+ * @brief Parses the DQT (Define Quantization Table) segment of a JPEG stream.
+ *
+ * This function reads the quantization tables from the JPEG stream and stores them in the
+ * `jpeg_stream_parameters_.quantization_matrix_buffer` data structure.
+ *
+ * @return `true` if the DQT segment is successfully parsed, `false` otherwise.
+ */
 bool RocJpegStreamParser::ParseDQT() {
     int32_t quantization_table_index = 0;
     const uint8_t *dqt_block_end;
@@ -210,6 +245,14 @@ bool RocJpegStreamParser::ParseDQT() {
     return true;
 }
 
+/**
+ * @brief Parses the Define Huffman Table (DHT) segment in the JPEG stream.
+ *
+ * This function reads and processes the DHT segment in the JPEG stream. It extracts the Huffman table
+ * information and stores it in the `jpeg_stream_parameters_.huffman_table_buffer` data structure.
+ *
+ * @return `true` if the DHT segment is successfully parsed, `false` otherwise.
+ */
 bool RocJpegStreamParser::ParseDHT() {
     uint32_t count, i;
     int32_t length, index;
@@ -269,6 +312,15 @@ bool RocJpegStreamParser::ParseDHT() {
     return true;
 }
 
+/**
+ * @brief Parses the Start of Scan (SOS) marker in the JPEG stream.
+ *
+ * This function reads and processes the SOS marker in the JPEG stream.
+ * It extracts the component IDs and Huffman table selectors for each component,
+ * and performs various checks for validity.
+ *
+ * @return true if the SOS marker is successfully parsed, false otherwise.
+ */
 bool RocJpegStreamParser::ParseSOS() {
     uint32_t component_id, table;
 
@@ -311,6 +363,14 @@ bool RocJpegStreamParser::ParseSOS() {
 }
 
 
+/**
+ * @brief Parses the Define Restart Interval (DRI) marker in the JPEG stream.
+ *
+ * This function reads the length field of the DRI marker and checks if it is valid.
+ * If the length is valid, it updates the restart interval value in the slice parameter buffer.
+ *
+ * @return true if the DRI marker is successfully parsed, false otherwise.
+ */
 bool RocJpegStreamParser::ParseDRI() {
     uint32_t length;
 
@@ -329,6 +389,14 @@ bool RocJpegStreamParser::ParseDRI() {
     return true;
 }
 
+/**
+ * @brief Parses the End of Image (EOI) marker in the JPEG stream.
+ *
+ * This function searches for the EOI marker in the JPEG stream and updates the slice data buffer
+ * and slice data size in the jpeg_stream_parameters_ structure.
+ *
+ * @return true if the EOI marker is found and the slice data buffer is updated successfully, false otherwise.
+ */
 bool RocJpegStreamParser::ParseEOI() {
 
     if (stream_ == nullptr) {
@@ -347,6 +415,20 @@ bool RocJpegStreamParser::ParseEOI() {
     return true;
 }
 
+/**
+ * @brief Determines the chroma subsampling format based on the given sampling factors.
+ *
+ * This function takes the horizontal and vertical sampling factors for each color component and determines
+ * the chroma subsampling format. It returns the corresponding `ChromaSubsampling` enum value.
+ *
+ * @param c1_h_sampling_factor The horizontal sampling factor for color component 1.
+ * @param c2_h_sampling_factor The horizontal sampling factor for color component 2.
+ * @param c3_h_sampling_factor The horizontal sampling factor for color component 3.
+ * @param c1_v_sampling_factor The vertical sampling factor for color component 1.
+ * @param c2_v_sampling_factor The vertical sampling factor for color component 2.
+ * @param c3_v_sampling_factor The vertical sampling factor for color component 3.
+ * @return The chroma subsampling format determined based on the given sampling factors.
+ */
 ChromaSubsampling RocJpegStreamParser::GetChromaSubsampling(uint8_t c1_h_sampling_factor, uint8_t c2_h_sampling_factor, uint8_t c3_h_sampling_factor,
                                                    uint8_t c1_v_sampling_factor, uint8_t c2_v_sampling_factor, uint8_t c3_v_sampling_factor) {
 

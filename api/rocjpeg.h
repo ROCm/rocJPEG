@@ -45,8 +45,8 @@ extern "C" {
 #define ROCJPEG_MAX_COMPONENT 4
 
 /**
- * \enum RocJpegStatus
- * \ingroup group_amd_rocjpeg
+ * @enum RocJpegStatus
+ * @ingroup group_amd_rocjpeg
  * @brief Enumeration representing the status codes for the rocJPEG library.
  */
 typedef enum {
@@ -187,8 +187,8 @@ typedef enum {
 typedef void* RocJpegStreamHandle;
 
 /**
- * \fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
- * \ingroup group_amd_rocjpeg
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle);
+ * @ingroup group_amd_rocjpeg
  * @brief Creates a RocJpegStreamHandle for JPEG stream processing.
  *
  * This function creates a RocJpegStreamHandle, which is used for processing JPEG streams.
@@ -242,8 +242,8 @@ RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_ha
 typedef void *RocJpegHandle;
 
 /**
- * \fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
- * \ingroup group_amd_rocjpeg
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegCreate(RocJpegBackend backend, int device_id, RocJpegHandle *handle);
+ * @ingroup group_amd_rocjpeg
  * @brief Creates a RocJpegHandle for JPEG decoding.
  *
  * This function creates a RocJpegHandle for JPEG decoding using the specified backend and device ID.

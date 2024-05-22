@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
     uint32_t prior_channel_sizes[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t num_channels = 0;
     int total_images = 0;
+    int batch_size = 2;
     double time_per_image_all = 0;
     double mpixels_all = 0;
     double images_per_sec = 0;
@@ -48,7 +49,7 @@ int main(int argc, char **argv) {
     RocJpegDecodeParams decode_params = {};
     RocJpegUtils rocjpeg_utils;
 
-    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, nullptr, nullptr, argc, argv);
+    RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, nullptr, &batch_size, argc, argv);
     if (!RocJpegUtils::GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "ERROR: Failed to get input file paths!" << std::endl;
         return EXIT_FAILURE;
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
         std::cout << "Input file name: " << base_file_name << std::endl;
         std::cout << "Input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
         std::cout << "Chroma subsampling: " + chroma_sub_sampling  << std::endl;
-        if (subsampling == ROCJPEG_CSS_411) {
+        if (subsampling == ROCJPEG_CSS_440 || subsampling == ROCJPEG_CSS_411) {
             std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
                 std::cout << std::endl;

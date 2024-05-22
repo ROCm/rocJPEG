@@ -80,24 +80,24 @@ public:
      * @param argv The command line arguments.
      */
     static void ParseCommandLine(std::string &input_path, std::string &output_file_path, bool &save_images, int &device_id,
-                                 RocJpegBackend &rocjpeg_backend, RocJpegDecodeParams &decode_params, int *num_threads, int argc, char *argv[]) {
+                                 RocJpegBackend &rocjpeg_backend, RocJpegDecodeParams &decode_params, int *num_threads, int *batch_size, int argc, char *argv[]) {
         if(argc <= 1) {
-            ShowHelpAndExit("", num_threads != nullptr);
+            ShowHelpAndExit("", num_threads != nullptr, batch_size != nullptr);
         }
         for (int i = 1; i < argc; i++) {
             if (!strcmp(argv[i], "-h")) {
-                ShowHelpAndExit("", num_threads != nullptr);
+                ShowHelpAndExit("", num_threads != nullptr, batch_size != nullptr);
             }
             if (!strcmp(argv[i], "-i")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-i", num_threads != nullptr);
+                    ShowHelpAndExit("-i", num_threads != nullptr, batch_size != nullptr);
                 }
                 input_path = argv[i];
                 continue;
             }
             if (!strcmp(argv[i], "-o")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-o", num_threads != nullptr);
+                    ShowHelpAndExit("-o", num_threads != nullptr, batch_size != nullptr);
                 }
                 output_file_path = argv[i];
                 save_images = true;
@@ -105,21 +105,21 @@ public:
             }
             if (!strcmp(argv[i], "-d")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-d", num_threads != nullptr);
+                    ShowHelpAndExit("-d", num_threads != nullptr, batch_size != nullptr);
                 }
                 device_id = atoi(argv[i]);
                 continue;
             }
             if (!strcmp(argv[i], "-be")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-be", num_threads != nullptr);
+                    ShowHelpAndExit("-be", num_threads != nullptr, batch_size != nullptr);
                 }
                 rocjpeg_backend = static_cast<RocJpegBackend>(atoi(argv[i]));
                 continue;
             }
             if (!strcmp(argv[i], "-fmt")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-fmt", num_threads != nullptr);
+                    ShowHelpAndExit("-fmt", num_threads != nullptr, batch_size != nullptr);
                 }
                 std::string selected_output_format = argv[i];
                 if (selected_output_format == "native") {
@@ -139,13 +139,21 @@ public:
             }
             if (!strcmp(argv[i], "-t")) {
                 if (++i == argc) {
-                    ShowHelpAndExit("-t", num_threads != nullptr);
+                    ShowHelpAndExit("-t", num_threads != nullptr, batch_size != nullptr);
                 }
                 if (num_threads != nullptr)
                     *num_threads = atoi(argv[i]);
                 continue;
             }
-            ShowHelpAndExit(argv[i], num_threads != nullptr);
+            if (!strcmp(argv[i], "-b")) {
+                if (++i == argc) {
+                    ShowHelpAndExit("-b", num_threads != nullptr, batch_size != nullptr);
+                }
+                if (batch_size != nullptr)
+                    *batch_size = atoi(argv[i]);
+                continue;
+            }
+            ShowHelpAndExit(argv[i], num_threads != nullptr, batch_size != nullptr);
         }
     }
 
@@ -553,7 +561,7 @@ private:
      * @param option The option to display in the help message (optional).
      * @param show_threads Flag indicating whether to show the number of threads in the help message.
      */
-    static void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false) {
+    static void ShowHelpAndExit(const char *option = nullptr, bool show_threads = false, bool show_batch_size = false) {
         std::cout  << "Options:\n"
         "-i     [input path] - input path to a single JPEG image or a directory containing JPEG images - [required]\n"
         "-be    [backend] - select rocJPEG backend (0 for hardware-accelerated JPEG decoding using VCN,\n"
@@ -563,6 +571,9 @@ private:
         "-d     [device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]\n";
         if (show_threads) {
             std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";
+        }
+        if (show_batch_size) {
+            std::cout << "-b     [batch_size] - decode images from input by batches of specified size - [optional - default: 2]\n";
         }
         exit(0);
     }

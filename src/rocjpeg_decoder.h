@@ -84,6 +84,21 @@ public:
     */
    RocJpegStatus Decode(RocJpegStreamHandle jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
+   /**
+    * Decodes a batch of JPEG streams.
+    *
+    * This function decodes a batch of JPEG streams specified by `jpeg_streams` into a batch of destination images specified by `destinations`.
+    * The number of JPEG streams in the batch is specified by `batch_size`.
+    * The decoding parameters are specified by `decode_params`.
+    *
+    * @param jpeg_streams The array of JPEG stream handles.
+    * @param batch_size The number of JPEG streams in the batch.
+    * @param decode_params The decoding parameters.
+    * @param destinations The array of destination images.
+    * @return The status of the decoding operation.
+    */
+   RocJpegStatus DecodeBatched(RocJpegStreamHandle *jpeg_streams, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations);
+
 private:
    /**
     * @brief Initializes the HIP framework.

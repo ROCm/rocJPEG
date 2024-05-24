@@ -312,6 +312,23 @@ RocJpegStatus ROCJPEGAPI rocJpegGetImageInfo(RocJpegHandle handle, RocJpegStream
 
 RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
+
+/**
+ * @fn RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, RocJpegStreamHandle *jpeg_stream_handles, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations);
+ * @ingroup group_amd_rocjpeg
+ * @brief Decodes a batch of JPEG images using the rocJPEG library.
+ *
+ * Decodes a batch of JPEG images using the rocJPEG library.
+ *
+ * @param handle The rocJPEG handle.
+ * @param jpeg_stream_handles An array of rocJPEG stream handles representing the input JPEG streams.
+ * @param batch_size The number of JPEG streams in the batch.
+ * @param decode_params The decode parameters for the JPEG decoding process.
+ * @param destinations An array of rocJPEG images representing the output decoded images.
+ * @return The status of the JPEG decoding operation.
+ */
+RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, RocJpegStreamHandle *jpeg_stream_handles, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations);
+
 /**
  * @fn extern const char* ROCDECAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status);
  * @ingroup group_amd_rocjpeg

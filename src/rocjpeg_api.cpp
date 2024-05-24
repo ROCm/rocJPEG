@@ -209,6 +209,33 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle
 }
 
 /**
+ * @brief Decodes a batch of JPEG images using the rocJPEG library.
+ *
+ * Decodes a batch of JPEG images using the specified handle, stream handles, decode parameters, and destination images.
+ *
+ * @param handle The handle to the RocJpeg decoder.
+ * @param jpeg_stream_handles An array of stream handles for the JPEG images to be decoded.
+ * @param decode_params The decode parameters for the decoding process.
+ * @param destinations An array of RocJpegImage structures to store the decoded images.
+ * @return The status of the decoding process. Returns ROCJPEG_STATUS_SUCCESS if successful, or an error code otherwise.
+ */
+RocJpegStatus ROCJPEGAPI rocJpegDecodeBatched(RocJpegHandle handle, RocJpegStreamHandle *jpeg_stream_handles, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations) {
+    if (handle == nullptr || jpeg_stream_handles == nullptr|| decode_params == nullptr || destinations == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
+    auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
+    try {
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->DecodeBatched(jpeg_stream_handles, batch_size, decode_params, destinations);
+    } catch (const std::exception& e) {
+        rocjpeg_handle->CaptureError(e.what());
+        ERR(e.what());
+        return ROCJPEG_STATUS_RUNTIME_ERROR;
+    }
+
+    return rocjpeg_status;
+}
+/**
  * @brief Returns the error name corresponding to the given RocJpegStatus.
  *
  * This function takes a RocJpegStatus enum value and returns the corresponding error name as a string.

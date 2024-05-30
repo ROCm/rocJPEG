@@ -7,6 +7,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 ## Supported JPEG chroma subsampling
 
 * YUV 4:4:4
+* YUV 4:4:0
 * YUV 4:2:2
 * YUV 4:2:0
 * YUV 4:0:0

@@ -128,8 +128,9 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
             if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
                 // Copy the second channel (UV interleaved) for NV12
                 CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
-            } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P) {
-                // Copy the second and third channels for YUV444
+            } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
+                       hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
+                // Copy the second and third channels for YUV444 and YUV440 (i.e., YUV422V)
                 CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
                 CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination));
             }
@@ -194,6 +195,11 @@ RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handl
             widths[2] = widths[1] = widths[0];
             heights[2] = heights[1] = heights[0];
             break;
+        case CSS_440:
+            *subsampling = ROCJPEG_CSS_440;
+            widths[2] = widths[1] = widths[0];
+            heights[2] = heights[1] = heights[0] >> 1;
+            break;
         case CSS_422:
             *subsampling = ROCJPEG_CSS_422;
             widths[2] = widths[1] = widths[0] >> 1;
@@ -213,11 +219,6 @@ RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handl
             *subsampling = ROCJPEG_CSS_411;
             widths[2] = widths[1] = widths[0] >> 2;
             heights[2] = heights[1] = heights[0];
-            break;
-        case CSS_440:
-            *subsampling = ROCJPEG_CSS_440;
-            widths[2] = widths[1] = widths[0] >> 1;
-            heights[2] = heights[1] = heights[0] >> 1;
             break;
         default:
             *subsampling = ROCJPEG_CSS_UNKNOWN;
@@ -277,6 +278,9 @@ RocJpegStatus RocJpegDecoder::GetChromaHeight(uint32_t surface_format, uint16_t 
             break;
         case ROCJPEG_FOURCC_YUYV: /*YUYV: one-plane packed 8-bit YUV 4:2:2. Four bytes per pair of pixels: Y, U, Y, V*/
             chroma_height = picture_height;
+            break;
+        case VA_FOURCC_422V: /*422V: three-plane 8-bit YUV 4:4:0*/
+            chroma_height = picture_height >> 1;
             break;
         default:
             return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
@@ -404,7 +408,8 @@ RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_
             // Extract the interleaved UV channels and copy them into the second and thrid channels of the destination.
             ConvertInterleavedUVToPlanarUV(hip_stream_, picture_width >> 1, picture_height >> 1, destination->channel[1], destination->channel[2],
                 destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] , hip_interop_dev_mem.pitch[1]);
-        } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P) {
+        } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
+                   hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
             CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination));
             CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination));
         }

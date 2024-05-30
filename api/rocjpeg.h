@@ -122,7 +122,7 @@ typedef struct {
  */
 typedef enum {
     /**< return native unchanged decoded YUV image from the VCN JPEG deocder.
-         For ROCJPEG_CSS_444 write Y, U, and V to first, second, and third channels of RocJpegImage
+         For ROCJPEG_CSS_444 and ROCJPEG_CSS_440 write Y, U, and V to first, second, and third channels of RocJpegImage
          For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
          For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
          For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage */

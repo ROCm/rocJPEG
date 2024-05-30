@@ -103,7 +103,7 @@ list is composed of the chroma subsampling property retrieved from the JPEG imag
 
 .. note::
 
-  The VCN hardware-accelerated JPEG decoder in AMD GPUs only supports decoding JPEG images with ``ROCJPEG_CSS_444``, ``ROCJPEG_CSS_422``,
+  The VCN hardware-accelerated JPEG decoder in AMD GPUs only supports decoding JPEG images with ``ROCJPEG_CSS_444``, ``ROCJPEG_CSS_440``, ``ROCJPEG_CSS_422``,
   ``ROCJPEG_CSS_420``, and ``ROCJPEG_CSS_400`` chroma subsampling.
 
 6. Decode a JPEG stream
@@ -149,7 +149,7 @@ You can set the ``RocJpegOutputFormat`` parameter of the ``RocJpegDecodeParams``
 For example, if ``output_format`` is set to ``ROCJPEG_OUTPUT_NATIVE``, then based on the chroma subsampling of the input image, the
 ``rocJpegDecode()`` function does one of the following:
 
-* For ``ROCJPEG_CSS_444`` write Y, U, and V to first, second, and third channels of ``RocJpegImage``.
+* For ``ROCJPEG_CSS_444`` and ``ROCJPEG_CSS_440`` write Y, U, and V to first, second, and third channels of ``RocJpegImage``.
 * For ``ROCJPEG_CSS_422`` write YUYV (packed) to first channel of ``RocJpegImage``.
 * For ``ROCJPEG_CSS_420`` write Y to first channel and UV (interleaved) to second channel of ``RocJpegImage``.
 * For ``ROCJPEG_CSS_400`` write Y to first channel of ``RocJpegImage``.
@@ -168,10 +168,11 @@ the required size for the output buffers for a single decode JPEG. To optimally 
   :header: "output_format", "chroma subsampling", "destination.pitch[c] should be atleast:", "destination.channel[c] should be atleast:"
 
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_444", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[0] for c = 0, 1, 2"
+  "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_440", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[0] = destination.pitch[0] * heights[0], destination.channel[c] = destination.pitch[c] * heights[0] / 2 for c = 1, 2"
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_422", "destination.pitch[0] = widths[0] * 2", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_420", "destination.pitch[1] = destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0], destination.channel[1] = destination.pitch[1] * (heights[0] >> 1)"
   "ROCJPEG_OUTPUT_NATIVE", "ROCJPEG_CSS_400", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
-  "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_444, ROCJPEG_CSS_422, ROCJPEG_CSS_420", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
+  "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_444, ROCJPEG_CSS_440, ROCJPEG_CSS_422, ROCJPEG_CSS_420", "destination.pitch[c] = widths[c] for c = 0, 1, 2", "destination.channel[c] = destination.pitch[c] * heights[c] for c = 0, 1, 2"
   "ROCJPEG_OUTPUT_YUV_PLANAR", "ROCJPEG_CSS_400", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_Y", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0]", "destination.channel[0] = destination.pitch[0] * heights[0]"
   "ROCJPEG_OUTPUT_RGB", "Any of the supported chroma subsampling", "destination.pitch[0] = widths[0] * 3", "destination.channel[0] = destination.pitch[0] * heights[0]"

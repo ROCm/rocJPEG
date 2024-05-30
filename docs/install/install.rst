@@ -29,6 +29,7 @@ Supported JPEG chroma subsampling
 ========================================
 
 * YUV 4:4:4
+* YUV 4:4:0
 * YUV 4:2:2
 * YUV 4:2:0
 * YUV 4:0:0
@@ -45,17 +46,23 @@ Prerequisites
 * `ROCm-supported hardware <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html>`_
   (``gfx908`` or higher is required)
 
-* Install ROCm 6.1.0 or later with
+* Install ROCm 6.3.0 or later with
   `amdgpu-install <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html>`_
 
   * Run: ``--usecase=rocm``
   * To install rocJPEG with minimum requirements, follow the :doc:`quick-start instructions <./quick-start>`
 
-* AMD multimedia packages
+* Video Acceleration API - Version `1.5.0+` - `Libva` is an implementation for VA-API
 
   .. code:: shell
 
-   sudo apt install libva-amdgpu-dev libdrm-amdgpu1 mesa-amdgpu-va-drivers
+   sudo apt install libva-dev
+
+* AMD VA Drivers
+
+  .. code:: shell
+
+   sudo apt install mesa-amdgpu-va-drivers
 
 * CMake 3.5 or later
 
@@ -63,7 +70,7 @@ Prerequisites
 
    sudo apt install cmake
 
-* `pkg-config <https://en.wikipedia.org/wiki/Pkg-config>`_
+* pkg-config
 
   .. code:: shell
 

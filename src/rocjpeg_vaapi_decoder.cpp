@@ -541,6 +541,10 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
                 surface_format = VA_RT_FORMAT_YUV444;
                 surface_attrib.value.value.i = VA_FOURCC_444P;
                 break;
+            case CSS_440:
+                surface_format = VA_RT_FORMAT_YUV422;
+                surface_attrib.value.value.i = VA_FOURCC_422V;
+                break;
             case CSS_422:
                 surface_format = VA_RT_FORMAT_YUV422;
                 surface_attrib.value.value.i = ROCJPEG_FOURCC_YUYV;

@@ -276,6 +276,12 @@ public:
                         output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
                         channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
                         break;
+                    case ROCJPEG_CSS_440:
+                        num_channels = 3;
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * (heights[0] >> 1);
+                        break;
                     case ROCJPEG_CSS_422:
                         num_channels = 1;
                         output_image.pitch[0] = widths[0] * 2;
@@ -407,6 +413,11 @@ public:
                         widths[2] = widths[1] = widths[0] = img_width;
                         heights[2] = heights[1] = heights[0] = img_height;
                         break;
+                    case ROCJPEG_CSS_440:
+                        widths[2] = widths[1] = widths[0] = img_width;
+                        heights[0] = img_height;
+                        heights[2] = heights[1] = img_height >> 1;
+                        break;
                     case ROCJPEG_CSS_422:
                         widths[0] = img_width * 2;
                         heights[0] = img_height;
@@ -430,6 +441,11 @@ public:
                     case ROCJPEG_CSS_444:
                         widths[2] = widths[1] = widths[0] = img_width;
                         heights[2] = heights[1] = heights[0] = img_height;
+                        break;
+                    case ROCJPEG_CSS_440:
+                        widths[2] = widths[1] = widths[0] = img_width;
+                        heights[0] = img_height;
+                        heights[2] = heights[1] = img_height >> 1;
                         break;
                     case ROCJPEG_CSS_422:
                         widths[0] = img_width;

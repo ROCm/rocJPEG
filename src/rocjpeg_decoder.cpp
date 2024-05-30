@@ -308,6 +308,10 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGB(HipInteropDeviceMem& hip_interop
             ColorConvertYUV444ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                   hip_interop_dev_mem.hip_mapped_device_mem, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1]);
             break;
+        case VA_FOURCC_422V:
+            ColorConvertYUV440ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
+                                                  hip_interop_dev_mem.hip_mapped_device_mem, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1], hip_interop_dev_mem.offset[2]);
+            break;
         case ROCJPEG_FOURCC_YUYV:
             ColorConvertYUYVToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
                                                 hip_interop_dev_mem.hip_mapped_device_mem, hip_interop_dev_mem.pitch[0]);
@@ -352,6 +356,10 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_i
         case VA_FOURCC_444P:
             ColorConvertYUV444ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
                                                   hip_interop_dev_mem.hip_mapped_device_mem, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1]);
+            break;
+        case VA_FOURCC_422V:
+            ColorConvertYUV440ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
+                                                  hip_interop_dev_mem.hip_mapped_device_mem, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1], hip_interop_dev_mem.offset[2]);
             break;
         case ROCJPEG_FOURCC_YUYV:
             ColorConvertYUYVToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],

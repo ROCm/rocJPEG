@@ -486,6 +486,443 @@ void ColorConvertYUV444ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint3
                         dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 }
 
+__global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image, uint32_t dst_image_stride_in_bytes,
+    uint32_t dst_image_stride_in_bytes_comp, const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_yuv_image_stride_in_bytes_comp) {
+
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp) && (y < dst_height_comp)) {
+        uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
+        uint32_t src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
+
+
+        uint2 y0 = *((uint2 *)(&src_y_image[src_y0_idx]));
+        uint2 y1 = *((uint2 *)(&src_y_image[src_y1_idx]));
+
+        uint2 u0 = *((uint2 *)(&src_u_image[src_y0_idx]));
+        uint2 u1 = u0;
+
+        uint2 v0 = *((uint2 *)(&src_v_image[src_y0_idx]));
+        uint2 v1 = v0;
+
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+
+        float2 cr = make_float2( 0.0000f,  1.5748f);
+        float2 cg = make_float2(-0.1873f, -0.4681f);
+        float2 cb = make_float2( 1.8556f,  0.0000f);
+        float3 yuv;
+        DUINT6 rgb0, rgb1;
+        float4 f;
+
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb0.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb0.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb0.data[2] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb0.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb0.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb0.data[5] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb1.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb1.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb1.data[2] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb1.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb1.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb1.data[5] = hipPack(f);
+
+        *((DUINT6 *)(&dst_image[rgb0_idx])) = rgb0;
+        *((DUINT6 *)(&dst_image[rgb1_idx])) = rgb1;
+    }
+}
+
+/**
+ * @brief Converts YUV440 image to RGB image.
+ *
+ * This function takes a YUV440 image and converts it to an RGB image using the ColorConvertYUV444ToRGBKernel HIP kernel.
+ *
+ * @param stream The HIP stream used for asynchronous execution of the kernel.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image Pointer to the destination RGB image buffer.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination RGB image buffer.
+ * @param src_yuv_image Pointer to the source YUV440 image buffer.
+ * @param src_yuv_image_stride_in_bytes The stride (in bytes) of the source YUV440 image buffer.
+ * @param src_u_image_offset The offset (in bytes) to the U component in the source YUV440 image buffer.
+ */
+void ColorConvertYUV440ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset) {
+
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
+
+    uint32_t dst_width_comp = (dst_width + 7) / 8;
+    uint32_t dst_height_comp = (dst_height + 1) / 2;
+    uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
+    uint32_t src_yuv_image_stride_in_bytes_comp = src_yuv_image_stride_in_bytes * 2;
+
+    ColorConvertYUV440ToRGBKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image,
+                        dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
+                        src_yuv_image + src_v_image_offset, src_yuv_image_stride_in_bytes,
+                        dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
+}
+
+__global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t dst_height, uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes,
+    uint32_t dst_image_stride_in_bytes_comp, const uint8_t *src_y_image, const uint8_t *src_u_image, const uint8_t *src_v_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t dst_width_comp, uint32_t dst_height_comp, uint32_t src_yuv_image_stride_in_bytes_comp) {
+
+    int32_t x = hipBlockDim_x * hipBlockIdx_x + hipThreadIdx_x;
+    int32_t y = hipBlockDim_y * hipBlockIdx_y + hipThreadIdx_y;
+
+    if ((x < dst_width_comp) && (y < dst_height_comp)) {
+        uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
+        uint32_t src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
+
+
+        uint2 y0 = *((uint2 *)(&src_y_image[src_y0_idx]));
+        uint2 y1 = *((uint2 *)(&src_y_image[src_y1_idx]));
+
+        uint2 u0 = *((uint2 *)(&src_u_image[src_y0_idx]));
+        uint2 u1 = u0;
+
+        uint2 v0 = *((uint2 *)(&src_v_image[src_y0_idx]));
+        uint2 v1 = v0;
+
+        uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 8);
+        uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
+
+        float2 cr = make_float2( 0.0000f,  1.5748f);
+        float2 cg = make_float2(-0.1873f, -0.4681f);
+        float2 cb = make_float2( 1.8556f,  0.0000f);
+        float3 yuv;
+        DUINT6 rgb0, rgb1;
+        float4 f;
+
+        yuv = make_float3(hipUnpack0(y0.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y0.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb0.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y0.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb0.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y0.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb0.data[2] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y0.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y0.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb0.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y0.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb0.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y0.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb0.data[5] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb1.data[0] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb1.data[1] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb1.data[2] = hipPack(f);
+
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.x = fmaf(cr.y, yuv.z, yuv.x);
+        f.y = fmaf(cg.x, yuv.y, yuv.x);
+        f.y = fmaf(cg.y, yuv.z, f.y);
+        f.z = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.w = fmaf(cr.y, yuv.z, yuv.x);
+        rgb1.data[3] = hipPack(f);
+
+        f.x = fmaf(cg.x, yuv.y, yuv.x);
+        f.x = fmaf(cg.y, yuv.z, f.x);
+        f.y = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.z = fmaf(cr.y, yuv.z, yuv.x);
+        f.w = fmaf(cg.x, yuv.y, yuv.x);
+        f.w = fmaf(cg.y, yuv.z, f.w);
+        rgb1.data[4] = hipPack(f);
+
+        f.x = fmaf(cb.x, yuv.y, yuv.x);
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
+        yuv.y -= 128.0f;
+        yuv.z -= 128.0f;
+        f.y = fmaf(cr.y, yuv.z, yuv.x);
+        f.z = fmaf(cg.x, yuv.y, yuv.x);
+        f.z = fmaf(cg.y, yuv.z, f.z);
+        f.w = fmaf(cb.x, yuv.y, yuv.x);
+        rgb1.data[5] = hipPack(f);
+
+        uint2 red0, red1, green0, green1, blue0, blue1;
+        red0.x = hipPack(make_float4(hipUnpack0(rgb0.data[0]), hipUnpack3(rgb0.data[0]), hipUnpack2(rgb0.data[1]), hipUnpack1(rgb0.data[2])));
+        red0.y = hipPack(make_float4(hipUnpack0(rgb0.data[3]), hipUnpack3(rgb0.data[3]), hipUnpack2(rgb0.data[4]), hipUnpack1(rgb0.data[5])));
+        red1.x = hipPack(make_float4(hipUnpack0(rgb1.data[0]), hipUnpack3(rgb1.data[0]), hipUnpack2(rgb1.data[1]), hipUnpack1(rgb1.data[2])));
+        red1.y = hipPack(make_float4(hipUnpack0(rgb1.data[3]), hipUnpack3(rgb1.data[3]), hipUnpack2(rgb1.data[4]), hipUnpack1(rgb1.data[5])));
+
+        green0.x = hipPack(make_float4(hipUnpack1(rgb0.data[0]), hipUnpack0(rgb0.data[1]), hipUnpack3(rgb0.data[1]), hipUnpack2(rgb0.data[2])));
+        green0.y = hipPack(make_float4(hipUnpack1(rgb0.data[3]), hipUnpack0(rgb0.data[4]), hipUnpack3(rgb0.data[4]), hipUnpack2(rgb0.data[5])));
+        green1.x = hipPack(make_float4(hipUnpack1(rgb1.data[0]), hipUnpack0(rgb1.data[1]), hipUnpack3(rgb1.data[1]), hipUnpack2(rgb1.data[2])));
+        green1.y = hipPack(make_float4(hipUnpack1(rgb1.data[3]), hipUnpack0(rgb1.data[4]), hipUnpack3(rgb1.data[4]), hipUnpack2(rgb1.data[5])));
+
+        blue0.x = hipPack(make_float4(hipUnpack2(rgb0.data[0]), hipUnpack1(rgb0.data[1]), hipUnpack0(rgb0.data[2]), hipUnpack3(rgb0.data[2])));
+        blue0.y = hipPack(make_float4(hipUnpack2(rgb0.data[3]), hipUnpack1(rgb0.data[4]), hipUnpack0(rgb0.data[5]), hipUnpack3(rgb0.data[5])));
+        blue1.x = hipPack(make_float4(hipUnpack2(rgb1.data[0]), hipUnpack1(rgb1.data[1]), hipUnpack0(rgb1.data[2]), hipUnpack3(rgb1.data[2])));
+        blue1.y = hipPack(make_float4(hipUnpack2(rgb1.data[3]), hipUnpack1(rgb1.data[4]), hipUnpack0(rgb1.data[5]), hipUnpack3(rgb1.data[5])));
+
+        *((uint2 *)(&dst_image_r[rgb0_idx])) = red0;
+        *((uint2 *)(&dst_image_r[rgb1_idx])) = red1;
+        *((uint2 *)(&dst_image_g[rgb0_idx])) = green0;
+        *((uint2 *)(&dst_image_g[rgb1_idx])) = green1;
+        *((uint2 *)(&dst_image_b[rgb0_idx])) = blue0;
+        *((uint2 *)(&dst_image_b[rgb1_idx])) = blue1;
+    }
+}
+
+
+/**
+ * @brief Converts YUV440 image to RGB planar format.
+ *
+ * This function takes a YUV440 image and converts it to RGB planar format using the ColorConvertYUV444ToRGBPlanarKernel HIP kernel.
+ *
+ * @param stream The HIP stream to be used for the kernel launch.
+ * @param dst_width The width of the destination RGB image.
+ * @param dst_height The height of the destination RGB image.
+ * @param dst_image_r Pointer to the destination red channel image.
+ * @param dst_image_g Pointer to the destination green channel image.
+ * @param dst_image_b Pointer to the destination blue channel image.
+ * @param dst_image_stride_in_bytes The stride (in bytes) of the destination image.
+ * @param src_yuv_image Pointer to the source YUV image.
+ * @param src_yuv_image_stride_in_bytes The stride (in bytes) of the source YUV image.
+ * @param src_u_image_offset The offset (in bytes) to the U channel in the source YUV image.
+ */
+void ColorConvertYUV440ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
+    uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset) {
+
+    int32_t local_threads_x = 16;
+    int32_t local_threads_y = 4;
+    int32_t global_threads_x = (dst_width + 7) >> 3;
+    int32_t global_threads_y = (dst_height + 1) >> 1;
+
+    uint32_t dst_width_comp = (dst_width + 7) / 8;
+    uint32_t dst_height_comp = (dst_height + 1) / 2;
+    uint32_t dst_image_stride_in_bytes_comp = dst_image_stride_in_bytes * 2;
+    uint32_t src_yuv_image_stride_in_bytes_comp = src_yuv_image_stride_in_bytes * 2;
+
+    ColorConvertYUV440ToRGBPlanarKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
+                        dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image_r, dst_image_g, dst_image_b,
+                        dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
+                        src_yuv_image + src_v_image_offset, src_yuv_image_stride_in_bytes,
+                        dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
+}
+
 __global__ void ColorConvertYUYVToRGBKernel(uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, uint32_t dst_image_stride_in_bytes_comp,
     const uint8_t *src_image, uint32_t src_image_stride_in_bytes, uint32_t src_image_stride_in_bytes_comp,

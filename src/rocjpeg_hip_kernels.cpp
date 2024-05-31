@@ -496,16 +496,13 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
         uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
         uint32_t src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
-
+        uint32_t src_chroma_idx = y * src_yuv_image_stride_in_bytes + (x << 3);
 
         uint2 y0 = *((uint2 *)(&src_y_image[src_y0_idx]));
         uint2 y1 = *((uint2 *)(&src_y_image[src_y1_idx]));
 
-        uint2 u0 = *((uint2 *)(&src_u_image[src_y0_idx]));
-        uint2 u1 = u0;
-
-        uint2 v0 = *((uint2 *)(&src_v_image[src_y0_idx]));
-        uint2 v1 = v0;
+        uint2 u0 = *((uint2 *)(&src_u_image[src_chroma_idx]));
+        uint2 v0 = *((uint2 *)(&src_v_image[src_chroma_idx]));
 
         uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 24);
         uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
@@ -585,14 +582,14 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -601,7 +598,7 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -610,7 +607,7 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -619,14 +616,14 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -635,7 +632,7 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -644,7 +641,7 @@ __global__ void ColorConvertYUV440ToRGBKernel(uint32_t dst_width, uint32_t dst_h
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -703,16 +700,13 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
     if ((x < dst_width_comp) && (y < dst_height_comp)) {
         uint32_t src_y0_idx = y * src_yuv_image_stride_in_bytes_comp + (x << 3);
         uint32_t src_y1_idx = src_y0_idx + src_yuv_image_stride_in_bytes;
-
+        uint32_t src_chroma_idx = y * src_yuv_image_stride_in_bytes + (x << 3);
 
         uint2 y0 = *((uint2 *)(&src_y_image[src_y0_idx]));
         uint2 y1 = *((uint2 *)(&src_y_image[src_y1_idx]));
 
-        uint2 u0 = *((uint2 *)(&src_u_image[src_y0_idx]));
-        uint2 u1 = u0;
-
-        uint2 v0 = *((uint2 *)(&src_v_image[src_y0_idx]));
-        uint2 v1 = v0;
+        uint2 u0 = *((uint2 *)(&src_u_image[src_chroma_idx]));
+        uint2 v0 = *((uint2 *)(&src_v_image[src_chroma_idx]));
 
         uint32_t rgb0_idx = y * dst_image_stride_in_bytes_comp + (x * 8);
         uint32_t rgb1_idx = rgb0_idx + dst_image_stride_in_bytes;
@@ -792,14 +786,14 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb0.data[5] = hipPack(f);
 
-        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u1.x), hipUnpack0(v1.x));
+        yuv = make_float3(hipUnpack0(y1.x), hipUnpack0(u0.x), hipUnpack0(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u1.x), hipUnpack1(v1.x));
+        yuv = make_float3(hipUnpack1(y1.x), hipUnpack1(u0.x), hipUnpack1(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -808,7 +802,7 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u1.x), hipUnpack2(v1.x));
+        yuv = make_float3(hipUnpack2(y1.x), hipUnpack2(u0.x), hipUnpack2(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -817,7 +811,7 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb1.data[1] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u1.x), hipUnpack3(v1.x));
+        yuv = make_float3(hipUnpack3(y1.x), hipUnpack3(u0.x), hipUnpack3(v0.x));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);
@@ -826,14 +820,14 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.w = fmaf(cb.x, yuv.y, yuv.x);
         rgb1.data[2] = hipPack(f);
 
-        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u1.y), hipUnpack0(v1.y));
+        yuv = make_float3(hipUnpack0(y1.y), hipUnpack0(u0.y), hipUnpack0(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.x = fmaf(cr.y, yuv.z, yuv.x);
         f.y = fmaf(cg.x, yuv.y, yuv.x);
         f.y = fmaf(cg.y, yuv.z, f.y);
         f.z = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u1.y), hipUnpack1(v1.y));
+        yuv = make_float3(hipUnpack1(y1.y), hipUnpack1(u0.y), hipUnpack1(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.w = fmaf(cr.y, yuv.z, yuv.x);
@@ -842,7 +836,7 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         f.x = fmaf(cg.x, yuv.y, yuv.x);
         f.x = fmaf(cg.y, yuv.z, f.x);
         f.y = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u1.y), hipUnpack2(v1.y));
+        yuv = make_float3(hipUnpack2(y1.y), hipUnpack2(u0.y), hipUnpack2(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.z = fmaf(cr.y, yuv.z, yuv.x);
@@ -851,7 +845,7 @@ __global__ void ColorConvertYUV440ToRGBPlanarKernel(uint32_t dst_width, uint32_t
         rgb1.data[4] = hipPack(f);
 
         f.x = fmaf(cb.x, yuv.y, yuv.x);
-        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u1.y), hipUnpack3(v1.y));
+        yuv = make_float3(hipUnpack3(y1.y), hipUnpack3(u0.y), hipUnpack3(v0.y));
         yuv.y -= 128.0f;
         yuv.z -= 128.0f;
         f.y = fmaf(cr.y, yuv.z, yuv.x);

@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     heights.resize(batch_size, std::vector<uint32_t>(ROCJPEG_MAX_COMPONENT, 0));
     subsamplings.resize(batch_size);
     std::vector<std::string> base_file_names(batch_size);
+    std::cout << "Decoding started, please wait! ... " << std::endl;
     for (int i = 0; i < file_paths.size(); i += batch_size) {
         int batch_end = std::min(i + batch_size, static_cast<int>(file_paths.size()));
         for (int j = i; j < batch_end; j++) {
@@ -103,9 +104,6 @@ int main(int argc, char **argv) {
             CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handles[index], &num_components, &subsamplings[index], widths[index].data(), heights[index].data()));
 
             rocjpeg_utils.GetChromaSubsamplingStr(subsamplings[index], chroma_sub_sampling);
-            std::cout << "Input file name: " << base_file_names[index] << std::endl;
-            std::cout << "Input image resolution: " << widths[index][0] << "x" << heights[index][0] << std::endl;
-            std::cout << "Chroma subsampling: " + chroma_sub_sampling  << std::endl;
             if (subsamplings[index] == ROCJPEG_CSS_440 || subsamplings[index] == ROCJPEG_CSS_411) {
                 std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
                 if (is_dir) {
@@ -157,7 +155,6 @@ int main(int argc, char **argv) {
         }
 
         if (is_dir) {
-            std::cout << std::endl;
             time_per_image_all += time_per_batch_in_milli_sec;
             mpixels_all += image_size_in_mpixels;
         }
@@ -178,7 +175,6 @@ int main(int argc, char **argv) {
             std::cout << "Average decoded images per sec (Images/Sec): " << images_per_sec << std::endl;
             std::cout << "Average decoded images size (Mpixels/Sec): " << mpixels_per_sec << std::endl;
         }
-        std::cout << std::endl;
     }
 
     //cleanup

@@ -22,7 +22,7 @@
 ################################################################################
 
 cmake_minimum_required (VERSION 3.0)
-project(jpegdecodeperf)
+project(jpegdecodebatched)
 set(CMAKE_CXX_STANDARD 17)
 
 # ROCM Path
@@ -62,7 +62,7 @@ if(HIP_FOUND AND ROCJPEG_FOUND)
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL "8.5")
       set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
     endif()
-    list(APPEND SOURCES ${PROJECT_SOURCE_DIR} jpegdecodeperf.cpp)
+    list(APPEND SOURCES ${PROJECT_SOURCE_DIR} jpegdecodebatched.cpp)
     add_executable(${PROJECT_NAME} ${SOURCES})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++17")
     target_link_libraries(${PROJECT_NAME} ${LINK_LIBRARY_LIST})

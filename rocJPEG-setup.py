@@ -22,13 +22,14 @@ import os
 import sys
 import argparse
 import platform
+import traceback
 if sys.version_info[0] < 3:
     import commands
 else:
     import subprocess
 
-__copyright__ = "Copyright (c) 2024, AMD rocJPEG"
-__version__ = "1.2.0"
+__copyright__ = "Copyright (c) 2023 - 2024, AMD ROCm rocJPEG"
+__version__ = "2.0.0"
 __email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
 
@@ -37,6 +38,7 @@ def ERROR_CHECK(call):
     status = call
     if(status != 0):
         print('ERROR_CHECK failed with status:'+str(status))
+        traceback.print_stack()
         exit(status)
 
 # Arguments
@@ -77,33 +79,50 @@ else:
     if sudoLocation != '/usr/bin/sudo':
         status, userName = subprocess.getstatusoutput("whoami")
 
+# check os version
+os_info_data = 'NOT Supported'
+if os.path.exists('/etc/os-release'):
+    with open('/etc/os-release', 'r') as os_file:
+        os_info_data = os_file.read().replace('\n', ' ')
+        os_info_data = os_info_data.replace('"', '')
+
 # setup for Linux
 linuxSystemInstall = ''
 linuxCMake = 'cmake'
 linuxSystemInstall_check = ''
 linuxFlag = ''
 sudoValidateOption= '-v'
-if "centos" in platfromInfo or "redhat" in platfromInfo or os.path.exists('/usr/bin/yum'):
+if "centos" in os_info_data or "redhat" in os_info_data or os.path.exists('/usr/bin/yum'):
     linuxSystemInstall = 'yum -y'
     linuxSystemInstall_check = '--nogpgcheck'
-    if "centos-7" in platfromInfo or "redhat-7" in platfromInfo:
-        print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-        exit(-1)
-    if not "centos" in platfromInfo or not "redhat" in platfromInfo:
-        platfromInfo = platfromInfo+'-redhat'
-elif "Ubuntu" in platfromInfo or os.path.exists('/usr/bin/apt-get'):
+    if "VERSION_ID=7" in os_info_data:
+        linuxCMake = 'cmake3'
+        platfromInfo = platfromInfo+'-redhat-7'
+    elif "VERSION_ID=8" in os_info_data:
+        platfromInfo = platfromInfo+'-redhat-8'
+    elif "VERSION_ID=9" in os_info_data:
+        platfromInfo = platfromInfo+'-redhat-9'
+    else:
+        platfromInfo = platfromInfo+'-redhat-centos-undefined-version'
+elif "Ubuntu" in os_info_data or os.path.exists('/usr/bin/apt-get'):
     linuxSystemInstall = 'apt-get -y'
     linuxSystemInstall_check = '--allow-unauthenticated'
     linuxFlag = '-S'
-    if not "Ubuntu" in platfromInfo:
-        platfromInfo = platfromInfo+'-Ubuntu'
-elif os.path.exists('/usr/bin/zypper'):
+    if "VERSION_ID=20" in os_info_data:
+        platfromInfo = platfromInfo+'-Ubuntu-20'
+    elif "VERSION_ID=22" in os_info_data:
+        platfromInfo = platfromInfo+'-Ubuntu-22'
+    elif "VERSION_ID=24" in os_info_data:
+        platfromInfo = platfromInfo+'-Ubuntu-24'
+    else:
+        platfromInfo = platfromInfo+'-Ubuntu-undefined-version'
+elif "SLES" in os_info_data or os.path.exists('/usr/bin/zypper'):
     linuxSystemInstall = 'zypper -n'
     linuxSystemInstall_check = '--no-gpg-checks'
     platfromInfo = platfromInfo+'-SLES'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-    print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15 SP4\n")
+    print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15\n")
     exit(-1)
 
 # rocJPEG Setup
@@ -153,6 +172,9 @@ coreRPMPackages = [
     'libva-utils'
 ]
 
+# update
+ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +' '+linuxSystemInstall_check+' update'))
+
 # common packages
 ERROR_CHECK(os.system('sudo '+sudoValidateOption))
 for i in range(len(commonPackages)):
@@ -165,10 +187,10 @@ if "Ubuntu" in platfromInfo:
     for i in range(len(coreDebianPackages)):
         ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
                 ' '+linuxSystemInstall_check+' install '+ coreDebianPackages[i]))
-    if "22.04" in platform.version():
+    if "VERSION_ID=22" in os_info_data:
         for i in range(len(coreDebianU22Packages)):
             ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
-                ' '+linuxSystemInstall_check+' install '+ coreDebianU22Packages[i]))
+                    ' '+linuxSystemInstall_check+' install '+ coreDebianU22Packages[i]))
 else:
     for i in range(len(coreRPMPackages)):
         ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +

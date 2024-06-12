@@ -93,3 +93,15 @@ add_test(
             --test-command "jpegdecodemultithreads"
             -i ${CMAKE_SOURCE_DIR}/data/images/ -t 2
 )
+
+add_test(
+  NAME
+  jpeg-decode-batch-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecodeBatched"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeBatched"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecodebatched"
+            -i ${CMAKE_SOURCE_DIR}/data/images/
+)

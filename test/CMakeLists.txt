@@ -121,3 +121,15 @@ add_test(
             --test-command "jpegdecodemultithreads"
             -i ${ROCM_PATH}/share/rocjpeg/images/ -t 2
 )
+
+add_test(
+  NAME
+    jpeg-decode-batch-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecodeBatched"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeBatched"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecodebatched"
+            -i ${ROCM_PATH}/share/rocjpeg/images/
+)

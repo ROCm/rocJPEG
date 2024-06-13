@@ -573,7 +573,7 @@ private:
             std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";
         }
         if (show_batch_size) {
-            std::cout << "-b     [batch_size] - decode images from input by batches of specified size - [optional - default: 2]\n";
+            std::cout << "-b     [batch_size] - decode images from input by batches of a specified size - [optional - default: 2]\n";
         }
         exit(0);
     }

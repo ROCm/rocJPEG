@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
             std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
                 std::cout << std::endl;
-                    continue;
+                continue;
             } else
                 return EXIT_FAILURE;
         }

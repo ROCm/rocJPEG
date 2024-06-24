@@ -239,6 +239,17 @@ public:
      */
     RocJpegStatus GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop);
 
+    /**
+     * Submits a batch of JPEG streams for decoding using the VAAPI decoder.
+     *
+     * @param jpeg_streams_params An array of the JPEG streams parameters to be decoded.
+     * @param batch_size The number of JPEG streams in the batch.
+     * @param decode_params The decoding parameters for the VAAPI decoder.
+     * @param surface_ids An array to store the surface IDs of the decoded frames.
+     * @return The status of the decoding operation.
+     */
+    RocJpegStatus SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids);
+
 private:
     int device_id_; // The ID of the device
     int drm_fd_; // The file descriptor for the DRM device

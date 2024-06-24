@@ -603,6 +603,10 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     return ROCJPEG_STATUS_SUCCESS;
 }
 
+RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids) {
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
 /**
  * @brief Synchronizes the specified VASurfaceID.
  *

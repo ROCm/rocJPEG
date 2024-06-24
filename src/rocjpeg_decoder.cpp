@@ -172,9 +172,28 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
  */
 RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations) {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    for(int i = 0; i < batch_size; i++) {
-        CHECK_ROCJPEG(Decode(jpeg_streams[i], decode_params, &destinations[i]));
+    if (jpeg_streams == nullptr || decode_params == nullptr || destinations == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
+
+    std::vector<VASurfaceID> current_surface_ids;
+    std::vector<JpegStreamParameters> jpeg_streams_params;
+    current_surface_ids.resize(batch_size);
+    jpeg_streams_params.resize(batch_size);
+
+    for (int i = 0; i < batch_size; i += 2) {
+        int batch_end = std::min(i + 2, batch_size);
+        int current_batch_size = batch_end - i;
+
+        for (int j = i; j < batch_end; j++) {
+            auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_streams[j]);
+            const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
+            jpeg_streams_params[j] = std::move(*jpeg_stream_params);
+        }
+
+        CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecodeBatched(jpeg_streams_params.data() + i, current_batch_size, decode_params, current_surface_ids.data() + i));
+    }
+
     return ROCJPEG_STATUS_SUCCESS;
 }
 /**

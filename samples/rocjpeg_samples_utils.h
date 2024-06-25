@@ -376,13 +376,13 @@ public:
                         format_description = "440";
                         break;
                     case ROCJPEG_CSS_422:
-                        format_description = "422_packed_yuyv";
+                        format_description = "422_yuyv";
                         break;
                     case ROCJPEG_CSS_420:
-                        format_description = "420_uv_interleaved";
+                        format_description = "nv12";
                         break;
                     case ROCJPEG_CSS_400:
-                        format_description = "400_y_only";
+                        format_description = "400";
                         break;
                     default:
                         std::cout << "Unknown chroma subsampling!" << std::endl;
@@ -395,7 +395,7 @@ public:
                 break;
             case ROCJPEG_OUTPUT_Y:
                 file_extension = "yuv";
-                format_description = "400_y_only";
+                format_description = "400";
                 break;
             case ROCJPEG_OUTPUT_RGB:
                 file_extension = "rgb";

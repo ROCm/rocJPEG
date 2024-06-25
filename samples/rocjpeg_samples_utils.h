@@ -360,32 +360,57 @@ public:
      * @param image_height The image height.
      * @param file_name_for_saving The string to store the file name for saving.
      */
-    void GetOutputFileExt(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, std::string &file_name_for_saving) {
+    void GetOutputFileExt(RocJpegOutputFormat output_format, std::string &base_file_name, uint32_t image_width, uint32_t image_height, RocJpegChromaSubsampling subsampling, std::string &file_name_for_saving) {
         std::string file_extension;
         std::string::size_type const p(base_file_name.find_last_of('.'));
         std::string file_name_no_ext = base_file_name.substr(0, p);
+        std::string format_description = "";
         switch (output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
-                file_extension = "native";
+                file_extension = "yuv";
+                switch (subsampling) {
+                    case ROCJPEG_CSS_444:
+                        format_description = "444";
+                        break;
+                    case ROCJPEG_CSS_440:
+                        format_description = "440";
+                        break;
+                    case ROCJPEG_CSS_422:
+                        format_description = "422_packed_yuyv";
+                        break;
+                    case ROCJPEG_CSS_420:
+                        format_description = "420_uv_interleaved";
+                        break;
+                    case ROCJPEG_CSS_400:
+                        format_description = "400_y_only";
+                        break;
+                    default:
+                        std::cout << "Unknown chroma subsampling!" << std::endl;
+                        return;
+                }
                 break;
             case ROCJPEG_OUTPUT_YUV_PLANAR:
                 file_extension = "yuv";
+                format_description = "planar";
                 break;
             case ROCJPEG_OUTPUT_Y:
-                file_extension = "y";
+                file_extension = "yuv";
+                format_description = "400_y_only";
                 break;
             case ROCJPEG_OUTPUT_RGB:
                 file_extension = "rgb";
+                format_description = "packed";
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
-                file_extension = "rgb_planar";
+                file_extension = "rgb";
+                format_description = "planar";
                 break;
             default:
                 file_extension = "";
                 break;
         }
         file_name_for_saving += "//" + file_name_no_ext + "_" + std::to_string(image_width) + "x"
-            + std::to_string(image_height) + "." + file_extension;
+            + std::to_string(image_height) + "_" + format_description + "." + file_extension;
     }
 
     /**

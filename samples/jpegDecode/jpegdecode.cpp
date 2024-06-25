@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
         if (save_images) {
             std::string image_save_path = output_file_path;
             if (is_dir) {
-                rocjpeg_utils.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], image_save_path);
+                rocjpeg_utils.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], subsampling, image_save_path);
             }
             rocjpeg_utils.SaveImage(image_save_path, &output_image, widths[0], heights[0], subsampling, decode_params.output_format);
         }

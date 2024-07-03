@@ -223,9 +223,7 @@ RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
                               [surface_id](const RocJpegVappiMemPoolEntry& entry) {return entry.va_surface_id == surface_id;});
         if (it != entries.end()) {
             if (it->hip_interop.hip_mapped_device_mem != nullptr) {
-                if (it->hip_interop.hip_mapped_device_mem != nullptr) {
-                    CHECK_HIP(hipFree(it->hip_interop.hip_mapped_device_mem));
-                }
+                CHECK_HIP(hipFree(it->hip_interop.hip_mapped_device_mem));
                 if (it->hip_interop.hip_ext_mem != nullptr) {
                     CHECK_HIP(hipDestroyExternalMemory(it->hip_interop.hip_ext_mem));
                 }

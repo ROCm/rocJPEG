@@ -32,8 +32,7 @@ THE SOFTWARE.
  * @return None
  */
 RocJpegVappiMemoryPool::RocJpegVappiMemoryPool() {
-std::vector<uint32_t> surface_formats = {VA_RT_FORMAT_RGB32, VA_RT_FORMAT_RGBP, VA_RT_FORMAT_YUV444,
-                                         VA_RT_FORMAT_YUV422, VA_RT_FORMAT_YUV420, VA_RT_FORMAT_YUV400};
+std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, ROCJPEG_FOURCC_YUYV, VA_FOURCC_NV12, VA_FOURCC_Y800};
     for (auto surface_format : surface_formats) {
         mem_pool_[surface_format] = std::vector<RocJpegVappiMemPoolEntry>();
     }
@@ -133,7 +132,7 @@ RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
 /**
  * @brief Retrieves a `RocJpegVappiMemPoolEntry` from the memory pool based on the specified surface format, image width, and image height.
  *
- * @param surface_format The surface format of the entry to retrieve.
+ * @param surface_format The surface pixel format of the entry to retrieve.
  * @param image_width The width of the image of the entry to retrieve.
  * @param image_height The height of the image of the entry to retrieve.
  * @return The matching `RocJpegVappiMemPoolEntry` if found, or a default-initialized entry if not found.
@@ -568,7 +567,8 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         }
     }
 
-    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height);
+    uint32_t surface_pixel_format = static_cast<uint32_t>(surface_attrib.value.value.i);
+    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height);
     VAContextID va_context_id;
     if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_id == 0) {
         CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &surface_id, 1, &surface_attrib, 1));
@@ -578,7 +578,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         mem_pool_entry.va_surface_id = surface_id;
         mem_pool_entry.va_context_id = va_context_id;
         mem_pool_entry.hip_interop = {};
-        CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_format, mem_pool_entry));
+        CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_pixel_format, mem_pool_entry));
     } else {
         surface_id = mem_pool_entry.va_surface_id;
         va_context_id = mem_pool_entry.va_context_id;

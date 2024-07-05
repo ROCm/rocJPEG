@@ -201,9 +201,7 @@ The ``rocJpegDecodeBatched()`` function takes the following arguments:
 * ``decode_params``: The decode parameters for the JPEG images.
 * ``destinations``: An array of rocJPEG images to store the decoded images.
 
-The function returns the status of the rocJPEG decoding operation.
-
-To use the ``rocJpegDecodeBatched()`` function, you need to provide the appropriate rocJPEG handles, stream handles, decode parameters, and destination images. The function will decode the batch of JPEG images and store the decoded images in the ``destination`` images array.
+To use the ``rocJpegDecodeBatched()`` function, you need to provide the appropriate rocJPEG handles, stream handles, decode parameters, and destination images. The function will decode the batch of JPEG images and store the decoded images in the ``destinations`` array.
 Remember to allocate device memories for each channel of the destination images and pass them to the ``rocJpegDecodeBatched()`` API. The API will then copy the decoded images to the destination images based on the requested output format specified in the ``RocJpegDecodeParams``.
 
 8. Destroy the decoder

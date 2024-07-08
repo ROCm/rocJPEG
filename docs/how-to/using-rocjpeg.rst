@@ -258,7 +258,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     RocJpegHandle handle;
     RocJpegStatus status = rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, 0, &handle);
     if (status != ROCJPEG_STATUS_SUCCESS) {
-      std::cerr << "Failed to create rocJPEG handle" << std::endl;
+      std::cerr << "Failed to create rocJPEG handle with error code: " << rocJpegGetErrorName(status) << std::endl;
       return EXIT_FAILURE;
     }
 
@@ -266,7 +266,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     RocJpegStreamHandle rocjpeg_stream_handle;
     status = rocJpegStreamCreate(&rocjpeg_stream_handle);
     if (status != ROCJPEG_STATUS_SUCCESS) {
-      std::cerr << "Failed to create JPEG stream" << std::endl;
+      std::cerr << "Failed to create JPEG stream with error code: " << rocJpegGetErrorName(status) << std::endl;
       rocJpegDestroy(handle);
       return EXIT_FAILURE;
     }
@@ -274,7 +274,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     // Parse the JPEG stream
     status = rocJpegStreamParse(reinterpret_cast<uint8_t*>(file_data.data()), file_size, rocjpeg_stream_handle);
     if (status != ROCJPEG_STATUS_SUCCESS) {
-      std::cerr << "Failed to parse JPEG stream" << std::endl;
+      std::cerr << "Failed to parse JPEG stream with error code: " << rocJpegGetErrorName(status) << std::endl;
       rocJpegStreamDestroy(rocjpeg_stream_handle);
       rocJpegDestroy(handle);
       return EXIT_FAILURE;
@@ -288,7 +288,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
 
     status = rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handle, &num_components, &subsampling, widths, heights);
     if (status != ROCJPEG_STATUS_SUCCESS) {
-      std::cerr << "Failed to get image info" << std::endl;
+      std::cerr << "Failed to get image info with error code: " << rocJpegGetErrorName(status) << std::endl;
       rocJpegStreamDestroy(rocjpeg_stream_handle);
       rocJpegDestroy(handle);
       return EXIT_FAILURE;
@@ -323,7 +323,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     // Decode the JPEG stream
     status = rocJpegDecode(rocjpeg_handle, rocjpeg_stream_handle, &decode_params, &output_image);
     if (status != ROCJPEG_STATUS_SUCCESS) {
-      std::cerr << "Failed to decode JPEG stream" << std::endl;
+      std::cerr << "Failed to decode JPEG stream with error code: " << rocJpegGetErrorName(status) << std::endl;
       hipFree((void *)output_image.channel[0]);
       hipFree((void *)output_image.channel[1]);
       rocJpegStreamDestroy(rocjpeg_stream_handle);

@@ -20,8 +20,8 @@ Tested configurations
 
 * ROCm
 
-  * rocm-core: 6.1.0.60100-65
-  * amdgpu-core: 1:6.1.60100-1744891
+  * rocm-core: 6.3.0.60300-14317
+  * amdgpu-core: 6.3.60300-1798298
 
 * rocJPEG Setup Script: V1.0
 

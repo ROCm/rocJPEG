@@ -207,9 +207,9 @@ page.
   * Ubuntu - `20.04` / `22.04`
   * RHEL - `8` / `9`
 * ROCm:
-  * rocm-core - `6.2.0.60200-14004`
-  * amdgpu-core - `6.2.60200-1775523`
+  * rocm-core - `6.3.0.60300-14317`
+  * amdgpu-core - `6.3.60300-1798298`
 * libva-dev - `2.7.0-2` / `2.14.0-1`
-* mesa-amdgpu-va-drivers - `24.1.0.60200-1775523`
-* mesa-amdgpu-dri-drivers - `24.1.0.60200-1775523`
-* rocJPEG Setup Script - `V1.2.0`
+* mesa-amdgpu-va-drivers - `24.2.0.60300-1798298`
+* mesa-amdgpu-dri-drivers - `24.2.0.60300-1798298`
+* rocJPEG Setup Script - `V2.0.0`

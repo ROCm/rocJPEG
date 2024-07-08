@@ -280,12 +280,12 @@ RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id},
                           {"gfx940", {24, true, true}},
                           {"gfx941", {32, true, true}},
                           {"gfx942", {32, true, true}},
-                          {"gfx1030", {2, false, false}},
-                          {"gfx1031", {2, false, false}},
-                          {"gfx1032", {2, false, false}},
-                          {"gfx1100", {2, false, false}},
+                          {"gfx1030", {1, false, false}},
+                          {"gfx1031", {1, false, false}},
+                          {"gfx1032", {1, false, false}},
+                          {"gfx1100", {1, false, false}},
                           {"gfx1101", {1, false, false}},
-                          {"gfx1102", {2, false, false}}};
+                          {"gfx1102", {1, false, false}}};
 };
 
 /**

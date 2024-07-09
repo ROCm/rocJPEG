@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <array>
 #if __cplusplus >= 201703L && __has_include(<filesystem>)
     #include <filesystem>
 #else
@@ -76,6 +77,7 @@ public:
      * @param rocjpeg_backend The rocJPEG backend.
      * @param decode_params The rocJPEG decode parameters.
      * @param num_threads The number of threads.
+     * @param crop The crop rectangle.
      * @param argc The number of command line arguments.
      * @param argv The command line arguments.
      */
@@ -151,6 +153,16 @@ public:
                 }
                 if (batch_size != nullptr)
                     *batch_size = atoi(argv[i]);
+                continue;
+            }
+            if (!strcmp(argv[i], "-crop")) {
+                if (++i == argc || 4 != sscanf(argv[i], "%hd,%hd,%hd,%hd", &decode_params.crop_rectangle.left, &decode_params.crop_rectangle.top, &decode_params.crop_rectangle.right, &decode_params.crop_rectangle.bottom)) {
+                    ShowHelpAndExit("-crop");
+                }
+                if ((&decode_params.crop_rectangle.right - &decode_params.crop_rectangle.left) % 2 == 1 || (&decode_params.crop_rectangle.bottom - &decode_params.crop_rectangle.top) % 2 == 1) {
+                    std::cout << "output crop rectangle must have width and height of even numbers" << std::endl;
+                    exit(1);
+                }
                 continue;
             }
             ShowHelpAndExit(argv[i], num_threads != nullptr, batch_size != nullptr);
@@ -265,7 +277,7 @@ public:
      * This function gets the channel pitch and sizes based on the specified output format, chroma subsampling,
      * output image, and channel sizes.
      *
-     * @param output_format The output format.
+     * @param decode_params The output format, four corners of ROI rectangle (if defined), width and height of ROI rectangle (if defined).
      * @param subsampling The chroma subsampling.
      * @param widths The array to store the channel widths.
      * @param heights The array to store the channel heights.
@@ -274,38 +286,90 @@ public:
      * @param channel_sizes The array to store the channel sizes.
      * @return The channel pitch.
      */
-    int GetChannelPitchAndSizes(RocJpegOutputFormat output_format, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
+    int GetChannelPitchAndSizes(RocJpegDecodeParams decode_params, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
                                 uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
-        switch (output_format) {
+        
+        bool defined_roi = false;
+        uint32_t roi_width;
+        uint32_t roi_height;
+        // only checking bottom and right because user can give a rectangle that starts at 0,0 and goes to roi_width,roi_height
+        if (decode_params.crop_rectangle.bottom != 0 && decode_params.crop_rectangle.right != 0) {
+            defined_roi = true;
+            roi_width = decode_params.crop_rectangle.right - decode_params.crop_rectangle.left;
+            roi_height = decode_params.crop_rectangle.bottom - decode_params.crop_rectangle.top;
+        }
+        
+        switch (decode_params.output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
                 switch (subsampling) {
                     case ROCJPEG_CSS_444:
                         num_channels = 3;
-                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                        channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
-                        break;
+                        if (!defined_roi) {
+                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                            channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                            break;
+                        }
+                        else {
+                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = roi_width;
+                            channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * roi_height;
+                            break;
+                        }
                     case ROCJPEG_CSS_440:
-                        num_channels = 3;
-                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                        channel_sizes[0] = output_image.pitch[0] * heights[0];
-                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * (heights[0] >> 1);
-                        break;
+                        if (!defined_roi) {
+                            num_channels = 3;
+                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                            channel_sizes[0] = output_image.pitch[0] * heights[0];
+                            channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * (heights[0] >> 1);
+                            break;
+                        }
+                        else {
+                            num_channels = 3;
+                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = roi_width;
+                            channel_sizes[0] = output_image.pitch[0] * roi_height;
+                            channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * (roi_height >> 1);
+                            break;
+                        }
                     case ROCJPEG_CSS_422:
-                        num_channels = 1;
-                        output_image.pitch[0] = widths[0] * 2;
-                        channel_sizes[0] = output_image.pitch[0] * heights[0];
-                        break;
+                        if (!defined_roi) {
+                            num_channels = 1;
+                            output_image.pitch[0] = widths[0] * 2;
+                            channel_sizes[0] = output_image.pitch[0] * heights[0];
+                            break;
+                        }
+                        else {
+                            num_channels = 1;
+                            output_image.pitch[0] = roi_width * 2;
+                            channel_sizes[0] = output_image.pitch[0] * roi_height;
+                            break;
+                        }
                     case ROCJPEG_CSS_420:
-                        num_channels = 2;
-                        output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                        channel_sizes[0] = output_image.pitch[0] * heights[0];
-                        channel_sizes[1] = output_image.pitch[1] * (heights[0] >> 1);
-                        break;
+                        if (!defined_roi) {
+                            num_channels = 2;
+                            output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                            channel_sizes[0] = output_image.pitch[0] * heights[0];
+                            channel_sizes[1] = output_image.pitch[1] * (heights[0] >> 1);
+                            break;
+                        }
+                        else {
+                            num_channels = 2;
+                            output_image.pitch[1] = output_image.pitch[0] = roi_width;
+                            channel_sizes[0] = output_image.pitch[0] * roi_height;
+                            channel_sizes[1] = output_image.pitch[1] * (roi_height >> 1);
+                            break;
+                        }
                     case ROCJPEG_CSS_400:
-                        num_channels = 1;
-                        output_image.pitch[0] = widths[0];
-                        channel_sizes[0] = output_image.pitch[0] * heights[0];
-                        break;
+                        if (!defined_roi) {
+                            num_channels = 1;
+                            output_image.pitch[0] = widths[0];
+                            channel_sizes[0] = output_image.pitch[0] * heights[0];
+                            break;
+                        }
+                        else {
+                            num_channels = 1;
+                            output_image.pitch[0] = roi_width;
+                            channel_sizes[0] = output_image.pitch[0] * roi_height;
+                            break;
+                        }
                     default:
                         std::cout << "Unknown chroma subsampling!" << std::endl;
                         return EXIT_FAILURE;
@@ -313,34 +377,79 @@ public:
                 break;
             case ROCJPEG_OUTPUT_YUV_PLANAR:
                 if (subsampling == ROCJPEG_CSS_400) {
-                    num_channels = 1;
-                    output_image.pitch[0] = widths[0];
-                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    if (!defined_roi) {
+                        num_channels = 1;
+                        output_image.pitch[0] = widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    }
+                    else {
+                        num_channels = 1;
+                        output_image.pitch[0] = roi_width;
+                        channel_sizes[0] = output_image.pitch[0] * roi_height;
+                    }
                 } else {
-                    num_channels = 3;
-                    output_image.pitch[0] = widths[0];
-                    output_image.pitch[1] = widths[1];
-                    output_image.pitch[2] = widths[2];
-                    channel_sizes[0] = output_image.pitch[0] * heights[0];
-                    channel_sizes[1] = output_image.pitch[1] * heights[1];
-                    channel_sizes[2] = output_image.pitch[2] * heights[2];
+                    // Not sure about this one since three widths and heights are given when there is no ROI
+                    // Since it is YUV planar, can't the widths and heights of all planes be computed from the
+                    // given width and height?
+                    if (!defined_roi) {
+                        num_channels = 3;
+                        output_image.pitch[0] = widths[0];
+                        output_image.pitch[1] = widths[1];
+                        output_image.pitch[2] = widths[2];
+                        channel_sizes[0] = output_image.pitch[0] * heights[0];
+                        channel_sizes[1] = output_image.pitch[1] * heights[1];
+                        channel_sizes[2] = output_image.pitch[2] * heights[2];
+                    }
+                    else {
+                        num_channels = 3;
+                        output_image.pitch[0] = roi_width;
+                        output_image.pitch[1] = roi_width;
+                        output_image.pitch[2] = roi_width;
+                        channel_sizes[0] = output_image.pitch[0] * roi_height;
+                        channel_sizes[1] = output_image.pitch[1] * roi_height;
+                        channel_sizes[2] = output_image.pitch[2] * roi_height;
+                    }
                 }
                 break;
             case ROCJPEG_OUTPUT_Y:
-                num_channels = 1;
-                output_image.pitch[0] = widths[0];
-                channel_sizes[0] = output_image.pitch[0] * heights[0];
-                break;
+                if (!defined_roi) {
+                    num_channels = 1;
+                    output_image.pitch[0] = widths[0];
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                }
+                else {
+                    num_channels = 1;
+                    output_image.pitch[0] = roi_width;
+                    channel_sizes[0] = output_image.pitch[0] * roi_height;
+                    break;
+                }
             case ROCJPEG_OUTPUT_RGB:
-                num_channels = 1;
-                output_image.pitch[0] = widths[0] * 3;
-                channel_sizes[0] = output_image.pitch[0] * heights[0];
-                break;
+                if (!defined_roi) {
+                    num_channels = 1;
+                    output_image.pitch[0] = widths[0] * 3;
+                    channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                }
+                else {
+                    num_channels = 1;
+                    output_image.pitch[0] = roi_width * 3;
+                    channel_sizes[0] = output_image.pitch[0] * roi_height;
+                    break;
+                }
             case ROCJPEG_OUTPUT_RGB_PLANAR:
-                num_channels = 3;
-                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
-                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
-                break;
+                if (!defined_roi) {
+                    num_channels = 3;
+                    output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = widths[0];
+                    channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * heights[0];
+                    break;
+                }
+                else {
+                    num_channels = 3;
+                    output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = roi_width;
+                    channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * roi_height;
+                    break;
+                }
             default:
                 std::cout << "Unknown output format!" << std::endl;
                 return EXIT_FAILURE;
@@ -593,6 +702,7 @@ private:
         "                                           1 for hybrid JPEG decoding using CPU and GPU HIP kernels (currently not supported)) [optional - default: 0]\n"
         "-fmt   [output format] - select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar] - [optional - default: native]\n"
         "-o     [output path] - path to an output file or a path to a directory - write decoded images to a file or directory based on selected output format - [optional]\n"
+        "-crop  [crop rectangle] crop rectangle for output, left,top,right,bottom\n"
         "-d     [device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]\n";
         if (show_threads) {
             std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";

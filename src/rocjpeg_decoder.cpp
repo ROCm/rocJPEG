@@ -181,8 +181,8 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
     current_surface_ids.resize(batch_size);
     jpeg_streams_params.resize(batch_size);
 
-    for (int i = 0; i < batch_size; i += 2) {
-        int batch_end = std::min(i + 2, batch_size);
+    for (int i = 0; i < batch_size; i += 24) {
+        int batch_end = std::min(i + 24, batch_size);
         int current_batch_size = batch_end - i;
 
         for (int j = i; j < batch_end; j++) {

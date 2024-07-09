@@ -40,6 +40,7 @@ THE SOFTWARE.
 #endif
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -188,6 +189,56 @@ class RocJpegVappiMemoryPool {
     private:
         VADisplay va_display_; // The VADisplay associated with the memory pool.
         std::unordered_map<uint32_t, std::vector<RocJpegVappiMemPoolEntry>> mem_pool_; // The memory pool.
+};
+
+/**
+ * @brief Structure representing the key for a JPEG stream.
+ *
+ * This structure contains information about the surface format, pixel format, width, and height
+ * of a JPEG stream. It is used for comparing two JpegStreamKey objects for equality.
+ */
+struct JpegStreamKey {
+    uint32_t surface_format; /**< The surface format of the JPEG stream. */
+    uint32_t pixel_format; /**< The pixel format of the JPEG stream. */
+    uint32_t width; /**< The width of the JPEG stream. */
+    uint32_t height; /**< The height of the JPEG stream. */
+
+    /**
+     * @brief Equality operator for comparing two JpegStreamKey objects.
+     *
+     * @param other The JpegStreamKey object to compare with.
+     * @return true if the two objects are equal, false otherwise.
+     */
+    bool operator==(const JpegStreamKey& other) const {
+        return surface_format == other.surface_format &&
+               pixel_format == other.pixel_format &&
+               width == other.width &&
+               height == other.height;
+    }
+};
+
+
+/**
+ * @brief Specialization of the std::hash template for JpegStreamKey.
+ *
+ * This struct provides a hash function for the JpegStreamKey struct, which is used as a key in hash-based containers.
+ * It calculates the hash value based on the surface_format, pixel_format, width, and height members of the JpegStreamKey struct.
+ */
+template <>
+struct std::hash<JpegStreamKey> {
+    /**
+     * @brief Calculates the hash value for a given JpegStreamKey object.
+     *
+     * @param k The JpegStreamKey object to calculate the hash value for.
+     * @return The calculated hash value.
+     */
+    std::size_t operator()(const JpegStreamKey& k) const {
+        size_t result = std::hash<int>()(k.surface_format);
+        result ^= std::hash<int>()(k.pixel_format) << 1;
+        result ^= std::hash<uint32_t>()(k.width) << 1;
+        result ^= std::hash<uint32_t>()(k.height) << 1;
+        return result;
+    }
 };
 
 /**

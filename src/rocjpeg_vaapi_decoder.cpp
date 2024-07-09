@@ -604,6 +604,123 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
 }
 
 RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids) {
+    if (jpeg_streams_params == nullptr || decode_params == nullptr || surface_ids == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+
+    // Group the JPEG streams in the jpeg_streams_params array based on their chroma subsampling, width, and height.
+    // Store the groups in an unordered map, where the key is a JpegStreamKey struct and the value is a vector of integers
+    // representing the indices of the JPEG streams in the batch.
+    std::unordered_map<JpegStreamKey, std::vector<int>> jpeg_stream_groups;
+    for (int i = 0; i < batch_size; i++) {
+        if (sizeof(jpeg_streams_params[i].picture_parameter_buffer) != sizeof(VAPictureParameterBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].quantization_matrix_buffer) != sizeof(VAIQMatrixBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].huffman_table_buffer) != sizeof(VAHuffmanTableBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].slice_parameter_buffer) != sizeof(VASliceParameterBufferJPEGBaseline)) {
+            return ROCJPEG_STATUS_INVALID_PARAMETER;
+        }
+        JpegStreamKey jpeg_stream_key = {};
+        jpeg_stream_key.width = jpeg_streams_params[i].picture_parameter_buffer.picture_width;
+        jpeg_stream_key.height = jpeg_streams_params[i].picture_parameter_buffer.picture_height;
+        if (jpeg_stream_key.width < min_picture_width_ ||
+            jpeg_stream_key.height < min_picture_height_ ||
+            jpeg_stream_key.width > max_picture_width_ ||
+            jpeg_stream_key.height > max_picture_height_) {
+                ERR("The JPEG image resolution is not supported!");
+                return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+            }
+
+        if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+            if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
+                jpeg_stream_key.surface_format = VA_RT_FORMAT_RGB32;
+                jpeg_stream_key.pixel_format = VA_FOURCC_RGBA;
+            } else if (decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
+                jpeg_stream_key.surface_format = VA_RT_FORMAT_RGBP;
+                jpeg_stream_key.pixel_format = VA_FOURCC_RGBP;
+            }
+        } else {
+            switch (jpeg_streams_params[i].chroma_subsampling) {
+                case CSS_444:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV444;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_444P;
+                    break;
+                case CSS_440:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV422;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_422V;
+                    break;
+                case CSS_422:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV422;
+                    jpeg_stream_key.pixel_format = ROCJPEG_FOURCC_YUYV;
+                    break;
+                case CSS_420:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV420;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_NV12;
+                    break;
+                case CSS_400:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV400;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_Y800;
+                    break;
+                default:
+                    ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
+                    return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+                    break;
+            }
+        }
+        jpeg_stream_groups[jpeg_stream_key].push_back(i);
+    }
+
+    uint32_t surface_format;
+    VASurfaceAttrib surface_attrib;
+    surface_attrib.type = VASurfaceAttribPixelFormat;
+    surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
+    surface_attrib.value.type = VAGenericValueTypeInteger;
+
+    // Iterate through all entries of jpeg_stream_groups.
+    // Check if there is a matching entry in the memory pool.
+    // If not, allocate surfaces and create a context for each group.
+    // Submit the JPEG streams to the hardware for decoding.
+    for (const auto& group : jpeg_stream_groups) {
+        const JpegStreamKey& key = group.first;
+        const std::vector<int>& indices = group.second;
+
+        surface_format = key.surface_format;
+        surface_attrib.value.value.i = key.pixel_format;
+
+        RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height);
+        VAContextID va_context_id;
+        if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_id == 0) {
+            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, &surface_ids[0], 1, &surface_attrib, 1));
+            CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, key.width, key.height, VA_PROGRESSIVE, &surface_ids[0], 1, &va_context_id));
+            mem_pool_entry.image_width = key.width;
+            mem_pool_entry.image_height = key.height;
+            mem_pool_entry.va_surface_id = surface_ids[0];
+            mem_pool_entry.va_context_id = va_context_id;
+            mem_pool_entry.hip_interop = {};
+            CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(key.pixel_format, mem_pool_entry));
+        } else {
+            surface_ids[0] = mem_pool_entry.va_surface_id;
+            va_context_id = mem_pool_entry.va_context_id;
+        }
+
+        for (int idx : indices) {
+            CHECK_ROCJPEG(DestroyDataBuffers());
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].picture_parameter_buffer, &va_picture_parameter_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].huffman_table_buffer, &va_huffmantable_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].slice_parameter_buffer, &va_slice_param_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceDataBufferType, jpeg_streams_params[idx].slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_streams_params[idx].slice_data_buffer, &va_slice_data_buf_id_));
+
+            CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id, surface_ids[0] /*surface_ids[idx]*/));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_picture_parameter_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_quantization_matrix_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_huffmantable_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
+            CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
+        }
+    }
+
+
     return ROCJPEG_STATUS_SUCCESS;
 }
 

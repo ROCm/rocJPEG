@@ -30,7 +30,6 @@ THE SOFTWARE.
 #include <vector>
 #include <thread>
 #include <mutex>
-#include <array>
 #if __cplusplus >= 201703L && __has_include(<filesystem>)
     #include <filesystem>
 #else

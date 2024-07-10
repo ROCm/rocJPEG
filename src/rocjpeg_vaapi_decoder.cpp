@@ -140,11 +140,12 @@ RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
  * @param surface_format The surface pixel format of the entry to retrieve.
  * @param image_width The width of the image of the entry to retrieve.
  * @param image_height The height of the image of the entry to retrieve.
+ * @param num_surfaces The number of surfaces of the entry to retrieve.
  * @return The matching `RocJpegVappiMemPoolEntry` if found, or a default-initialized entry if not found.
  */
-RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height) {
+RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces) {
     for (const auto& entry : mem_pool_[surface_format]) {
-        if (entry.image_width == image_width && entry.image_height == image_height) {
+        if (entry.image_width == image_width && entry.image_height == image_height && entry.va_surface_ids.size() == num_surfaces) {
             return entry;
         }
     }
@@ -535,7 +536,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     }
 
     uint32_t surface_pixel_format = static_cast<uint32_t>(surface_attrib.value.value.i);
-    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height);
+    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
     VAContextID va_context_id;
     if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
         mem_pool_entry.va_surface_ids.resize(1);
@@ -654,7 +655,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
         surface_format = key.surface_format;
         surface_attrib.value.value.i = key.pixel_format;
 
-        RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height);
+        RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height, indices.size());
         VAContextID va_context_id;
         if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
             mem_pool_entry.va_surface_ids.resize(indices.size());

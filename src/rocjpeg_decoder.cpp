@@ -180,9 +180,10 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
     std::vector<JpegStreamParameters> jpeg_streams_params;
     current_surface_ids.resize(batch_size);
     jpeg_streams_params.resize(batch_size);
+    VcnJpegSpec current_vcn_jpeg_spec = jpeg_vaapi_decoder_.GetCurrentVcnJpegSpec();
 
-    for (int i = 0; i < batch_size; i += 24) {
-        int batch_end = std::min(i + 24, batch_size);
+    for (int i = 0; i < batch_size; i += current_vcn_jpeg_spec.num_jpeg_cores) {
+        int batch_end = std::min(i + static_cast<int>(current_vcn_jpeg_spec.num_jpeg_cores), batch_size);
         int current_batch_size = batch_end - i;
 
         for (int j = i; j < batch_end; j++) {

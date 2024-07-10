@@ -160,9 +160,10 @@ class RocJpegVappiMemoryPool {
          * @param surface_format The surface format of the pool entry.
          * @param image_width The image width of the pool entry.
          * @param image_height The image height of the pool entry.
+         * @param num_surfaces The number of surfaces of the entry to retrieve.
          * @return The RocJpegVappiMemPoolEntry object if found, otherwise a default-constructed object.
          */
-        RocJpegVappiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height);
+        RocJpegVappiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces);
 
         /**
          * @brief Adds a pool entry to the memory pool.
@@ -295,6 +296,11 @@ public:
      */
     RocJpegStatus SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids);
 
+    /**
+     * @brief Returns the current VCN JPEG specification.
+     * @return The current VCN JPEG specification.
+     */
+    const VcnJpegSpec& GetCurrentVcnJpegSpec() const {return current_vcn_jpeg_spec_;}
 private:
     int device_id_; // The ID of the device
     int drm_fd_; // The file descriptor for the DRM device

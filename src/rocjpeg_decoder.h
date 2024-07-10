@@ -171,7 +171,7 @@ private:
    int device_id_; // ID of the device to be used
    hipDeviceProp_t hip_dev_prop_; // HIP device properties
    hipStream_t hip_stream_; // HIP stream
-   std::recursive_mutex mutex_; // Mutex for thread safety
+   std::mutex mutex_; // Mutex for thread safety
    RocJpegBackend backend_; // RocJpeg backend
    RocJpegVappiDecoder jpeg_vaapi_decoder_; // RocJpeg VAAPI decoder object
 };

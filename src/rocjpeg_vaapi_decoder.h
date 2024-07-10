@@ -88,6 +88,7 @@ struct HipInteropDeviceMem {
     uint32_t surface_format; /**< Pixel format fourcc of the whole surface */
     uint32_t width; /**< Width of the surface in pixels. */
     uint32_t height; /**< Height of the surface in pixels. */
+    uint32_t size; /**< Size of the surface in pixels. */
     uint32_t offset[3]; /**< Offset of each plane */
     uint32_t pitch[3]; /**< Pitch of each plane */
     uint32_t num_layers; /**< Number of layers making up the surface */
@@ -110,9 +111,9 @@ struct HipInteropDeviceMem {
 struct RocJpegVappiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
-    VASurfaceID va_surface_id;
     VAContextID va_context_id;
-    HipInteropDeviceMem hip_interop;
+    std::vector<VASurfaceID> va_surface_ids;
+    std::vector<HipInteropDeviceMem> hip_interops;
 };
 
 /**
@@ -170,13 +171,6 @@ class RocJpegVappiMemoryPool {
          * @return The status of the operation.
          */
         RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry);
-
-        /**
-         * @brief Deletes a surface ID from the memory pool.
-         * @param surface_id The surface ID to be deleted.
-         * @return The status of the operation.
-         */
-        RocJpegStatus DeleteSurfaceId(VASurfaceID surface_id);
 
         /**
          * @brief Retrieves HipInterop memory for a specific surface ID.

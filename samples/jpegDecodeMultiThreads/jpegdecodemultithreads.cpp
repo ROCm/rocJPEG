@@ -77,7 +77,7 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
             return;
         }
 
-        if (rocjpeg_util.GetChannelPitchAndSizes(decode_params.output_format, subsampling, widths, heights, num_channels, *output_image, channel_sizes)) {
+        if (rocjpeg_util.GetChannelPitchAndSizes(decode_params, subsampling, widths, heights, num_channels, *output_image, channel_sizes)) {
                 std::cerr << "ERROR: Failed to get the channel pitch and sizes" << std::endl;
                 return;
         }

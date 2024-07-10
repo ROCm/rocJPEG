@@ -193,8 +193,57 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
         }
 
         CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecodeBatched(jpeg_streams_params.data() + i, current_batch_size, decode_params, current_surface_ids.data() + i));
+
+        for (int k = 0; k < current_batch_size; k++) {
+            HipInteropDeviceMem hip_interop_dev_mem = {};
+            VASurfaceID current_surface_id = *(current_surface_ids.data() + k + i);
+            const JpegStreamParameters *jpeg_stream_params = jpeg_streams_params.data() + k + i;
+            CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
+            CHECK_ROCJPEG(jpeg_vaapi_decoder_.GetHipInteropMem(current_surface_id, hip_interop_dev_mem));
+
+            uint16_t chroma_height = 0;
+
+            switch (decode_params->output_format) {
+                case ROCJPEG_OUTPUT_NATIVE:
+                    // Copy the native decoded output buffers from interop memory directly to the destination buffers
+                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
+                    // Copy Luma (first channel) for any surface format
+                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_height, 0, &destinations[k + i]));
+                    if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
+                        // Copy the second channel (UV interleaved) for NV12
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, &destinations[k + i]));
+                    } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
+                            hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
+                        // Copy the second and third channels for YUV444 and YUV440 (i.e., YUV422V)
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, &destinations[k + i]));
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, &destinations[k + i]));
+                    }
+                    break;
+                case ROCJPEG_OUTPUT_YUV_PLANAR:
+                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
+                    CHECK_ROCJPEG(GetPlanarYUVOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                        jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, &destinations[k + i]));
+                    break;
+                case ROCJPEG_OUTPUT_Y:
+                    CHECK_ROCJPEG(GetYOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i]));
+                    break;
+                case ROCJPEG_OUTPUT_RGB:
+                    CHECK_ROCJPEG(ColorConvertToRGB(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                            jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i]));
+                    break;
+                case ROCJPEG_OUTPUT_RGB_PLANAR:
+                    CHECK_ROCJPEG(ColorConvertToRGBPlanar(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
+                                                            jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i]));
+                    break;
+                default:
+                    break;
+            }
+        }
+
     }
 
+    CHECK_HIP(hipStreamSynchronize(hip_stream_));
     return ROCJPEG_STATUS_SUCCESS;
 }
 /**

@@ -245,7 +245,8 @@ RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id},
                           {"gfx90a", {2, false, false}},
                           {"gfx940", {24, true, true}},
                           {"gfx941", {32, true, true}},
-                          {"gfx942", {32, true, true}},
+                          {"gfx942_mi300a", {24, true, true}},
+                          {"gfx942_mi300x", {32, true, true}},
                           {"gfx1030", {1, false, false}},
                           {"gfx1031", {1, false, false}},
                           {"gfx1032", {1, false, false}},
@@ -304,7 +305,20 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     std::size_t pos = gcn_arch_name.find_first_of(":");
     std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
 
-    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base);
+    std::string gcn_arch_name_base_temp = gcn_arch_name_base;
+    // Check if the device name contains "MI300A" to identify if it is MI300A or MI300X ASIC
+    // as both have the same gfx942 architecture name.
+    bool is_gfx942_detected = (gcn_arch_name_base.compare("gfx942") == 0);
+    if (is_gfx942_detected) {
+        std::string mi300a = "MI300A";
+        size_t found_mi300a = device_name.find(mi300a);
+        if (found_mi300a != std::string::npos) {
+            gcn_arch_name_base_temp = (found_mi300a != std::string::npos) ? gcn_arch_name_base_temp + "_mi300a"
+                                                                          : gcn_arch_name_base_temp + "_mi300x";
+        }
+    }
+
+    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
     if (it != vcn_jpeg_spec_.end()) {
         current_vcn_jpeg_spec_ = it->second;
     }

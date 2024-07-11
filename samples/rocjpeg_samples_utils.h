@@ -276,7 +276,7 @@ public:
      * This function gets the channel pitch and sizes based on the specified output format, chroma subsampling,
      * output image, and channel sizes.
      *
-     * @param decode_params The output format, four corners of ROI rectangle (if defined), width and height of ROI rectangle (if defined).
+     * @param decode_params The decode parameters that specify the output format and crop rectangle.
      * @param subsampling The chroma subsampling.
      * @param widths The array to store the channel widths.
      * @param heights The array to store the channel heights.

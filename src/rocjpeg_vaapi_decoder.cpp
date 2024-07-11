@@ -155,10 +155,8 @@ RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_forma
 bool RocJpegVappiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
     for (auto& pair : mem_pool_) {
         for (auto& entry : pair.second) {
-            for (auto& va_surface_id_entry : entry.va_surface_ids) {
-                if (va_surface_id_entry == surface_id) {
-                    return true;
-                }
+            if (std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end()) {
+                return true;
             }
         }
     }

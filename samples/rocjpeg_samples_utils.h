@@ -293,7 +293,7 @@ public:
         uint32_t roi_height;
         roi_width = decode_params.crop_rectangle.right - decode_params.crop_rectangle.left;
         roi_height = decode_params.crop_rectangle.bottom - decode_params.crop_rectangle.top;
-        if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0 && roi_height <= heights[0]]) {
+        if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0] && roi_height <= heights[0]) {
             is_roi_valid = true; 
         }
         switch (decode_params.output_format) {

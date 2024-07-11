@@ -301,31 +301,31 @@ public:
                 switch (subsampling) {
                     case ROCJPEG_CSS_444:
                         num_channels = 3;
-                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                            channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                            break;
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                        channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                        break;
                     case ROCJPEG_CSS_440:
-                            num_channels = 3;
-                            output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                            channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                            channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * ((is_roi_valid ? roi_height : heights[0]) >> 1);
-                            break;
+                        num_channels = 3;
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * ((is_roi_valid ? roi_height : heights[0]) >> 1);
+                        break;
                     case ROCJPEG_CSS_422:
-                            num_channels = 1;
-                            output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 2;
-                            channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                            break;
+                        num_channels = 1;
+                        output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 2;
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                        break;
                     case ROCJPEG_CSS_420:
-                            num_channels = 2;
-                            output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                            channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                            channel_sizes[1] = output_image.pitch[1] * ((is_roi_valid ? roi_height : heights[0]) >> 1);
-                            break;
+                        num_channels = 2;
+                        output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                        channel_sizes[1] = output_image.pitch[1] * ((is_roi_valid ? roi_height : heights[0]) >> 1);
+                        break;
                     case ROCJPEG_CSS_400:
-                            num_channels = 1;
-                            output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                            channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                            break;
+                        num_channels = 1;
+                        output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                        break;
                     default:
                         std::cout << "Unknown chroma subsampling!" << std::endl;
                         return EXIT_FAILURE;
@@ -333,34 +333,34 @@ public:
                 break;
             case ROCJPEG_OUTPUT_YUV_PLANAR:
                 if (subsampling == ROCJPEG_CSS_400) {
-                        num_channels = 1;
-                        output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                } else {
-                        num_channels = 3;
-                        output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        output_image.pitch[1] = is_roi_valid ? roi_width : widths[1];
-                        output_image.pitch[2] = is_roi_valid ? roi_width : widths[2];
-                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                        channel_sizes[1] = output_image.pitch[1] * (is_roi_valid ? roi_height : heights[1]);
-                        channel_sizes[2] = output_image.pitch[2] * (is_roi_valid ? roi_height : heights[2]);
-                }
-                break;
-            case ROCJPEG_OUTPUT_Y:
                     num_channels = 1;
                     output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
                     channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                    break;
-            case ROCJPEG_OUTPUT_RGB:
-                    num_channels = 1;
-                    output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
-                    channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                    break;
-            case ROCJPEG_OUTPUT_RGB_PLANAR:
+                } else {
                     num_channels = 3;
-                    output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                    channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
-                    break;
+                    output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                    output_image.pitch[1] = is_roi_valid ? roi_width : widths[1];
+                    output_image.pitch[2] = is_roi_valid ? roi_width : widths[2];
+                    channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                    channel_sizes[1] = output_image.pitch[1] * (is_roi_valid ? roi_height : heights[1]);
+                    channel_sizes[2] = output_image.pitch[2] * (is_roi_valid ? roi_height : heights[2]);
+                }
+                break;
+            case ROCJPEG_OUTPUT_Y:
+                num_channels = 1;
+                output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                break;
+            case ROCJPEG_OUTPUT_RGB:
+                num_channels = 1;
+                output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
+                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                break;
+            case ROCJPEG_OUTPUT_RGB_PLANAR:
+                num_channels = 3;
+                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
                 return EXIT_FAILURE;

@@ -34,9 +34,16 @@ def runTestCommand (platform, project) {
         libLocation = ':/usr/local/lib'
     }
 
+    String libvaDriverPath = ""
+    if (platform.jenkinsLabel.contains('sles'))
+    {
+        libvaDriverPath = "export LIBVA_DRIVERS_PATH=/opt/amdgpu/lib64/dri"
+    }
+
     def command = """#!/usr/bin/env bash
                 set -ex
                 export HOME=/home/jenkins
+                ${libvaDriverPath}
                 echo make test
                 cd ${project.paths.project_build_prefix}/build/release
                 LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} make test ARGS="-VV --rerun-failed --output-on-failure"

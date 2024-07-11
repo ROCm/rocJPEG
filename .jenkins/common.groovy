@@ -26,17 +26,13 @@ def runCompileCommand(platform, project, jobName, boolean debug=false, boolean s
 def runTestCommand (platform, project) {
 
     String libLocation = ''
+    String libvaDriverPath = ""
 
     if (platform.jenkinsLabel.contains('rhel')) {
         libLocation = ':/usr/local/lib'
     }
     else if (platform.jenkinsLabel.contains('sles')) {
         libLocation = ':/usr/local/lib'
-    }
-
-    String libvaDriverPath = ""
-    if (platform.jenkinsLabel.contains('sles'))
-    {
         libvaDriverPath = "export LIBVA_DRIVERS_PATH=/opt/amdgpu/lib64/dri"
     }
 

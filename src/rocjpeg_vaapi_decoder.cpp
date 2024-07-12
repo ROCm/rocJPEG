@@ -475,14 +475,14 @@ RocJpegStatus RocJpegVappiDecoder::DestroyDataBuffers() {
  *
  * @param jpeg_stream_params The JPEG stream parameters for the decode operation.
  * @param surface_id [out] The ID of the output surface where the decoded image will be stored.
- * @param output_format The desired output format for the decoded image.
+ * @param decode_params Additional parameters for the decode operation.
  * @return The status of the decode operation.
  *         - ROCJPEG_STATUS_SUCCESS if the decode operation was successful.
  *         - ROCJPEG_STATUS_INVALID_PARAMETER if the provided parameters are invalid.
  *         - ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the JPEG image resolution or chroma subsampling is not supported.
  */
-RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format) {
-    if (jpeg_stream_params == nullptr) {
+RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, const RocJpegDecodeParams *decode_params) {
+    if (jpeg_stream_params == nullptr || decode_params == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
 
@@ -510,11 +510,11 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
     // set the RGB surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
     // otherwise set the appropriate surface format and attributes based on the chroma subsampling of the image.
-    if ((output_format == ROCJPEG_OUTPUT_RGB || output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
-        if (output_format == ROCJPEG_OUTPUT_RGB) {
+    if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+        if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
             surface_format = VA_RT_FORMAT_RGB32;
             surface_attrib.value.value.i = VA_FOURCC_RGBA;
-        } else if (output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
+        } else if (decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
             surface_format = VA_RT_FORMAT_RGBP;
             surface_attrib.value.value.i = VA_FOURCC_RGBP;
         }

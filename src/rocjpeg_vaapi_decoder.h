@@ -265,10 +265,10 @@ public:
      * @brief Submits a JPEG stream for decoding.
      * @param jpeg_stream_params The parameters of the JPEG stream.
      * @param surface_id The ID of the output surface.
-     * @param output_format The output format of the decoded image.
+     *  @param decode_params Additional parameters for the decode operation.
      * @return The status of the decoding operation.
      */
-    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format);
+    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, const RocJpegDecodeParams *decode_params);
 
     /**
      * @brief Waits for the decoding operation to complete.

@@ -108,7 +108,7 @@ struct HipInteropDeviceMem {
  * It includes the image width and height, the VASurfaceID and VAContextID associated with the image,
  * and the HipInteropDeviceMem for interoperation with HIP.
  */
-struct RocJpegVappiMemPoolEntry {
+struct RocJpegVaapiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
     VAContextID va_context_id;
@@ -117,19 +117,19 @@ struct RocJpegVappiMemPoolEntry {
 };
 
 /**
- * @class RocJpegVappiMemoryPool
+ * @class RocJpegVaapiMemoryPool
  * @brief A class that represents a memory pool for VAAPI surfaces used by the RocJpegVappiDecoder.
  *
- * The RocJpegVappiMemoryPool class provides methods to manage and allocate memory resources for VAAPI surfaces.
+ * The RocJpegVaapiMemoryPool class provides methods to manage and allocate memory resources for VAAPI surfaces.
  * It allows setting the pool size, associating a VADisplay, finding surface IDs, getting pool entries, adding pool entries,
- * deleting surface IDs, and retrieving HipInterop memory for a specific surface ID.
+ * and retrieving HipInterop memory for a specific surface ID.
  */
-class RocJpegVappiMemoryPool {
+class RocJpegVaapiMemoryPool {
     public:
         /**
-         * @brief Default constructor for RocJpegVappiMemoryPool.
+         * @brief Default constructor for RocJpegVaapiMemoryPool.
          */
-        RocJpegVappiMemoryPool();
+        RocJpegVaapiMemoryPool();
 
         /**
          * @brief Releases all the resources associated with the memory pool.
@@ -161,17 +161,17 @@ class RocJpegVappiMemoryPool {
          * @param image_width The image width of the pool entry.
          * @param image_height The image height of the pool entry.
          * @param num_surfaces The number of surfaces of the entry to retrieve.
-         * @return The RocJpegVappiMemPoolEntry object if found, otherwise a default-constructed object.
+         * @return The RocJpegVaapiMemPoolEntry object if found, otherwise a default-constructed object.
          */
-        RocJpegVappiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces);
+        RocJpegVaapiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces);
 
         /**
          * @brief Adds a pool entry to the memory pool.
          * @param surface_format The surface format of the pool entry.
-         * @param pool_entry The RocJpegVappiMemPoolEntry to be added.
+         * @param pool_entry The RocJpegVaapiMemPoolEntry to be added.
          * @return The status of the operation.
          */
-        RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry);
+        RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVaapiMemPoolEntry& pool_entry);
 
         /**
          * @brief Retrieves HipInterop memory for a specific surface ID.
@@ -183,7 +183,7 @@ class RocJpegVappiMemoryPool {
 
     private:
         VADisplay va_display_; // The VADisplay associated with the memory pool.
-        std::unordered_map<uint32_t, std::vector<RocJpegVappiMemPoolEntry>> mem_pool_; // The memory pool.
+        std::unordered_map<uint32_t, std::vector<RocJpegVaapiMemPoolEntry>> mem_pool_; // The memory pool.
 };
 
 /**
@@ -313,7 +313,7 @@ private:
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile
     std::unordered_map<std::string, VcnJpegSpec> vcn_jpeg_spec_; // The map of VCN JPEG specifications
-    std::unique_ptr<RocJpegVappiMemoryPool> vaapi_mem_pool_; // The VAAPI memory pool
+    std::unique_ptr<RocJpegVaapiMemoryPool> vaapi_mem_pool_; // The VAAPI memory pool
     VcnJpegSpec current_vcn_jpeg_spec_; // The current VCN JPEG specification
     VABufferID va_picture_parameter_buf_id_; // The VAAPI picture parameter buffer ID
     VABufferID va_quantization_matrix_buf_id_; // The VAAPI quantization matrix buffer ID

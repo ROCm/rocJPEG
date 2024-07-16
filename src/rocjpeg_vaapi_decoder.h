@@ -40,6 +40,7 @@ THE SOFTWARE.
 #endif
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -87,6 +88,7 @@ struct HipInteropDeviceMem {
     uint32_t surface_format; /**< Pixel format fourcc of the whole surface */
     uint32_t width; /**< Width of the surface in pixels. */
     uint32_t height; /**< Height of the surface in pixels. */
+    uint32_t size; /**< Size of the surface in pixels. */
     uint32_t offset[3]; /**< Offset of each plane */
     uint32_t pitch[3]; /**< Pitch of each plane */
     uint32_t num_layers; /**< Number of layers making up the surface */
@@ -106,28 +108,28 @@ struct HipInteropDeviceMem {
  * It includes the image width and height, the VASurfaceID and VAContextID associated with the image,
  * and the HipInteropDeviceMem for interoperation with HIP.
  */
-struct RocJpegVappiMemPoolEntry {
+struct RocJpegVaapiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
-    VASurfaceID va_surface_id;
     VAContextID va_context_id;
-    HipInteropDeviceMem hip_interop;
+    std::vector<VASurfaceID> va_surface_ids;
+    std::vector<HipInteropDeviceMem> hip_interops;
 };
 
 /**
- * @class RocJpegVappiMemoryPool
+ * @class RocJpegVaapiMemoryPool
  * @brief A class that represents a memory pool for VAAPI surfaces used by the RocJpegVappiDecoder.
  *
- * The RocJpegVappiMemoryPool class provides methods to manage and allocate memory resources for VAAPI surfaces.
+ * The RocJpegVaapiMemoryPool class provides methods to manage and allocate memory resources for VAAPI surfaces.
  * It allows setting the pool size, associating a VADisplay, finding surface IDs, getting pool entries, adding pool entries,
- * deleting surface IDs, and retrieving HipInterop memory for a specific surface ID.
+ * and retrieving HipInterop memory for a specific surface ID.
  */
-class RocJpegVappiMemoryPool {
+class RocJpegVaapiMemoryPool {
     public:
         /**
-         * @brief Default constructor for RocJpegVappiMemoryPool.
+         * @brief Default constructor for RocJpegVaapiMemoryPool.
          */
-        RocJpegVappiMemoryPool();
+        RocJpegVaapiMemoryPool();
 
         /**
          * @brief Releases all the resources associated with the memory pool.
@@ -158,24 +160,18 @@ class RocJpegVappiMemoryPool {
          * @param surface_format The surface format of the pool entry.
          * @param image_width The image width of the pool entry.
          * @param image_height The image height of the pool entry.
-         * @return The RocJpegVappiMemPoolEntry object if found, otherwise a default-constructed object.
+         * @param num_surfaces The number of surfaces of the entry to retrieve.
+         * @return The RocJpegVaapiMemPoolEntry object if found, otherwise a default-constructed object.
          */
-        RocJpegVappiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height);
+        RocJpegVaapiMemPoolEntry GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces);
 
         /**
          * @brief Adds a pool entry to the memory pool.
          * @param surface_format The surface format of the pool entry.
-         * @param pool_entry The RocJpegVappiMemPoolEntry to be added.
+         * @param pool_entry The RocJpegVaapiMemPoolEntry to be added.
          * @return The status of the operation.
          */
-        RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry);
-
-        /**
-         * @brief Deletes a surface ID from the memory pool.
-         * @param surface_id The surface ID to be deleted.
-         * @return The status of the operation.
-         */
-        RocJpegStatus DeleteSurfaceId(VASurfaceID surface_id);
+        RocJpegStatus AddPoolEntry(uint32_t surface_format, const RocJpegVaapiMemPoolEntry& pool_entry);
 
         /**
          * @brief Retrieves HipInterop memory for a specific surface ID.
@@ -187,7 +183,57 @@ class RocJpegVappiMemoryPool {
 
     private:
         VADisplay va_display_; // The VADisplay associated with the memory pool.
-        std::unordered_map<uint32_t, std::vector<RocJpegVappiMemPoolEntry>> mem_pool_; // The memory pool.
+        std::unordered_map<uint32_t, std::vector<RocJpegVaapiMemPoolEntry>> mem_pool_; // The memory pool.
+};
+
+/**
+ * @brief Structure representing the key for a JPEG stream.
+ *
+ * This structure contains information about the surface format, pixel format, width, and height
+ * of a JPEG stream. It is used for comparing two JpegStreamKey objects for equality.
+ */
+struct JpegStreamKey {
+    uint32_t surface_format; /**< The surface format of the JPEG stream. */
+    uint32_t pixel_format; /**< The pixel format of the JPEG stream. */
+    uint32_t width; /**< The width of the JPEG stream. */
+    uint32_t height; /**< The height of the JPEG stream. */
+
+    /**
+     * @brief Equality operator for comparing two JpegStreamKey objects.
+     *
+     * @param other The JpegStreamKey object to compare with.
+     * @return true if the two objects are equal, false otherwise.
+     */
+    bool operator==(const JpegStreamKey& other) const {
+        return surface_format == other.surface_format &&
+               pixel_format == other.pixel_format &&
+               width == other.width &&
+               height == other.height;
+    }
+};
+
+
+/**
+ * @brief Specialization of the std::hash template for JpegStreamKey.
+ *
+ * This struct provides a hash function for the JpegStreamKey struct, which is used as a key in hash-based containers.
+ * It calculates the hash value based on the surface_format, pixel_format, width, and height members of the JpegStreamKey struct.
+ */
+template <>
+struct std::hash<JpegStreamKey> {
+    /**
+     * @brief Calculates the hash value for a given JpegStreamKey object.
+     *
+     * @param k The JpegStreamKey object to calculate the hash value for.
+     * @return The calculated hash value.
+     */
+    std::size_t operator()(const JpegStreamKey& k) const {
+        size_t result = std::hash<int>()(k.surface_format);
+        result ^= std::hash<int>()(k.pixel_format) << 1;
+        result ^= std::hash<uint32_t>()(k.width) << 1;
+        result ^= std::hash<uint32_t>()(k.height) << 1;
+        return result;
+    }
 };
 
 /**
@@ -219,10 +265,10 @@ public:
      * @brief Submits a JPEG stream for decoding.
      * @param jpeg_stream_params The parameters of the JPEG stream.
      * @param surface_id The ID of the output surface.
-     * @param output_format The output format of the decoded image.
+     *  @param decode_params Additional parameters for the decode operation.
      * @return The status of the decoding operation.
      */
-    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format);
+    RocJpegStatus SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, const RocJpegDecodeParams *decode_params);
 
     /**
      * @brief Waits for the decoding operation to complete.
@@ -239,6 +285,22 @@ public:
      */
     RocJpegStatus GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop);
 
+    /**
+     * Submits a batch of JPEG streams for decoding using the VAAPI decoder.
+     *
+     * @param jpeg_streams_params An array of the JPEG streams parameters to be decoded.
+     * @param batch_size The number of JPEG streams in the batch.
+     * @param decode_params The decoding parameters for the VAAPI decoder.
+     * @param surface_ids An array to store the surface IDs of the decoded frames.
+     * @return The status of the decoding operation.
+     */
+    RocJpegStatus SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids);
+
+    /**
+     * @brief Returns the current VCN JPEG specification.
+     * @return The current VCN JPEG specification.
+     */
+    const VcnJpegSpec& GetCurrentVcnJpegSpec() const {return current_vcn_jpeg_spec_;}
 private:
     int device_id_; // The ID of the device
     int drm_fd_; // The file descriptor for the DRM device
@@ -251,7 +313,7 @@ private:
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile
     std::unordered_map<std::string, VcnJpegSpec> vcn_jpeg_spec_; // The map of VCN JPEG specifications
-    std::unique_ptr<RocJpegVappiMemoryPool> vaapi_mem_pool_; // The VAAPI memory pool
+    std::unique_ptr<RocJpegVaapiMemoryPool> vaapi_mem_pool_; // The VAAPI memory pool
     VcnJpegSpec current_vcn_jpeg_spec_; // The current VCN JPEG specification
     VABufferID va_picture_parameter_buf_id_; // The VAAPI picture parameter buffer ID
     VABufferID va_quantization_matrix_buf_id_; // The VAAPI quantization matrix buffer ID

@@ -23,7 +23,7 @@ THE SOFTWARE.
 #include "rocjpeg_vaapi_decoder.h"
 
 /**
- * @brief Default constructor for RocJpegVappiMemoryPool class.
+ * @brief Default constructor for RocJpegVaapiMemoryPool class.
  *
  * This constructor initializes the memory pool for different surface formats used in RocJpegVappiDecoder.
  * It creates an empty vector for each surface format and stores it in the mem_pool_ map.
@@ -31,15 +31,15 @@ THE SOFTWARE.
  * @param None
  * @return None
  */
-RocJpegVappiMemoryPool::RocJpegVappiMemoryPool() {
+RocJpegVaapiMemoryPool::RocJpegVaapiMemoryPool() {
 std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, ROCJPEG_FOURCC_YUYV, VA_FOURCC_NV12, VA_FOURCC_Y800};
     for (auto surface_format : surface_formats) {
-        mem_pool_[surface_format] = std::vector<RocJpegVappiMemPoolEntry>();
+        mem_pool_[surface_format] = std::vector<RocJpegVaapiMemPoolEntry>();
     }
 }
 
 /**
- * @brief Releases the resources used by the RocJpegVappiMemoryPool.
+ * @brief Releases the resources used by the RocJpegVaapiMemoryPool.
  *
  * This function releases the VA-API contexts, surfaces, HIP device memory, and HIP external memory
  * associated with the memory pool. It iterates over each entry in the memory pool and checks if
@@ -47,7 +47,7 @@ std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOUR
  * non-zero. If so, it destroys the corresponding resource using the appropriate API function.
  * Finally, it resets the HIP interop structure for each entry in the memory pool.
  */
-void RocJpegVappiMemoryPool::ReleaseResources() {
+void RocJpegVaapiMemoryPool::ReleaseResources() {
     VAStatus va_status;
     hipError_t hip_status;
     for (auto& pair : mem_pool_) {
@@ -58,36 +58,39 @@ void RocJpegVappiMemoryPool::ReleaseResources() {
                     ERR("ERROR: vaDestroyContext failed!");
                 }
             }
-            if (entry.va_surface_id != 0) {
-                va_status = vaDestroySurfaces(va_display_, &entry.va_surface_id, 1);
+            if (!entry.va_surface_ids.empty()) {
+                va_status = vaDestroySurfaces(va_display_, entry.va_surface_ids.data(), entry.va_surface_ids.size());
                 if (va_status != VA_STATUS_SUCCESS) {
                     ERR("ERROR: vaDestroySurfaces failed!");
                 }
             }
-            if (entry.hip_interop.hip_mapped_device_mem != nullptr) {
-                hip_status = hipFree(entry.hip_interop.hip_mapped_device_mem);
-                 if (hip_status != hipSuccess) {
-                    ERR("ERROR: hipFree failed!");
-                 }
+            if (!entry.hip_interops.empty()) {
+                for(auto& hip_interop_entry : entry.hip_interops) {
+                    if (hip_interop_entry.hip_mapped_device_mem != nullptr) {
+                        hip_status = hipFree(hip_interop_entry.hip_mapped_device_mem);
+                        if (hip_status != hipSuccess) {
+                            ERR("ERROR: hipFree failed!");
+                        }
+                    }
+                    if (hip_interop_entry.hip_ext_mem != nullptr) {
+                        hip_status = hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem);
+                        if (hip_status != hipSuccess) {
+                            ERR("ERROR: hipDestroyExternalMemory failed!");
+                        }
+                    }
+                }
             }
-            if (entry.hip_interop.hip_ext_mem != nullptr) {
-                hip_status = hipDestroyExternalMemory(entry.hip_interop.hip_ext_mem);
-                 if (hip_status != hipSuccess) {
-                    ERR("ERROR: hipDestroyExternalMemory failed!");
-                 }
-            }
-            memset((void*)&entry.hip_interop, 0, sizeof(entry.hip_interop));
         }
     }
 }
 
-void RocJpegVappiMemoryPool::SetPoolSize(int32_t max_pool_size) {
+void RocJpegVaapiMemoryPool::SetPoolSize(int32_t max_pool_size) {
     for (auto& pair : mem_pool_) {
         pair.second.reserve(max_pool_size);
     }
 }
 
-void RocJpegVappiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
+void RocJpegVaapiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
     va_display_ = va_display;
 }
 
@@ -103,7 +106,7 @@ void RocJpegVappiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
  * @param pool_entry The pool entry to be added.
  * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the operation is successful.
  */
-RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVappiMemPoolEntry& pool_entry) {
+RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVaapiMemPoolEntry& pool_entry) {
     auto& entires = mem_pool_[surface_format];
     if (entires.size() < entires.capacity()) {
         entires.push_back(pool_entry);
@@ -112,17 +115,19 @@ RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
             CHECK_VAAPI(vaDestroyContext(va_display_, entires.front().va_context_id));
             entires.front().va_context_id = 0;
         }
-        if (entires.front().va_surface_id != 0) {
-            CHECK_VAAPI(vaDestroySurfaces(va_display_, &entires.front().va_surface_id, 1));
-            entires.front().va_surface_id = 0;
+        if (!entires.front().va_surface_ids.empty()) {
+            CHECK_VAAPI(vaDestroySurfaces(va_display_, entires.front().va_surface_ids.data(), entires.front().va_surface_ids.size()));
+            std::fill(entires.front().va_surface_ids.begin(), entires.front().va_surface_ids.end(), 0);
         }
-        if (entires.front().hip_interop.hip_mapped_device_mem != nullptr) {
-            CHECK_HIP(hipFree(entires.front().hip_interop.hip_mapped_device_mem));
+        if (!entires.front().hip_interops.empty()) {
+            for(auto& hip_interop_entry : entires.front().hip_interops) {
+                if (hip_interop_entry.hip_mapped_device_mem != nullptr)
+                    CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
+                if (hip_interop_entry.hip_ext_mem != nullptr)
+                    CHECK_HIP(hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem));
+                memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
+            }
         }
-        if (entires.front().hip_interop.hip_ext_mem != nullptr) {
-            CHECK_HIP(hipDestroyExternalMemory(entires.front().hip_interop.hip_ext_mem));
-        }
-        memset((void*)&entires.front().hip_interop, 0, sizeof(entires.front().hip_interop));
         entires.erase(entires.begin());
         entires.push_back(pool_entry);
     }
@@ -130,26 +135,27 @@ RocJpegStatus RocJpegVappiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
 }
 
 /**
- * @brief Retrieves a `RocJpegVappiMemPoolEntry` from the memory pool based on the specified surface format, image width, and image height.
+ * @brief Retrieves a `RocJpegVaapiMemPoolEntry` from the memory pool based on the specified surface format, image width, and image height.
  *
  * @param surface_format The surface pixel format of the entry to retrieve.
  * @param image_width The width of the image of the entry to retrieve.
  * @param image_height The height of the image of the entry to retrieve.
- * @return The matching `RocJpegVappiMemPoolEntry` if found, or a default-initialized entry if not found.
+ * @param num_surfaces The number of surfaces of the entry to retrieve.
+ * @return The matching `RocJpegVaapiMemPoolEntry` if found, or a default-initialized entry if not found.
  */
-RocJpegVappiMemPoolEntry RocJpegVappiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height) {
+RocJpegVaapiMemPoolEntry RocJpegVaapiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces) {
     for (const auto& entry : mem_pool_[surface_format]) {
-        if (entry.image_width == image_width && entry.image_height == image_height) {
+        if (entry.image_width == image_width && entry.image_height == image_height && entry.va_surface_ids.size() == num_surfaces) {
             return entry;
         }
     }
-    return {0, 0, 0 , 0, {0}};
+    return {0, 0, 0 , {}, {}};
 }
 
-bool RocJpegVappiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
+bool RocJpegVaapiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
     for (auto& pair : mem_pool_) {
         for (auto& entry : pair.second) {
-            if (entry.va_surface_id == surface_id) {
+            if (std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end()) {
                 return true;
             }
         }
@@ -157,48 +163,6 @@ bool RocJpegVappiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
     return false;
 }
 
-/**
- * @brief Deletes a surface ID from the memory pool.
- *
- * This function deletes the specified surface ID from the memory pool. It performs the following actions:
- * 1. If the surface ID has a valid context ID, it destroys the context associated with the surface ID.
- * 2. It destroys the surface ID itself.
- * 3. If the surface ID has a valid HIP mapped device memory, it frees the memory.
- * 4. If the surface ID has a valid HIP external memory, it destroys the memory.
- * 5. It clears the HIP interop structure associated with the surface ID.
- * 6. It removes the entry from the memory pool.
- *
- * @param surface_id The surface ID to be deleted.
- * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the surface ID was successfully deleted.
- */
-RocJpegStatus RocJpegVappiMemoryPool::DeleteSurfaceId(VASurfaceID surface_id) {
-    for (auto& pair : mem_pool_) {
-        auto& entries = pair.second;
-        auto it = std::find_if(entries.begin(), entries.end(),
-                              [surface_id](const RocJpegVappiMemPoolEntry& entry) {return entry.va_surface_id == surface_id;});
-        if (it != entries.end()) {
-            if (it->va_context_id != 0) {
-                CHECK_VAAPI(vaDestroyContext(va_display_, it->va_context_id));
-                it->va_context_id = 0;
-            }
-            if (it->va_surface_id != 0) {
-                CHECK_VAAPI(vaDestroySurfaces(va_display_, &it->va_surface_id, 1));
-                it->va_surface_id = 0;
-            }
-            if (it->hip_interop.hip_mapped_device_mem != nullptr) {
-                CHECK_HIP(hipFree(it->hip_interop.hip_mapped_device_mem));
-            }
-            if (it->hip_interop.hip_ext_mem != nullptr) {
-                CHECK_HIP(hipDestroyExternalMemory(it->hip_interop.hip_ext_mem));
-            }
-            memset((void*)&it->hip_interop, 0, sizeof(it->hip_interop));
-
-            entries.erase(it);
-            break;
-        }
-    }
-    return ROCJPEG_STATUS_SUCCESS;
-}
 
 /**
  * @brief Retrieves the HipInteropDeviceMem associated with a given VASurfaceID from the memory pool.
@@ -215,16 +179,17 @@ RocJpegStatus RocJpegVappiMemoryPool::DeleteSurfaceId(VASurfaceID surface_id) {
  * @return RocJpegStatus Returns ROCJPEG_STATUS_SUCCESS if the HipInteropDeviceMem is successfully retrieved,
  *         ROCJPEG_STATUS_INVALID_PARAMETER if the requested surface_id is not found in the memory pool.
  */
-RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
+RocJpegStatus RocJpegVaapiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop) {
     for (auto& pair : mem_pool_) {
         auto& entries = pair.second;
         auto it = std::find_if(entries.begin(), entries.end(),
-                              [surface_id](const RocJpegVappiMemPoolEntry& entry) {return entry.va_surface_id == surface_id;});
+                              [surface_id](const RocJpegVaapiMemPoolEntry& entry){return std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end();});
         if (it != entries.end()) {
-            if (it->hip_interop.hip_mapped_device_mem != nullptr) {
-                CHECK_HIP(hipFree(it->hip_interop.hip_mapped_device_mem));
-                if (it->hip_interop.hip_ext_mem != nullptr) {
-                    CHECK_HIP(hipDestroyExternalMemory(it->hip_interop.hip_ext_mem));
+            auto idx = std::distance(it->va_surface_ids.begin(), std::find(it->va_surface_ids.begin(), it->va_surface_ids.end(), surface_id));
+            if (it->hip_interops[idx].hip_mapped_device_mem != nullptr) {
+                CHECK_HIP(hipFree(it->hip_interops[idx].hip_mapped_device_mem));
+                if (it->hip_interops[idx].hip_ext_mem != nullptr) {
+                    CHECK_HIP(hipDestroyExternalMemory(it->hip_interops[idx].hip_ext_mem));
                 }
             }
             VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
@@ -238,25 +203,26 @@ RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
             external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
             external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
 
-            CHECK_HIP(hipImportExternalMemory(&it->hip_interop.hip_ext_mem, &external_mem_handle_desc));
+            CHECK_HIP(hipImportExternalMemory(&it->hip_interops[idx].hip_ext_mem, &external_mem_handle_desc));
             external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
-            CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interop.hip_mapped_device_mem, it->hip_interop.hip_ext_mem, &external_mem_buffer_desc));
+            CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interops[idx].hip_mapped_device_mem, it->hip_interops[idx].hip_ext_mem, &external_mem_buffer_desc));
 
-            it->hip_interop.surface_format = va_drm_prime_surface_desc.fourcc;
-            it->hip_interop.width = va_drm_prime_surface_desc.width;
-            it->hip_interop.height = va_drm_prime_surface_desc.height;
-            it->hip_interop.offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
-            it->hip_interop.offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
-            it->hip_interop.offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
-            it->hip_interop.pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
-            it->hip_interop.pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
-            it->hip_interop.pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
-            it->hip_interop.num_layers = va_drm_prime_surface_desc.num_layers;
+            it->hip_interops[idx].surface_format = va_drm_prime_surface_desc.fourcc;
+            it->hip_interops[idx].width = va_drm_prime_surface_desc.width;
+            it->hip_interops[idx].height = va_drm_prime_surface_desc.height;
+            it->hip_interops[idx].size = va_drm_prime_surface_desc.objects[0].size;
+            it->hip_interops[idx].offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+            it->hip_interops[idx].offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+            it->hip_interops[idx].offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+            it->hip_interops[idx].pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+            it->hip_interops[idx].pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+            it->hip_interops[idx].pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+            it->hip_interops[idx].num_layers = va_drm_prime_surface_desc.num_layers;
 
             for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
                 close(va_drm_prime_surface_desc.objects[i].fd);
             }
-            hip_interop = it->hip_interop;
+            hip_interop = it->hip_interops[idx];
             return ROCJPEG_STATUS_SUCCESS;
         }
     }
@@ -273,13 +239,14 @@ RocJpegStatus RocJpegVappiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
  */
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
     max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
-    vaapi_mem_pool_(std::make_unique<RocJpegVappiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
+    vaapi_mem_pool_(std::make_unique<RocJpegVaapiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
     va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {
         vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
                           {"gfx90a", {2, false, false}},
                           {"gfx940", {24, true, true}},
                           {"gfx941", {32, true, true}},
-                          {"gfx942", {32, true, true}},
+                          {"gfx942_mi300a", {24, true, true}},
+                          {"gfx942_mi300x", {32, true, true}},
                           {"gfx1030", {1, false, false}},
                           {"gfx1031", {1, false, false}},
                           {"gfx1032", {1, false, false}},
@@ -338,7 +305,20 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     std::size_t pos = gcn_arch_name.find_first_of(":");
     std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
 
-    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base);
+    std::string gcn_arch_name_base_temp = gcn_arch_name_base;
+    // Check if the device name contains "MI300A" to identify if it is MI300A or MI300X ASIC
+    // as both have the same gfx942 architecture name.
+    bool is_gfx942_detected = (gcn_arch_name_base.compare("gfx942") == 0);
+    if (is_gfx942_detected) {
+        std::string mi300a = "MI300A";
+        size_t found_mi300a = device_name.find(mi300a);
+        if (found_mi300a != std::string::npos) {
+            gcn_arch_name_base_temp = (found_mi300a != std::string::npos) ? gcn_arch_name_base_temp + "_mi300a"
+                                                                          : gcn_arch_name_base_temp + "_mi300x";
+        }
+    }
+
+    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
     if (it != vcn_jpeg_spec_.end()) {
         current_vcn_jpeg_spec_ = it->second;
     }
@@ -495,14 +475,14 @@ RocJpegStatus RocJpegVappiDecoder::DestroyDataBuffers() {
  *
  * @param jpeg_stream_params The JPEG stream parameters for the decode operation.
  * @param surface_id [out] The ID of the output surface where the decoded image will be stored.
- * @param output_format The desired output format for the decoded image.
+ * @param decode_params Additional parameters for the decode operation.
  * @return The status of the decode operation.
  *         - ROCJPEG_STATUS_SUCCESS if the decode operation was successful.
  *         - ROCJPEG_STATUS_INVALID_PARAMETER if the provided parameters are invalid.
  *         - ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the JPEG image resolution or chroma subsampling is not supported.
  */
-RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, RocJpegOutputFormat output_format) {
-    if (jpeg_stream_params == nullptr) {
+RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg_stream_params, uint32_t &surface_id, const RocJpegDecodeParams *decode_params) {
+    if (jpeg_stream_params == nullptr || decode_params == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
 
@@ -530,11 +510,11 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
     // set the RGB surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
     // otherwise set the appropriate surface format and attributes based on the chroma subsampling of the image.
-    if ((output_format == ROCJPEG_OUTPUT_RGB || output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
-        if (output_format == ROCJPEG_OUTPUT_RGB) {
+    if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+        if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
             surface_format = VA_RT_FORMAT_RGB32;
             surface_attrib.value.value.i = VA_FOURCC_RGBA;
-        } else if (output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
+        } else if (decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
             surface_format = VA_RT_FORMAT_RGBP;
             surface_attrib.value.value.i = VA_FOURCC_RGBP;
         }
@@ -568,19 +548,20 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     }
 
     uint32_t surface_pixel_format = static_cast<uint32_t>(surface_attrib.value.value.i);
-    RocJpegVappiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height);
+    RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
     VAContextID va_context_id;
-    if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_id == 0) {
-        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, &surface_id, 1, &surface_attrib, 1));
-        CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, &surface_id, 1, &va_context_id));
+    if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
+        mem_pool_entry.va_surface_ids.resize(1);
+        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, mem_pool_entry.va_surface_ids.data(), 1, &surface_attrib, 1));
+        CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, mem_pool_entry.va_surface_ids.data(), 1, &va_context_id));
         mem_pool_entry.image_width = jpeg_stream_params->picture_parameter_buffer.picture_width;
         mem_pool_entry.image_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
-        mem_pool_entry.va_surface_id = surface_id;
         mem_pool_entry.va_context_id = va_context_id;
-        mem_pool_entry.hip_interop = {};
+        mem_pool_entry.hip_interops.resize(1);
+        surface_id = mem_pool_entry.va_surface_ids[0];
         CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_pixel_format, mem_pool_entry));
     } else {
-        surface_id = mem_pool_entry.va_surface_id;
+        surface_id = mem_pool_entry.va_surface_ids[0];
         va_context_id = mem_pool_entry.va_context_id;
     }
 
@@ -599,6 +580,132 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
     CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
     CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
+
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpeg_streams_params, int batch_size, const RocJpegDecodeParams *decode_params, uint32_t *surface_ids) {
+    if (jpeg_streams_params == nullptr || decode_params == nullptr || surface_ids == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+
+    // Group the JPEG streams in the jpeg_streams_params array based on their chroma subsampling, width, and height.
+    // Store the groups in an unordered map, where the key is a JpegStreamKey struct and the value is a vector of integers
+    // representing the indices of the JPEG streams in the batch.
+    std::unordered_map<JpegStreamKey, std::vector<int>> jpeg_stream_groups;
+    for (int i = 0; i < batch_size; i++) {
+        if (sizeof(jpeg_streams_params[i].picture_parameter_buffer) != sizeof(VAPictureParameterBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].quantization_matrix_buffer) != sizeof(VAIQMatrixBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].huffman_table_buffer) != sizeof(VAHuffmanTableBufferJPEGBaseline) ||
+            sizeof(jpeg_streams_params[i].slice_parameter_buffer) != sizeof(VASliceParameterBufferJPEGBaseline)) {
+            return ROCJPEG_STATUS_INVALID_PARAMETER;
+        }
+        JpegStreamKey jpeg_stream_key = {};
+        jpeg_stream_key.width = jpeg_streams_params[i].picture_parameter_buffer.picture_width;
+        jpeg_stream_key.height = jpeg_streams_params[i].picture_parameter_buffer.picture_height;
+        if (jpeg_stream_key.width < min_picture_width_ ||
+            jpeg_stream_key.height < min_picture_height_ ||
+            jpeg_stream_key.width > max_picture_width_ ||
+            jpeg_stream_key.height > max_picture_height_) {
+                ERR("The JPEG image resolution is not supported!");
+                return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+            }
+
+        if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+            if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
+                jpeg_stream_key.surface_format = VA_RT_FORMAT_RGB32;
+                jpeg_stream_key.pixel_format = VA_FOURCC_RGBA;
+            } else if (decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) {
+                jpeg_stream_key.surface_format = VA_RT_FORMAT_RGBP;
+                jpeg_stream_key.pixel_format = VA_FOURCC_RGBP;
+            }
+        } else {
+            switch (jpeg_streams_params[i].chroma_subsampling) {
+                case CSS_444:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV444;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_444P;
+                    break;
+                case CSS_440:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV422;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_422V;
+                    break;
+                case CSS_422:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV422;
+                    jpeg_stream_key.pixel_format = ROCJPEG_FOURCC_YUYV;
+                    break;
+                case CSS_420:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV420;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_NV12;
+                    break;
+                case CSS_400:
+                    jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV400;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_Y800;
+                    break;
+                default:
+                    ERR("ERROR: The chroma subsampling is not supported by the VCN hardware!");
+                    return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
+                    break;
+            }
+        }
+        jpeg_stream_groups[jpeg_stream_key].push_back(i);
+    }
+
+    uint32_t surface_format;
+    VASurfaceAttrib surface_attrib;
+    surface_attrib.type = VASurfaceAttribPixelFormat;
+    surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
+    surface_attrib.value.type = VAGenericValueTypeInteger;
+
+    // Iterate through all entries of jpeg_stream_groups.
+    // Check if there is a matching entry in the memory pool.
+    // If not, allocate surfaces and create a context for each group.
+    // Submit the JPEG streams to the hardware for decoding.
+    for (const auto& group : jpeg_stream_groups) {
+        const JpegStreamKey& key = group.first;
+        const std::vector<int>& indices = group.second;
+
+        surface_format = key.surface_format;
+        surface_attrib.value.value.i = key.pixel_format;
+
+        RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height, indices.size());
+        VAContextID va_context_id;
+        if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
+            mem_pool_entry.va_surface_ids.resize(indices.size());
+            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), &surface_attrib, 1));
+            CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, key.width, key.height, VA_PROGRESSIVE, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), &va_context_id));
+            mem_pool_entry.image_width = key.width;
+            mem_pool_entry.image_height = key.height;
+            for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
+                surface_ids[indices[i]] = mem_pool_entry.va_surface_ids[i];
+            }
+            mem_pool_entry.va_context_id = va_context_id;
+            mem_pool_entry.hip_interops.resize(indices.size());
+            CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(key.pixel_format, mem_pool_entry));
+        } else {
+            for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
+                surface_ids[indices[i]] = mem_pool_entry.va_surface_ids[i];
+            }
+            va_context_id = mem_pool_entry.va_context_id;
+        }
+
+        for (int idx : indices) {
+            CHECK_ROCJPEG(DestroyDataBuffers());
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].picture_parameter_buffer, &va_picture_parameter_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].huffman_table_buffer, &va_huffmantable_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].slice_parameter_buffer, &va_slice_param_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceDataBufferType, jpeg_streams_params[idx].slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_streams_params[idx].slice_data_buffer, &va_slice_data_buf_id_));
+
+            CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id, surface_ids[idx]));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_picture_parameter_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_quantization_matrix_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_huffmantable_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
+            CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
+        }
+    }
+
 
     return ROCJPEG_STATUS_SUCCESS;
 }

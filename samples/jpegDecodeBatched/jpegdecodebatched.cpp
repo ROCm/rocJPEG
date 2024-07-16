@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
                     return EXIT_FAILURE;
             }
 
-            if (rocjpeg_utils.GetChannelPitchAndSizes(decode_params.output_format, subsamplings[index], widths[index].data(), heights[index].data(), num_channels, output_images[index], channel_sizes)) {
+            if (rocjpeg_utils.GetChannelPitchAndSizes(decode_params, subsamplings[index], widths[index].data(), heights[index].data(), num_channels, output_images[index], channel_sizes)) {
                 std::cerr << "ERROR: Failed to get the channel pitch and sizes" << std::endl;
                 return EXIT_FAILURE;
             }

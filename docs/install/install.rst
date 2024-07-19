@@ -9,22 +9,6 @@ Installation
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API,
 you can access the JPEG decoding features available on your GPU.
 
-Tested configurations
-========================================
-
-* Linux
-
-  * Ubuntu: 20.04/22.04
-  * RHEL: 8/9
-  * SLES: 15-SP5
-
-* ROCm
-
-  * rocm-core: 6.3.0.60300-14317
-  * amdgpu-core: 6.3.60300-1798298
-
-* rocJPEG Setup Script: V1.0
-
 Supported JPEG chroma subsampling
 ========================================
 
@@ -136,7 +120,7 @@ system.
 
   Package install auto installs all dependencies.
 
-* Runtime package: ``rocjpeg`` only provides the rocjpeg library ``librocdecode.so``
+* Runtime package: ``rocjpeg`` only provides the rocjpeg library ``librocjpeg.so``
 * Development package: ``rocjpeg-dev``or ``rocjpeg-devel`` provides the library, header files, and samples
 * Test package: ``rocjpeg-test`` provides CTest to verify installation
 
@@ -240,5 +224,4 @@ architecture.
   "gfx940, gfx942 - MI300A", "VCN 3.0", "24", "16384, 16384"
   "gfx941, gfx942 - MI300X", "VCN 3.0", "32", "16384, 16384"
   "gfx1030, gfx1031, gfx1032 - Navi2x", "VCN 3.x", "1", "16384, 16384"
-  "gfx1100, gfx1102 - Navi3x", "VCN 4.0", "1", "16384, 16384"
-  "gfx1101 - Navi3x", "VCN 4.0", "1", "16384, 16384"
+  "gfx1100, gfx1101, gfx1102 - Navi3x", "VCN 4.0", "1", "16384, 16384"

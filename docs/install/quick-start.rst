@@ -8,7 +8,7 @@ rocJPEG quick-start installation
 
 To install the rocJPEG runtime with minimum requirements, follow these steps:
 
-1. Install core ROCm components (ROCm 6.1.0 or later) using the
+1. Install core ROCm components (ROCm 6.3.0 or later) using the
 :doc:`native package manager <rocm-install-on-linux:how-to/native-install/index>`
 installation instructions.
 

@@ -32,10 +32,11 @@ THE SOFTWARE.
  * @return None
  */
 RocJpegVaapiMemoryPool::RocJpegVaapiMemoryPool() {
-std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, ROCJPEG_FOURCC_YUYV, VA_FOURCC_NV12, VA_FOURCC_Y800};
+    std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, ROCJPEG_FOURCC_YUYV, VA_FOURCC_NV12, VA_FOURCC_Y800};
     for (auto surface_format : surface_formats) {
         mem_pool_[surface_format] = std::vector<RocJpegVaapiMemPoolEntry>();
     }
+    max_pool_size_ = 2;
 }
 
 /**
@@ -84,10 +85,8 @@ void RocJpegVaapiMemoryPool::ReleaseResources() {
     }
 }
 
-void RocJpegVaapiMemoryPool::SetPoolSize(int32_t max_pool_size) {
-    for (auto& pair : mem_pool_) {
-        pair.second.reserve(max_pool_size);
-    }
+void RocJpegVaapiMemoryPool::SetPoolSize(uint32_t max_pool_size) {
+    max_pool_size_ = max_pool_size;
 }
 
 void RocJpegVaapiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
@@ -107,20 +106,20 @@ void RocJpegVaapiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
  * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the operation is successful.
  */
 RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVaapiMemPoolEntry& pool_entry) {
-    auto& entires = mem_pool_[surface_format];
-    if (entires.size() < entires.capacity()) {
-        entires.push_back(pool_entry);
+    auto& entries = mem_pool_[surface_format];
+    if (entries.size() < max_pool_size_) {
+        entries.push_back(pool_entry);
     } else {
-        if (entires.front().va_context_id != 0) {
-            CHECK_VAAPI(vaDestroyContext(va_display_, entires.front().va_context_id));
-            entires.front().va_context_id = 0;
+        if (entries.front().va_context_id != 0) {
+            CHECK_VAAPI(vaDestroyContext(va_display_, entries.front().va_context_id));
+            entries.front().va_context_id = 0;
         }
-        if (!entires.front().va_surface_ids.empty()) {
-            CHECK_VAAPI(vaDestroySurfaces(va_display_, entires.front().va_surface_ids.data(), entires.front().va_surface_ids.size()));
-            std::fill(entires.front().va_surface_ids.begin(), entires.front().va_surface_ids.end(), 0);
+        if (!entries.front().va_surface_ids.empty()) {
+            CHECK_VAAPI(vaDestroySurfaces(va_display_, entries.front().va_surface_ids.data(), entries.front().va_surface_ids.size()));
+            std::fill(entries.front().va_surface_ids.begin(), entries.front().va_surface_ids.end(), 0);
         }
-        if (!entires.front().hip_interops.empty()) {
-            for(auto& hip_interop_entry : entires.front().hip_interops) {
+        if (!entries.front().hip_interops.empty()) {
+            for(auto& hip_interop_entry : entries.front().hip_interops) {
                 if (hip_interop_entry.hip_mapped_device_mem != nullptr)
                     CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
                 if (hip_interop_entry.hip_ext_mem != nullptr)
@@ -128,8 +127,8 @@ RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
                 memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
             }
         }
-        entires.erase(entires.begin());
-        entires.push_back(pool_entry);
+        entries.erase(entries.begin());
+        entries.push_back(pool_entry);
     }
     return ROCJPEG_STATUS_SUCCESS;
 }

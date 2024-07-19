@@ -140,7 +140,7 @@ class RocJpegVaapiMemoryPool {
          * @brief Sets the maximum size of the memory pool.
          * @param max_pool_size The maximum size of the memory pool.
          */
-        void SetPoolSize(int32_t max_pool_size);
+        void SetPoolSize(uint32_t max_pool_size);
 
         /**
          * @brief Sets the VADisplay for the memory pool.
@@ -183,6 +183,7 @@ class RocJpegVaapiMemoryPool {
 
     private:
         VADisplay va_display_; // The VADisplay associated with the memory pool.
+        uint32_t max_pool_size_; // The maximum pool size of the memory pool (mem_pool_) per entry.
         std::unordered_map<uint32_t, std::vector<RocJpegVaapiMemPoolEntry>> mem_pool_; // The memory pool.
 };
 

@@ -311,15 +311,16 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     if (is_gfx942_detected) {
         std::string mi300a = "MI300A";
         size_t found_mi300a = device_name.find(mi300a);
-        if (found_mi300a != std::string::npos) {
-            gcn_arch_name_base_temp = (found_mi300a != std::string::npos) ? gcn_arch_name_base_temp + "_mi300a"
-                                                                          : gcn_arch_name_base_temp + "_mi300x";
-        }
+        gcn_arch_name_base_temp = (found_mi300a != std::string::npos) ? gcn_arch_name_base_temp + "_mi300a"
+                                                                      : gcn_arch_name_base_temp + "_mi300x";
     }
 
     auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
     if (it != vcn_jpeg_spec_.end()) {
         current_vcn_jpeg_spec_ = it->second;
+    } else {
+        ERR("ERROR: didn't find the jpeg spec for " + gcn_arch_name_base_temp);
+        return ROCJPEG_STATUS_NOT_INITIALIZED;
     }
     std::vector<int> visible_devices;
     GetVisibleDevices(visible_devices);

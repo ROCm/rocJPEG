@@ -286,7 +286,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
     uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
 
-    status = rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handle, &num_components, &subsampling, widths, heights);
+    status = rocJpegGetImageInfo(handle, rocjpeg_stream_handle, &num_components, &subsampling, widths, heights);
     if (status != ROCJPEG_STATUS_SUCCESS) {
       std::cerr << "Failed to get image info with error code: " << rocJpegGetErrorName(status) << std::endl;
       rocJpegStreamDestroy(rocjpeg_stream_handle);
@@ -297,7 +297,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     // Allocate device memory for the decoded output image
     RocJpegImage output_image = {};
     RocJpegDecodeParams decode_params = {};
-    RocJpegDecodeParams.output_format = ROCJPEG_OUTPUT_NATIVE;
+    decode_params.output_format = ROCJPEG_OUTPUT_NATIVE;
 
     // For this sample assuming the input image has a YUV420 chroma subsampling.
     // For YUV420 subsampling, the native decoded output image would be NV12 (i.e., the rocJPegDecode API copies Y to first channel and UV (interleaved) to second channel of RocJpegImage)
@@ -321,7 +321,7 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     }
 
     // Decode the JPEG stream
-    status = rocJpegDecode(rocjpeg_handle, rocjpeg_stream_handle, &decode_params, &output_image);
+    status = rocJpegDecode(handle, rocjpeg_stream_handle, &decode_params, &output_image);
     if (status != ROCJPEG_STATUS_SUCCESS) {
       std::cerr << "Failed to decode JPEG stream with error code: " << rocJpegGetErrorName(status) << std::endl;
       hipFree((void *)output_image.channel[0]);

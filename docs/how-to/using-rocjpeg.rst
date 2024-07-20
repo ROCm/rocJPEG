@@ -204,6 +204,10 @@ The ``rocJpegDecodeBatched()`` function takes the following arguments:
 To use the ``rocJpegDecodeBatched()`` function, you need to provide the appropriate rocJPEG handles, stream handles, decode parameters, and destination images. The function will decode the batch of JPEG images and store the decoded images in the ``destinations`` array.
 Remember to allocate device memories for each channel of the destination images and pass them to the ``rocJpegDecodeBatched()`` API. The API will then copy the decoded images to the destination images based on the requested output format specified in the ``RocJpegDecodeParams``.
 
+The ``rocJpegDecodeBatched()`` function provides optimal performance on ASICs with multiple JPEG cores, such as the MI300 series. It efficiently submits a batch of JPEG streams for decoding based on the available JPEG cores, resulting in better performance compared
+to the single JPEG decode API ``rocJpegDecode``. To achieve the best performance, it is recommended to choose a batch size that is a multiple of the available JPEG cores. For example, the MI300X
+has 32 independent JPEG cores, so a batch size that is a multiple of 32 will provide optimal performance.
+
 8. Destroy the decoder
 ====================================================
 
@@ -340,5 +344,213 @@ Finally, the code decodes the JPEG stream by calling the ``rocJpegDecode()`` fun
     rocJpegStreamDestroy(rocjpeg_stream_handle);
     rocJpegDestroy(handle);
 
+    return EXIT_SUCCESS;
+  }
+
+12. Sample code snippet for decoding a batch of JPEG streams using the rocJPEG APIs
+====================================================
+
+The code snippet provided demonstrates how to decode a batch of JPEG streams using the rocJPEG library.
+
+.. code:: cpp
+
+  #include <iostream>
+  #include <fstream>
+  #include <vector>
+  #include <filesystem>
+  #include "rocjpeg.h"
+
+  int main() {
+    // the input path of a folder containing JPEG files
+    // note: replace the "path_to_a_folder_of_JPEG_files" with an actual path of a folder
+    std::string input_path = "path_to_a_folder_of_JPEG_files";
+
+    // vector of string to store the paths of the JPEG files
+    std::vector<std::string> file_paths = {};
+
+    if (std::filesystem::is_directory(input_path)) {
+      for (const auto &entry : std::filesystem::recursive_directory_iterator(input_path)) {
+        if (std::filesystem::is_regular_file(entry)) {
+          file_paths.push_back(entry.path().string());
+        }
+      }
+    } else {
+      std::cerr << "ERROR: the input path is not a directoy!" << std::endl;
+      return EXIT_FAILURE;
+    }
+
+    // Initialize rocJPEG handle
+    RocJpegHandle handle;
+    RocJpegStatus status = rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, 0, &handle);
+    if (status != ROCJPEG_STATUS_SUCCESS) {
+      std::cerr << "Failed to create rocJPEG handle with error code: " << rocJpegGetErrorName(status) << std::endl;
+      return EXIT_FAILURE;
+    }
+
+    int batch_size = 32;
+    batch_size = std::min(batch_size, static_cast<int>(file_paths.size()));
+
+    std::vector<RocJpegStreamHandle> rocjpeg_stream_handles;
+    rocjpeg_stream_handles.resize(batch_size);
+    // Create stream handles of batch_size
+    for (auto i = 0; i < batch_size; i++) {
+      status = rocJpegStreamCreate(&rocjpeg_stream_handles[i]);
+      if (status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Failed to create rocJPEG stream handle with error code: " << rocJpegGetErrorName(status) << std::endl;
+        rocJpegDestroy(handle);
+        for (auto j = 0; j < i; j++) {
+          rocJpegStreamDestroy(rocjpeg_stream_handles[j]);
+        }
+        return EXIT_FAILURE;
+      }
+    }
+
+    // Vector to store batch of raw JPEG data from files
+    std::vector<std::vector<char>> batch_images;
+    batch_images.resize(batch_size);
+
+    // Vector to store widths of JPEG images
+    std::vector<std::vector<uint32_t>> widths;
+    widths.resize(batch_size, std::vector<uint32_t>(ROCJPEG_MAX_COMPONENT, 0));
+
+    // Vector to store heights of JPEG images
+    std::vector<std::vector<uint32_t>> heights;
+    heights.resize(batch_size, std::vector<uint32_t>(ROCJPEG_MAX_COMPONENT, 0));
+
+    // Vector to store chroma subsamplings of JPEG images
+    std::vector<RocJpegChromaSubsampling> subsamplings;
+    subsamplings.resize(batch_size);
+
+    // Vector to store output images
+    std::vector<RocJpegImage> output_images;
+    output_images.resize(batch_size);
+
+    uint8_t num_components;
+    RocJpegDecodeParams decode_params = {};
+    decode_params.output_format = ROCJPEG_OUTPUT_NATIVE;
+
+    // Start reading images from files and prepare a batch of JPEG streams for decoding
+    for (int i = 0; i < file_paths.size(); i += batch_size) {
+      int batch_end = std::min(i + batch_size, static_cast<int>(file_paths.size()));
+      for (int j = i; j < batch_end; j++) {
+          int index = j - i;
+          // Read an image from disk
+          std::ifstream input(file_paths[j].c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+          if (!(input.is_open())) {
+            std::cerr << "ERROR: Cannot open image: " << file_paths[j] << std::endl;
+            rocJpegDestroy(handle);
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            return EXIT_FAILURE;
+          }
+          // Get the size
+          std::streamsize file_size = input.tellg();
+          input.seekg(0, std::ios::beg);
+          // Resize if buffer is too small
+          if (batch_images[index].size() < file_size) {
+            batch_images[index].resize(file_size);
+          }
+          if (!input.read(batch_images[index].data(), file_size)) {
+            std::cerr << "ERROR: Cannot read from file: " << file_paths[j] << std::endl;
+            rocJpegDestroy(handle);
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            return EXIT_FAILURE;
+          }
+
+          status = rocJpegStreamParse(reinterpret_cast<uint8_t*>(batch_images[index].data()), file_size, rocjpeg_stream_handles[index]);
+          if (status != ROCJPEG_STATUS_SUCCESS) {
+            std::cerr << "Failed to parse a JPEG stream with error code: " << rocJpegGetErrorName(status) << std::endl;
+            rocJpegDestroy(handle);
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            return EXIT_FAILURE;
+          }
+
+          status = rocJpegGetImageInfo(handle, rocjpeg_stream_handles[index], &num_components, &subsamplings[index], widths[index].data(), heights[index].data());
+          if (status != ROCJPEG_STATUS_SUCCESS) {
+            std::cerr << "Failed to get image info with error code: " << rocJpegGetErrorName(status) << std::endl;
+            rocJpegDestroy(handle);
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            return EXIT_FAILURE;
+           }
+
+          // Allocate memory for each channel of RocJpegImage
+          // For this sample assuming the all the input images have a YUV420 chroma subsampling (i.e., subsamplings[index] = ROCJPEG_CSS_420)
+          // For YUV420 subsampling, the native decoded output image would be NV12 (i.e., the rocJPegDecodeBatched API copies Y to first channel
+          // and UV (interleaved) to second channel of RocJpegImage for each image in the batch)
+          output_images[index].pitch[1] = output_images[index].pitch[0] = widths[index][0];
+          hipError_t hip_status;
+          if (output_images[index].channel[0] != nullptr) {
+            hipFree((void *)output_images[index].channel[0]);
+            output_images[index].channel[0] = nullptr;
+          }
+          // Allocate device memory for the first channel (Y)
+          hip_status = hipMalloc(&output_images[index].channel[0], output_images[index].pitch[0] * heights[index][0]);
+          if (hip_status != hipSuccess) {
+            std::cerr << "Failed to allocate device memory for the first channel" << std::endl;
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            rocJpegDestroy(handle);
+            return EXIT_FAILURE;
+          }
+
+          if (output_images[index].channel[1] != nullptr) {
+            hipFree((void *)output_images[index].channel[1]);
+            output_images[index].channel[1] = nullptr;
+          }
+          // Allocate device memory for the second channel (UV)
+          hip_status = hipMalloc(&output_images[index].channel[1], output_images[index].pitch[1] * (heights[index][0] >> 1));
+          if (hip_status != hipSuccess) {
+            std::cerr << "Failed to allocate device memory for the second channel" << std::endl;
+            for (auto& it : rocjpeg_stream_handles) {
+              rocJpegStreamDestroy(it);
+            }
+            rocJpegDestroy(handle);
+            return EXIT_FAILURE;
+          }
+      }
+      int current_batch_size = batch_end - i;
+      status = rocJpegDecodeBatched(handle, rocjpeg_stream_handles.data(), current_batch_size, &decode_params, output_images.data());
+      if (status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Failed to decode a batch of JPEG streams with error code: " << rocJpegGetErrorName(status) << std::endl;
+        for (int b = 0; b < batch_size; b++) {
+          hipFree((void *)output_images[b].channel[0]);
+          hipFree((void *)output_images[b].channel[1]);
+        }
+        for (auto& it : rocjpeg_stream_handles) {
+          rocJpegStreamDestroy(it);
+        }
+        rocJpegDestroy(handle);
+        return EXIT_FAILURE;
+      }
+      // Perform additional post-processing on the decoded image or optionally save it
+      // ...
+
+      // Clear the batch_images vector after processing each batch
+      for (int j = i; j < batch_end; j++) {
+        batch_images[j - i].clear();
+      }
+    }
+
+    // Clean up resources
+    for (auto& it : output_images) {
+      for (int i = 0; i < ROCJPEG_MAX_COMPONENT; i++) {
+        if (it.channel[i] != nullptr) {
+          hipFree((void *)it.channel[i]);
+          it.channel[i] = nullptr;
+        }
+      }
+    }
+    rocJpegDestroy(handle);
+    for (auto& it : rocjpeg_stream_handles) {
+      rocJpegStreamDestroy(it);
+    }
     return EXIT_SUCCESS;
   }

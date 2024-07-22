@@ -135,7 +135,7 @@ if(HIP_FOUND AND Libva_FOUND)
   install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
   install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT asan)
   # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
-  install(FILES api/rocjpeg.h
+  install(FILES api/rocjpeg.h api/rocjpeg_version.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
   # install rocJPEG samples -- {ROCM_PATH}/share/rocJPEG
   install(DIRECTORY cmake DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME} COMPONENT dev)

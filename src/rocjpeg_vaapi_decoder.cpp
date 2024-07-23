@@ -251,7 +251,9 @@ RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id},
                           {"gfx1032", {1, false, false}},
                           {"gfx1100", {1, false, false}},
                           {"gfx1101", {1, false, false}},
-                          {"gfx1102", {1, false, false}}};
+                          {"gfx1102", {1, false, false}},
+                          {"gfx1200", {1, false, false}},
+                          {"gfx1201", {1, false, false}}};
 };
 
 /**
@@ -315,13 +317,6 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
                                                                       : gcn_arch_name_base_temp + "_mi300x";
     }
 
-    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
-    if (it != vcn_jpeg_spec_.end()) {
-        current_vcn_jpeg_spec_ = it->second;
-    } else {
-        ERR("ERROR: didn't find the jpeg spec for " + gcn_arch_name_base_temp);
-        return ROCJPEG_STATUS_NOT_INITIALIZED;
-    }
     std::vector<int> visible_devices;
     GetVisibleDevices(visible_devices);
 
@@ -353,6 +348,14 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     CHECK_ROCJPEG(CreateDecoderConfig());
 
     vaapi_mem_pool_->SetVaapiDisplay(va_display_);
+
+    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
+    if (it != vcn_jpeg_spec_.end()) {
+        current_vcn_jpeg_spec_ = it->second;
+    } else {
+        INFO("WARNING: didn't find the vcn jpeg spec for " + gcn_arch_name_base_temp + " using the default setting");
+        current_vcn_jpeg_spec_.num_jpeg_cores = 1;
+    }
     vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores * 2);
 
     return ROCJPEG_STATUS_SUCCESS;

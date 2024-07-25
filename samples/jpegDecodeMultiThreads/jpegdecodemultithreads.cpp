@@ -78,7 +78,7 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
         }
 
         if (subsampling == ROCJPEG_CSS_411 || subsampling == ROCJPEG_CSS_UNKNOWN) {
-            std::cout << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
+            std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             std::cout << "Skipping decoding file " << base_file_name << std::endl;
             return;
         }

@@ -104,7 +104,16 @@ int main(int argc, char **argv) {
             CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handles[index], &num_components, &subsamplings[index], widths[index].data(), heights[index].data()));
 
             rocjpeg_utils.GetChromaSubsamplingStr(subsamplings[index], chroma_sub_sampling);
-            if (subsamplings[index] == ROCJPEG_CSS_411) {
+            if (widths[index][0] < 64 || heights[index][0] < 64) {
+                std::cerr << "The image resolution is not supported by VCN Hardware" << std::endl;
+                if (is_dir) {
+                    std::cout << std::endl;
+                    continue;
+                } else
+                    return EXIT_FAILURE;
+            }
+
+            if (subsamplings[index] == ROCJPEG_CSS_411 || subsamplings[index] == ROCJPEG_CSS_UNKNOWN) {
                 std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
                 if (is_dir) {
                     std::cout << std::endl;

@@ -91,7 +91,15 @@ int main(int argc, char **argv) {
         std::cout << "Input file name: " << base_file_name << std::endl;
         std::cout << "Input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
         std::cout << "Chroma subsampling: " + chroma_sub_sampling  << std::endl;
-        if (subsampling == ROCJPEG_CSS_411) {
+        if (widths[0] < 64 || heights[0] < 64) {
+            std::cerr << "The image resolution is not supported by VCN Hardware" << std::endl;
+            if (is_dir) {
+                std::cout << std::endl;
+                continue;
+            } else
+                return EXIT_FAILURE;
+        }
+        if (subsampling == ROCJPEG_CSS_411 || subsampling == ROCJPEG_CSS_UNKNOWN) {
             std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
                 std::cout << std::endl;

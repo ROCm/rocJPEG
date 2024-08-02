@@ -124,7 +124,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus CopyChannel(HipInteropDeviceMem& hip_interop, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination);
+   RocJpegStatus CopyChannel(HipInteropDeviceMem& hip_interop, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
 
    /**
     * @brief Converts the image to RGB color space.
@@ -134,7 +134,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus ColorConvertToRGB(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+   RocJpegStatus ColorConvertToRGB(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
 
    /**
     * @brief Converts the image to RGB planar color space.
@@ -144,7 +144,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+   RocJpegStatus ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
 
    /**
     * @brief Retrieves the output format for planar YUV images.
@@ -155,7 +155,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination);
+   RocJpegStatus GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
 
    /**
     * @brief Retrieves the output format for Y images.
@@ -165,7 +165,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus GetYOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination);
+   RocJpegStatus GetYOutputFormat(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
 
    int num_devices_; // Number of available devices
    int device_id_; // ID of the device to be used

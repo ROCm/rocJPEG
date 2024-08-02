@@ -133,3 +133,15 @@ add_test(
             --test-command "jpegdecodebatched"
             -i ${ROCM_PATH}/share/rocjpeg/images/
 )
+
+add_test(
+  NAME
+    jpeg-decode-crop-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -crop 960,540,2880,1620
+)

@@ -105,3 +105,15 @@ add_test(
             --test-command "jpegdecodebatched"
             -i ${CMAKE_SOURCE_DIR}/data/images/
 )
+
+add_test(
+  NAME
+  jpeg-decode-crop-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecode"
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -crop 960,540,2880,1620
+)

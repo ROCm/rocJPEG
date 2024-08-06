@@ -212,4 +212,4 @@ page.
 * libva-dev - `2.7.0-2` / `2.14.0-1`
 * mesa-amdgpu-va-drivers - `24.2.0.60300-1798298`
 * mesa-amdgpu-dri-drivers - `24.2.0.60300-1798298`
-* rocJPEG Setup Script - `V2.0.0`
+* rocJPEG Setup Script - `V2.1.0`

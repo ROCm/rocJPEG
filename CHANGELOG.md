@@ -36,4 +36,4 @@ Documentation for rocJPEG is available at
 * libva-dev - `2.7.0-2` / `2.14.0-1`
 * mesa-amdgpu-va-drivers - `1:24.1.0`
 * mesa-amdgpu-dri-drivers - `24.1.0.60200`
-* rocJPEG Setup Script - `V1.2.0`
+* rocJPEG Setup Script - `V2.1.0`

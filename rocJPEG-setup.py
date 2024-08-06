@@ -28,8 +28,8 @@ if sys.version_info[0] < 3:
 else:
     import subprocess
 
-__copyright__ = "Copyright (c) 2023 - 2024, AMD ROCm rocJPEG"
-__version__ = "2.0.0"
+__copyright__ = "Copyright (c) 2024, AMD ROCm rocJPEG"
+__version__ = "2.1.0"
 __email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
 
@@ -45,8 +45,11 @@ def ERROR_CHECK(call):
 parser = argparse.ArgumentParser()
 parser.add_argument('--rocm_path', 	type=str, default='/opt/rocm',
                     help='ROCm Installation Path - optional (default:/opt/rocm) - ROCm Installation Required')
+parser.add_argument('--runtime', 	type=str, default='ON',
+                    help='Install RunTime Dependencies - optional (default:ON) [options:ON/OFF]')
 
 args = parser.parse_args()
+runtimeInstall = args.runtime.upper()
 
 ROCM_PATH = args.rocm_path
 
@@ -63,6 +66,11 @@ else:
         "WARNING: If ROCm installed, set ROCm Path with \"--rocm_path\" option for full installation [Default:/opt/rocm]\n")
     print("ERROR: rocJPEG Setup requires ROCm install\n")
     exit(-1)
+
+if runtimeInstall not in ('OFF', 'ON'):
+    print(
+        "ERROR: Runtime Option Not Supported - [Supported Options: OFF or ON]\n")
+    exit()
 
 # get platfrom info
 platfromInfo = platform.platform()
@@ -92,7 +100,7 @@ linuxCMake = 'cmake'
 linuxSystemInstall_check = ''
 linuxFlag = ''
 sudoValidateOption= '-v'
-if "centos" in os_info_data or "redhat" in os_info_data or os.path.exists('/usr/bin/yum'):
+if "centos" in os_info_data or "redhat" in os_info_data:
     linuxSystemInstall = 'yum -y'
     linuxSystemInstall_check = '--nogpgcheck'
     if "VERSION_ID=7" in os_info_data:
@@ -104,7 +112,7 @@ if "centos" in os_info_data or "redhat" in os_info_data or os.path.exists('/usr/
         platfromInfo = platfromInfo+'-redhat-9'
     else:
         platfromInfo = platfromInfo+'-redhat-centos-undefined-version'
-elif "Ubuntu" in os_info_data or os.path.exists('/usr/bin/apt-get'):
+elif "Ubuntu" in os_info_data:
     linuxSystemInstall = 'apt-get -y'
     linuxSystemInstall_check = '--allow-unauthenticated'
     linuxFlag = '-S'
@@ -116,10 +124,15 @@ elif "Ubuntu" in os_info_data or os.path.exists('/usr/bin/apt-get'):
         platfromInfo = platfromInfo+'-Ubuntu-24'
     else:
         platfromInfo = platfromInfo+'-Ubuntu-undefined-version'
-elif "SLES" in os_info_data or os.path.exists('/usr/bin/zypper'):
+elif "SLES" in os_info_data:
     linuxSystemInstall = 'zypper -n'
     linuxSystemInstall_check = '--no-gpg-checks'
     platfromInfo = platfromInfo+'-SLES'
+elif "Mariner" in os_info_data:
+    linuxSystemInstall = 'tdnf -y'
+    linuxSystemInstall_check = '--nogpgcheck'
+    platfromInfo = platfromInfo+'-Mariner'
+    runtimeInstall = 'OFF'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
     print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15\n")
@@ -141,7 +154,6 @@ commonPackages = [
     'wget',
     'unzip',
     'pkg-config',
-    'inxi',
     'rocm-hip-runtime'
 ]
 
@@ -150,26 +162,34 @@ coreDebianPackages = [
     'rocm-hip-runtime-dev',
     'libva2',
     'libva-dev',
-    'libdrm-amdgpu1',
-    'mesa-amdgpu-va-drivers',
-    'vainfo'
 ]
 coreDebianU22Packages = [
     'libstdc++-12-dev'
 ]
+runtimeDebianPackages = [
+    'libdrm-amdgpu1',
+    'mesa-amdgpu-va-drivers',
+    'vainfo'
+]
 
 # RPM Packages
 libvaNameRPM = "libva"
-if os.path.exists('/usr/bin/zypper'):
-        libvaNameRPM = "libva2"
+if "SLES" in os_info_data or "Mariner" in os_info_data:
+    libvaNameRPM = "libva2"
 coreRPMPackages = [
     'rocm-hip-runtime-devel',
     str(libvaNameRPM),
-    'libva-devel',
+    'libva-devel'
+]
+
+libvaUtilsNameRPM = "libva-utils"
+if "Mariner" in os_info_data:
+    libvaUtilsNameRPM = "libva2" #TBD - no utils package available 
+runtimeRPMPackages = [
     'libdrm-amdgpu',
     'mesa-amdgpu-va-drivers',
     'mesa-amdgpu-dri-drivers',
-    'libva-utils'
+    str(libvaUtilsNameRPM)
 ]
 
 # update
@@ -181,7 +201,7 @@ for i in range(len(commonPackages)):
     ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
             ' '+linuxSystemInstall_check+' install '+ commonPackages[i]))
 
-# rocJPEG Core - LibVA Requirements
+# rocJPEG Core - Requirements
 ERROR_CHECK(os.system('sudo '+sudoValidateOption))
 if "Ubuntu" in platfromInfo:
     for i in range(len(coreDebianPackages)):
@@ -195,5 +215,17 @@ else:
     for i in range(len(coreRPMPackages)):
         ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
                 ' '+linuxSystemInstall_check+' install '+ coreRPMPackages[i]))
+
+# rocJPEG runTime - Requirements
+ERROR_CHECK(os.system('sudo '+sudoValidateOption))
+if runtimeInstall == 'ON':
+    if "Ubuntu" in platfromInfo:
+        for i in range(len(runtimeDebianPackages)):
+            ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
+                ' '+linuxSystemInstall_check+' install '+ runtimeDebianPackages[i]))
+    else:
+        for i in range(len(runtimeRPMPackages)):
+            ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
+                ' '+linuxSystemInstall_check+' install '+ runtimeRPMPackages[i]))
 
 print("\nrocJPEG Dependencies Installed with rocJPEG-setup.py V-"+__version__+"\n")

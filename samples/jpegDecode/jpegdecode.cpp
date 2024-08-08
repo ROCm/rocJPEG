@@ -145,12 +145,12 @@ int main(int argc, char **argv) {
 
         if (save_images) {
             std::string image_save_path = output_file_path;
-            if (is_dir) {
-                rocjpeg_utils.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], subsampling, image_save_path);
-            }
             //if ROI is present, need to pass roi_width and roi_height
             uint32_t width = is_roi_valid ? roi_width : widths[0];
             uint32_t height = is_roi_valid ? roi_height : heights[0];
+            if (is_dir) {
+                rocjpeg_utils.GetOutputFileExt(decode_params.output_format, base_file_name, width, height, subsampling, image_save_path);
+            }
             rocjpeg_utils.SaveImage(image_save_path, &output_image, width, height, subsampling, decode_params.output_format);
         }
 

@@ -359,7 +359,7 @@ RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handl
  */
 RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_mem, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
     if (hip_interop_dev_mem.pitch[channel_index] != 0 && destination->pitch[channel_index] != 0 && destination->channel[channel_index] != nullptr) {
-        uint32_t new_offset = 0;
+        uint32_t roi_offset = 0;
         if(is_roi_valid){
             int16_t top = decode_params->crop_rectangle.top;
             int16_t left = decode_params->crop_rectangle.left;
@@ -373,13 +373,13 @@ RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_m
                     left *= 2;
                     break;
             }
-            new_offset = top * hip_interop_dev_mem.pitch[channel_index] + left;
+            roi_offset = top * hip_interop_dev_mem.pitch[channel_index] + left;
         }
         if (destination->pitch[channel_index] == hip_interop_dev_mem.pitch[channel_index]) {
             uint32_t channel_size = destination->pitch[channel_index] * channel_height;
-            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[channel_index], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[channel_index] + new_offset, channel_size, hip_stream_));
+            CHECK_HIP(hipMemcpyDtoDAsync(destination->channel[channel_index], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[channel_index] + roi_offset, channel_size, hip_stream_));
         } else {
-            CHECK_HIP(hipMemcpy2DAsync(destination->channel[channel_index], destination->pitch[channel_index], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[channel_index] + new_offset, hip_interop_dev_mem.pitch[channel_index],
+            CHECK_HIP(hipMemcpy2DAsync(destination->channel[channel_index], destination->pitch[channel_index], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[channel_index] + roi_offset, hip_interop_dev_mem.pitch[channel_index],
             destination->pitch[channel_index], channel_height, hipMemcpyDeviceToDevice, hip_stream_));
         }
     }
@@ -436,43 +436,43 @@ RocJpegStatus RocJpegDecoder::GetChromaHeight(uint32_t surface_format, uint16_t 
  *         is successful. Returns ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the surface format is not supported.
  */
 RocJpegStatus RocJpegDecoder::ColorConvertToRGB(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
-    uint32_t new_offset = 0;
-    uint32_t new_uv_offset = 0;
+    uint32_t roi_offset = 0;
+    uint32_t roi_uv_offset = 0;
     int16_t top = decode_params->crop_rectangle.top;
     int16_t left = decode_params->crop_rectangle.left;
     if (is_roi_valid) {
         if (hip_interop_dev_mem.surface_format == VA_FOURCC_422V || hip_interop_dev_mem.surface_format == VA_FOURCC_NV12){
-            new_uv_offset = (top >> 1) * hip_interop_dev_mem.pitch[1] + left;
+            roi_uv_offset = (top >> 1) * hip_interop_dev_mem.pitch[1] + left;
         } else if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
             left *= 2;
         }
-        new_offset = top * hip_interop_dev_mem.pitch[0] + left;
+        roi_offset = top * hip_interop_dev_mem.pitch[0] + left;
     }
     switch (hip_interop_dev_mem.surface_format) {
         case VA_FOURCC_444P:
             ColorConvertYUV444ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                  hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + new_offset);
+                                                  hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + roi_offset);
             break;
         case VA_FOURCC_422V:
             ColorConvertYUV440ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                  hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + new_uv_offset, hip_interop_dev_mem.offset[2]);
+                                                  hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + roi_uv_offset, hip_interop_dev_mem.offset[2]);
             break;
         case ROCJPEG_FOURCC_YUYV:
             ColorConvertYUYVToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
             break;
         case VA_FOURCC_NV12:
             ColorConvertNV12ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + new_uv_offset, hip_interop_dev_mem.pitch[1]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0],
+                                                hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + roi_uv_offset, hip_interop_dev_mem.pitch[1]);
             break;
         case VA_FOURCC_Y800:
             ColorConvertYUV400ToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
            break;
         case VA_FOURCC_RGBA:
             ColorConvertRGBAToRGB(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
            break;
         default:
             ERR("ERROR! surface format is not supported!");
@@ -497,39 +497,39 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGB(HipInteropDeviceMem& hip_interop
  *         Returns ROCJPEG_STATUS_JPEG_NOT_SUPPORTED if the surface format is not supported.
  */
 RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
-    uint32_t new_offset = 0;
-    uint32_t new_uv_offset = 0;
+    uint32_t roi_offset = 0;
+    uint32_t roi_uv_offset = 0;
     int16_t top = decode_params->crop_rectangle.top;
     int16_t left = decode_params->crop_rectangle.left;
     if (is_roi_valid) {
         if (hip_interop_dev_mem.surface_format == VA_FOURCC_422V || hip_interop_dev_mem.surface_format == VA_FOURCC_NV12){
-            new_uv_offset = (top >> 1) * hip_interop_dev_mem.pitch[1] + left;
+            roi_uv_offset = (top >> 1) * hip_interop_dev_mem.pitch[1] + left;
         } else if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
             left *= 2;
         }
-        new_offset = top * hip_interop_dev_mem.pitch[0] + left;
+        roi_offset = top * hip_interop_dev_mem.pitch[0] + left;
     }
     switch (hip_interop_dev_mem.surface_format) {
         case VA_FOURCC_444P:            
             ColorConvertYUV444ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
-                                                  hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + new_offset);
+                                                  hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + roi_offset);
             break;
         case VA_FOURCC_422V:
             ColorConvertYUV440ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
-                                                  hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + new_uv_offset, hip_interop_dev_mem.offset[2]);
+                                                  hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + roi_uv_offset, hip_interop_dev_mem.offset[2]);
             break;
         case ROCJPEG_FOURCC_YUYV:
             ColorConvertYUYVToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
             break;
         case VA_FOURCC_NV12:
             ColorConvertNV12ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + new_uv_offset, hip_interop_dev_mem.pitch[1]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0],
+                                                hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + roi_uv_offset, hip_interop_dev_mem.pitch[1]);
             break;
         case VA_FOURCC_Y800:
             ColorConvertYUV400ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
-                                                hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
            break;
         case VA_FOURCC_RGBP:
             // Copy red, green, and blue channels from the interop memory into the destination
@@ -562,16 +562,16 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_i
  * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful.
  */
 RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, uint16_t chroma_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
-    uint32_t new_offset = 0;   
+    uint32_t roi_offset = 0;   
     if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
         // Extract the packed YUYV and copy them into the first, second, and thrid channels of the destination.
         if (is_roi_valid) {
             int16_t top = decode_params->crop_rectangle.top;
             int16_t left = decode_params->crop_rectangle.left * 2;
-            new_offset = top * hip_interop_dev_mem.pitch[0] + left;
+            roi_offset = top * hip_interop_dev_mem.pitch[0] + left;
         }
         ConvertPackedYUYVToPlanarYUV(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2],
-                                                  destination->pitch[0], destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                                                  destination->pitch[0], destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
     } else {
         // Copy Luma
         CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, destination, decode_params, is_roi_valid));
@@ -581,10 +581,10 @@ RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_
             if (is_roi_valid) {
                 int16_t top = decode_params->crop_rectangle.top >> 1;
                 int16_t left = decode_params->crop_rectangle.left;
-                new_offset = top * hip_interop_dev_mem.pitch[1] + left;
+                roi_offset = top * hip_interop_dev_mem.pitch[1] + left;
             }
             ConvertInterleavedUVToPlanarUV(hip_stream_, picture_width >> 1, picture_height >> 1, destination->channel[1], destination->channel[2],
-                destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + new_offset, hip_interop_dev_mem.pitch[1]);
+                destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + roi_offset, hip_interop_dev_mem.pitch[1]);
         } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
                    hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
             CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination, decode_params, is_roi_valid));
@@ -608,16 +608,16 @@ RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_
  * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful.
  */
 RocJpegStatus RocJpegDecoder::GetYOutputFormat(HipInteropDeviceMem& hip_interop_dev_mem, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
-    uint32_t new_offset = 0; 
+    uint32_t roi_offset = 0; 
     if (hip_interop_dev_mem.surface_format == ROCJPEG_FOURCC_YUYV) {
         // calculate offset and add to hip_mapped_device_mem
         if(is_roi_valid){
                 int16_t top = decode_params->crop_rectangle.top;
                 int16_t left = decode_params->crop_rectangle.left * 2;
-                new_offset = top * hip_interop_dev_mem.pitch[0] + left;
+                roi_offset = top * hip_interop_dev_mem.pitch[0] + left;
         }
         ExtractYFromPackedYUYV(hip_stream_, picture_width, picture_height, destination->channel[0], destination->pitch[0],
-                              hip_interop_dev_mem.hip_mapped_device_mem + new_offset, hip_interop_dev_mem.pitch[0]);
+                              hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
     } else {
         // Copy Luma
         CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, destination, decode_params, is_roi_valid));

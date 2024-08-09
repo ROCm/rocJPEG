@@ -25,6 +25,15 @@ THE SOFTWARE.
 void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_handle, RocJpegStreamHandle rocjpeg_stream, RocJpegUtils rocjpeg_util, RocJpegImage *output_image, std::mutex &mutex,
     RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels) {
 
+    bool is_roi_valid = false;
+    uint32_t roi_width;
+    uint32_t roi_height;
+    roi_width = decode_params.crop_rectangle.right - decode_params.crop_rectangle.left;
+    roi_height = decode_params.crop_rectangle.bottom - decode_params.crop_rectangle.top;
+    if (roi_width > 0 && roi_height > 0) {
+        is_roi_valid = true; 
+    }
+
     std::vector<char> file_data;
     uint8_t num_components;
     uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
@@ -105,8 +114,11 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
 
         if (save_images) {
             std::string image_save_path = output_file_path;
-            rocjpeg_util.GetOutputFileExt(decode_params.output_format, base_file_name, widths[0], heights[0], subsampling, image_save_path);
-            rocjpeg_util.SaveImage(image_save_path, output_image, widths[0], heights[0], subsampling, decode_params.output_format);
+            //if ROI is present, need to pass roi_width and roi_height
+            uint32_t width = is_roi_valid ? roi_width : widths[0];
+            uint32_t height = is_roi_valid ? roi_height : heights[0];
+            rocjpeg_util.GetOutputFileExt(decode_params.output_format, base_file_name, width, height, subsampling, image_save_path);
+            rocjpeg_util.SaveImage(image_save_path, output_image, width, height, subsampling, decode_params.output_format);
         }
 
         for (int i = 0; i < ROCJPEG_MAX_COMPONENT; i++) {

@@ -95,23 +95,26 @@ struct HipInteropDeviceMem {
 };
 
 /**
- * @brief Structure representing an entry in the RocJpegVappiMemPool.
- *
- * This structure holds information about an image in the memory pool used by the RocJpegVappiDecoder.
- * It includes the image width and height, the VASurfaceID and VAContextID associated with the image,
- * and the HipInteropDeviceMem for interoperation with HIP.
+ * @brief Defines the enumeration MemPoolEntryStatus.
  */
+typedef enum {
+    kIdle = 0,
+    kBusy = 1,
+} MemPoolEntryStatus;
+
 /**
- * @brief Structure representing an entry in the RocJpegVappiMemPool.
+ * @struct RocJpegVaapiMemPoolEntry
+ * @brief Structure representing an entry in the RocJpegVaapiMemPool.
  *
- * This structure holds information about an image in the memory pool used by the RocJpegVappiDecoder.
- * It includes the image width and height, the VASurfaceID and VAContextID associated with the image,
- * and the HipInteropDeviceMem for interoperation with HIP.
+ * This structure holds information about a memory pool entry used by the RocJpegVaapiDecoder.
+ * It contains the image width and height, the VA context ID, the entry status, an array of VA surface IDs,
+ * and an array of HipInteropDeviceMem objects.
  */
 struct RocJpegVaapiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
     VAContextID va_context_id;
+    MemPoolEntryStatus entry_status;
     std::vector<VASurfaceID> va_surface_ids;
     std::vector<HipInteropDeviceMem> hip_interops;
 };
@@ -180,6 +183,16 @@ class RocJpegVaapiMemoryPool {
          * @return The status of the operation.
          */
         RocJpegStatus GetHipInteropMem(VASurfaceID surface_id, HipInteropDeviceMem& hip_interop);
+
+        /**
+         * @brief Sets a VASurfaceID as idle.
+         *
+         * This function sets the specified VASurfaceID as idle, indicating that it is available for reuse.
+         *
+         * @param surface_id The VASurfaceID to set as idle.
+         * @return true if the VASurfaceID was successfully set as idle, false otherwise.
+         */
+        bool SetSurfaceAsIdle(VASurfaceID surface_id);
 
     private:
         VADisplay va_display_; // The VADisplay associated with the memory pool.
@@ -302,6 +315,14 @@ public:
      * @return The current VCN JPEG specification.
      */
     const VcnJpegSpec& GetCurrentVcnJpegSpec() const {return current_vcn_jpeg_spec_;}
+
+    /**
+     * Sets the specified VASurfaceID as idle.
+     *
+     * @param surface_id The VASurfaceID to set as idle.
+     * @return The status of the operation.
+     */
+    RocJpegStatus SetSurfaceAsIdle(VASurfaceID surface_id);
 private:
     int device_id_; // The ID of the device
     int drm_fd_; // The file descriptor for the DRM device

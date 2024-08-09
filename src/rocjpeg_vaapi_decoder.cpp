@@ -110,25 +110,32 @@ RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
     if (entries.size() < max_pool_size_) {
         entries.push_back(pool_entry);
     } else {
-        if (entries.front().va_context_id != 0) {
-            CHECK_VAAPI(vaDestroyContext(va_display_, entries.front().va_context_id));
-            entries.front().va_context_id = 0;
-        }
-        if (!entries.front().va_surface_ids.empty()) {
-            CHECK_VAAPI(vaDestroySurfaces(va_display_, entries.front().va_surface_ids.data(), entries.front().va_surface_ids.size()));
-            std::fill(entries.front().va_surface_ids.begin(), entries.front().va_surface_ids.end(), 0);
-        }
-        if (!entries.front().hip_interops.empty()) {
-            for(auto& hip_interop_entry : entries.front().hip_interops) {
-                if (hip_interop_entry.hip_mapped_device_mem != nullptr)
-                    CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
-                if (hip_interop_entry.hip_ext_mem != nullptr)
-                    CHECK_HIP(hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem));
-                memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
+        auto it = std::find_if(entries.begin(), entries.end(), [](const RocJpegVaapiMemPoolEntry& entry) {return entry.entry_status == kIdle;});
+        if (it != entries.end()) {
+            auto index = std::distance(entries.begin(), it);
+            if (entries[index].va_context_id != 0) {
+                CHECK_VAAPI(vaDestroyContext(va_display_, entries[index].va_context_id));
+                entries[index].va_context_id = 0;
             }
+            if (!entries[index].va_surface_ids.empty()) {
+                CHECK_VAAPI(vaDestroySurfaces(va_display_, entries[index].va_surface_ids.data(), entries[index].va_surface_ids.size()));
+                std::fill(entries[index].va_surface_ids.begin(), entries[index].va_surface_ids.end(), 0);
+            }
+            if (!entries[index].hip_interops.empty()) {
+                for(auto& hip_interop_entry : entries[index].hip_interops) {
+                    if (hip_interop_entry.hip_mapped_device_mem != nullptr)
+                        CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
+                    if (hip_interop_entry.hip_ext_mem != nullptr)
+                        CHECK_HIP(hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem));
+                    memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
+                }
+            }
+            entries.erase(it);
+            entries.push_back(pool_entry);
+        } else {
+            ERR("cannot find an idle entry in the the memory pool!");
+            return ROCJPEG_STATUS_INVALID_PARAMETER;
         }
-        entries.erase(entries.begin());
-        entries.push_back(pool_entry);
     }
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -143,12 +150,13 @@ RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
  * @return The matching `RocJpegVaapiMemPoolEntry` if found, or a default-initialized entry if not found.
  */
 RocJpegVaapiMemPoolEntry RocJpegVaapiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces) {
-    for (const auto& entry : mem_pool_[surface_format]) {
-        if (entry.image_width == image_width && entry.image_height == image_height && entry.va_surface_ids.size() == num_surfaces) {
+    for (auto& entry : mem_pool_[surface_format]) {
+        if (entry.image_width == image_width && entry.image_height == image_height && entry.va_surface_ids.size() == num_surfaces && entry.entry_status == kIdle) {
+            entry.entry_status = kBusy;
             return entry;
         }
     }
-    return {0, 0, 0 , {}, {}};
+    return {0, 0, 0 , kIdle, {}, {}};
 }
 
 bool RocJpegVaapiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
@@ -229,6 +237,19 @@ RocJpegStatus RocJpegVaapiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
     ERR("the surface_id: " + TOSTR(surface_id) + " was not found in the memory pool!");
     return ROCJPEG_STATUS_INVALID_PARAMETER;
 }
+
+bool RocJpegVaapiMemoryPool::SetSurfaceAsIdle(VASurfaceID surface_id) {
+    for (auto& pair : mem_pool_) {
+        for (auto& entry : pair.second) {
+            if (std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end()) {
+                entry.entry_status = kIdle;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 /**
  * @brief Constructs a RocJpegVappiDecoder object.
  *
@@ -356,7 +377,7 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
         INFO("WARNING: didn't find the vcn jpeg spec for " + gcn_arch_name_base_temp + " using the default setting");
         current_vcn_jpeg_spec_.num_jpeg_cores = 1;
     }
-    vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores * 2);
+    vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores + 1);
 
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -562,6 +583,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         mem_pool_entry.va_context_id = va_context_id;
         mem_pool_entry.hip_interops.resize(1);
         surface_id = mem_pool_entry.va_surface_ids[0];
+        mem_pool_entry.entry_status = kBusy;
         CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_pixel_format, mem_pool_entry));
     } else {
         surface_id = mem_pool_entry.va_surface_ids[0];
@@ -683,6 +705,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
             }
             mem_pool_entry.va_context_id = va_context_id;
             mem_pool_entry.hip_interops.resize(indices.size());
+            mem_pool_entry.entry_status = kBusy;
             CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(key.pixel_format, mem_pool_entry));
         } else {
             for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
@@ -888,4 +911,21 @@ void RocJpegVappiDecoder::GetDrmNodeOffset(std::string device_name, uint8_t devi
                 break;
         }
     }
+}
+
+/**
+ * @brief Sets a VASurfaceID as idle.
+ *
+ * This function sets the specified VASurfaceID as idle in the RocJpegVappiDecoder's vaapi_mem_pool.
+ * If the surface cannot be set as idle, it returns ROCJPEG_STATUS_INVALID_PARAMETER.
+ *
+ * @param surface_id The VASurfaceID to set as idle.
+ * @return RocJpegStatus The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if successful,
+ *         or ROCJPEG_STATUS_INVALID_PARAMETER if the surface cannot be set as idle.
+ */
+RocJpegStatus RocJpegVappiDecoder::SetSurfaceAsIdle(VASurfaceID surface_id) {
+    if (!vaapi_mem_pool_->SetSurfaceAsIdle(surface_id)) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    return ROCJPEG_STATUS_SUCCESS;
 }

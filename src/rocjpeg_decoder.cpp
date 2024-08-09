@@ -172,6 +172,7 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
             break;
     }
 
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SetSurfaceAsIdle(current_surface_id));
     CHECK_HIP(hipStreamSynchronize(hip_stream_));
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -268,6 +269,7 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
                 default:
                     break;
             }
+            CHECK_ROCJPEG(jpeg_vaapi_decoder_.SetSurfaceAsIdle(current_surface_id));
         }
 
     }

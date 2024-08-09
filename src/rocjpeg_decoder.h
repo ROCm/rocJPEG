@@ -134,7 +134,7 @@ private:
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus ColorConvertToRGB(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params);
+   RocJpegStatus ColorConvertToRGB(HipInteropDeviceMem& hip_interop, uint32_t picture_width, uint32_t picture_height, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid);
 
    /**
     * @brief Converts the image to RGB planar color space.

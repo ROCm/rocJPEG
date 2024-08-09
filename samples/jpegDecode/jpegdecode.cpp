@@ -49,8 +49,7 @@ int main(int argc, char **argv) {
     RocJpegUtils rocjpeg_utils;
 
     RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, nullptr, nullptr, argc, argv);
-
-    // have decode_params, need to calculate is_roi_valid (same as before)
+    
     bool is_roi_valid = false;
     uint32_t roi_width;
     uint32_t roi_height;

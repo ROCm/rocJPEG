@@ -133,9 +133,6 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
     picture_width = is_roi_valid ? roi_width : jpeg_stream_params->picture_parameter_buffer.picture_width;
     picture_height = is_roi_valid ? roi_height : jpeg_stream_params->picture_parameter_buffer.picture_height;
     
-
-    // hip_mapped_device_mem is pointer to the entire image rectangle, need to calculate ROI 
-    // and add to the pointer.
     switch (decode_params->output_format) {
         case ROCJPEG_OUTPUT_NATIVE:
             // Copy the native decoded output buffers from interop memory directly to the destination buffers
@@ -152,7 +149,7 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
                 // Copy the second and third channels for YUV444 and YUV440 (i.e., YUV422V)
                 CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination, decode_params, is_roi_valid));
                 CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination, decode_params, is_roi_valid));
-            } 
+            }
             break;
         case ROCJPEG_OUTPUT_YUV_PLANAR:
             CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, picture_height, chroma_height));

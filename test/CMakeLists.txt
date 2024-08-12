@@ -148,7 +148,7 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-crop-fmt-native
+    jpeg-decode-crop-fmt-yuv-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
@@ -160,7 +160,7 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-crop-fmt-native
+    jpeg-decode-crop-fmt-y
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
@@ -172,7 +172,7 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-crop-fmt-native
+    jpeg-decode-crop-fmt-rgb
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
@@ -184,7 +184,7 @@ add_test(
 
 add_test(
   NAME
-    jpeg-decode-crop-fmt-native
+    jpeg-decode-crop-fmt-rgb-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
             --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"

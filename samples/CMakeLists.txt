@@ -123,11 +123,11 @@ add_test(
     jpeg-decode-crop-fmt-yuv-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt yuv -crop 960,540,2880,1620
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv -crop 960,540,2880,1620
 )
 
 add_test(
@@ -135,11 +135,11 @@ add_test(
     jpeg-decode-crop-fmt-y
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt y -crop 960,540,2880,1620
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt y -crop 960,540,2880,1620
 )
 
 add_test(
@@ -147,11 +147,11 @@ add_test(
     jpeg-decode-crop-fmt-rgb
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+            --build-and-test "$${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgb -crop 960,540,2880,1620
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgb -crop 960,540,2880,1620
 )
 
 add_test(
@@ -159,9 +159,9 @@ add_test(
     jpeg-decode-crop-fmt-rgb-planar
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecode"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgb_planar -crop 960,540,2880,1620
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt rgb_planar -crop 960,540,2880,1620
 )

@@ -507,7 +507,7 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_i
         roi_offset = top * hip_interop_dev_mem.pitch[0] + left;
     }
     switch (hip_interop_dev_mem.surface_format) {
-        case VA_FOURCC_444P:            
+        case VA_FOURCC_444P:
             ColorConvertYUV444ToRGBPlanar(hip_stream_, picture_width, picture_height, destination->channel[0], destination->channel[1], destination->channel[2], destination->pitch[0],
                                                   hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0], hip_interop_dev_mem.offset[1] + roi_offset, hip_interop_dev_mem.offset[2] + roi_offset);
             break;

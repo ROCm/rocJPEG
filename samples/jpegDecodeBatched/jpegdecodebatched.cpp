@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
             CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t*>(batch_images[index].data()), file_size, rocjpeg_stream_handles[index]));
             CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handles[index], &num_components, &subsamplings[index], widths[index].data(), heights[index].data()));
 
-            if (roi_width > 0 && roi_height > 0 && roi_width < *widths[index].data() && roi_height < *heights[index].data()) {
+            if (roi_width > 0 && roi_height > 0 && roi_width < widths[index][0] && roi_height < heights[index][0]) {
                 is_roi_valid = true; 
             }
 

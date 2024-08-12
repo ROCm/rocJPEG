@@ -135,6 +135,9 @@ int main(int argc, char **argv) {
             }
         }
 
+        if (is_roi_valid) {
+            std::cout << "Cropped image resolution: " << roi_width << "x" <<  roi_height << std::endl;
+        }
         std::cout << "Decoding started, please wait! ... " << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
         CHECK_ROCJPEG(rocJpegDecode(rocjpeg_handle, rocjpeg_stream_handle, &decode_params, &output_image));

@@ -30,9 +30,6 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
     uint32_t roi_height;
     roi_width = decode_params.crop_rectangle.right - decode_params.crop_rectangle.left;
     roi_height = decode_params.crop_rectangle.bottom - decode_params.crop_rectangle.top;
-    if (roi_width > 0 && roi_height > 0) {
-        is_roi_valid = true; 
-    }
 
     std::vector<char> file_data;
     uint8_t num_components;
@@ -80,6 +77,10 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
 
         CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t *>(file_data.data()), file_size, rocjpeg_stream));
         CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream, &num_components, &subsampling, widths, heights));
+        if (roi_width > 0 && roi_height > 0 && roi_width < widths[0] && roi_height < heights[0]) {
+            is_roi_valid = true; 
+        }
+
         if (widths[0] < 64 || heights[0] < 64) {
             std::cerr << "The image resolution is not supported by VCN Hardware" << std::endl;
             std::cout << "Skipping decoding file " << base_file_name << std::endl;

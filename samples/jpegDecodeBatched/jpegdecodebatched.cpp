@@ -58,9 +58,6 @@ int main(int argc, char **argv) {
     uint32_t roi_height;
     roi_width = decode_params.crop_rectangle.right - decode_params.crop_rectangle.left;
     roi_height = decode_params.crop_rectangle.bottom - decode_params.crop_rectangle.top;
-    if (roi_width > 0 && roi_height > 0) {
-        is_roi_valid = true; 
-    }
     
     if (!RocJpegUtils::GetFilePaths(input_path, file_paths, is_dir, is_file)) {
         std::cerr << "ERROR: Failed to get input file paths!" << std::endl;
@@ -112,6 +109,10 @@ int main(int argc, char **argv) {
 
             CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t*>(batch_images[index].data()), file_size, rocjpeg_stream_handles[index]));
             CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handles[index], &num_components, &subsamplings[index], widths[index].data(), heights[index].data()));
+
+            if (roi_width > 0 && roi_height > 0 && roi_width < *widths[index].data() && roi_height < *heights[index].data()) {
+                is_roi_valid = true; 
+            }
 
             rocjpeg_utils.GetChromaSubsamplingStr(subsamplings[index], chroma_sub_sampling);
             if (widths[index][0] < 64 || heights[index][0] < 64) {

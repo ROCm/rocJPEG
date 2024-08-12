@@ -157,7 +157,7 @@ typedef struct {
         int16_t top; /**< Top coordinate of the crop rectangle. */
         int16_t right; /**< Right coordinate of the crop rectangle. */
         int16_t bottom; /**< Bottom coordinate of the crop rectangle. */
-    } crop_rectangle; /**< (future use) Defines the region of interest (ROI) to be copied into the RocJpegImage output buffers. */
+    } crop_rectangle; /**< Defines the region of interest (ROI) to be copied into the RocJpegImage output buffers. */
     struct {
         uint32_t width; /**< Target width of the picture to be resized. */
         uint32_t height; /**< Target height of the picture to be resized. */

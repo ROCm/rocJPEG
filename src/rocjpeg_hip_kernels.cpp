@@ -237,7 +237,7 @@ __global__ void ColorConvertYUV444ToRGBKernel(uint32_t dst_width, uint32_t dst_h
  */
 void ColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset) {
 
     int32_t local_threads_x = 16;
     int32_t local_threads_y = 4;
@@ -252,7 +252,7 @@ void ColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t ds
     ColorConvertYUV444ToRGBKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                         dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image,
                         dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
-                        src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
+                        src_yuv_image + src_v_image_offset, src_yuv_image_stride_in_bytes,
                         dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 }
 
@@ -467,7 +467,7 @@ __global__ void ColorConvertYUV444ToRGBPlanarKernel(uint32_t dst_width, uint32_t
  */
 void ColorConvertYUV444ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset) {
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset) {
 
     int32_t local_threads_x = 16;
     int32_t local_threads_y = 4;
@@ -482,7 +482,7 @@ void ColorConvertYUV444ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint3
     ColorConvertYUV444ToRGBPlanarKernel<<<dim3(ceil(static_cast<float>(global_threads_x) / local_threads_x), ceil(static_cast<float>(global_threads_y) / local_threads_y)),
                         dim3(local_threads_x, local_threads_y), 0, stream>>>(dst_width, dst_height, dst_image_r, dst_image_g, dst_image_b,
                         dst_image_stride_in_bytes, dst_image_stride_in_bytes_comp, src_yuv_image, src_yuv_image + src_u_image_offset,
-                        src_yuv_image + (src_u_image_offset * 2), src_yuv_image_stride_in_bytes,
+                        src_yuv_image + src_v_image_offset, src_yuv_image_stride_in_bytes,
                         dst_width_comp, dst_height_comp, src_yuv_image_stride_in_bytes_comp);
 }
 

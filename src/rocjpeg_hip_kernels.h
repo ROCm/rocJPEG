@@ -43,7 +43,7 @@ THE SOFTWARE.
  */
 void ColorConvertYUV444ToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset);
 
 /**
  * @brief Converts YUV440 image to RGB image.
@@ -156,7 +156,7 @@ void ColorConvertRGBAToRGB(hipStream_t stream, uint32_t dst_width, uint32_t dst_
  */
 void ColorConvertYUV444ToRGBPlanar(hipStream_t stream, uint32_t dst_width, uint32_t dst_height,
     uint8_t *dst_image_r, uint8_t *dst_image_g, uint8_t *dst_image_b, uint32_t dst_image_stride_in_bytes, const uint8_t *src_yuv_image,
-    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset);
+    uint32_t src_yuv_image_stride_in_bytes, uint32_t src_u_image_offset, uint32_t src_v_image_offset);
 
 /**
  * @brief Converts YUV440 image to RGB planar format.

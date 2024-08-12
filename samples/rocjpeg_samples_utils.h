@@ -309,7 +309,6 @@ public:
     int GetChannelPitchAndSizes(RocJpegDecodeParams decode_params, RocJpegChromaSubsampling subsampling, uint32_t *widths, uint32_t *heights,
                                 uint32_t &num_channels, RocJpegImage &output_image, uint32_t *channel_sizes) {
         
-
         bool is_roi_valid = false;
         uint32_t roi_width;
         uint32_t roi_height;
@@ -318,7 +317,6 @@ public:
         if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0] && roi_height <= heights[0]) {
             is_roi_valid = true; 
         }
-
         switch (decode_params.output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
                 switch (subsampling) {

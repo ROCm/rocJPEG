@@ -147,7 +147,7 @@ add_test(
     jpeg-decode-crop-fmt-rgb
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "$${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecode"
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"

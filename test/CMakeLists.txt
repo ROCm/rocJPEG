@@ -193,3 +193,15 @@ add_test(
             --test-command "jpegdecode"
             -i ${ROCM_PATH}/share/rocjpeg/images/ -fmt rgb_planar -crop 960,540,2880,1620
 )
+
+add_test(
+  NAME
+    jpeg-decode-crop-batch-fmt-native
+  COMMAND
+    "${CMAKE_CTEST_COMMAND}"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecodeBatched"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeBatched"
+            --build-generator "${CMAKE_GENERATOR}"
+            --test-command "jpegdecodebatched"
+            -i ${ROCM_PATH}/share/rocjpeg/images/ -crop 960,540,2880,1620
+)

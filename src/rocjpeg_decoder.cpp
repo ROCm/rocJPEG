@@ -235,9 +235,9 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
             switch (decode_params->output_format) {
                 case ROCJPEG_OUTPUT_NATIVE:
                     // Copy the native decoded output buffers from interop memory directly to the destination buffers
-                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
+                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, picture_height, chroma_height));
                     // Copy Luma (first channel) for any surface format
-                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_height, 0, &destinations[k + i], decode_params, is_roi_valid));
+                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, &destinations[k + i], decode_params, is_roi_valid));
                     if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
                         // Copy the second channel (UV interleaved) for NV12
                         CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, &destinations[k + i], decode_params, is_roi_valid));
@@ -249,21 +249,21 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
                     }
                     break;
                 case ROCJPEG_OUTPUT_YUV_PLANAR:
-                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height));
-                    CHECK_ROCJPEG(GetPlanarYUVOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                        jpeg_stream_params->picture_parameter_buffer.picture_height, chroma_height, &destinations[k + i], decode_params, is_roi_valid));
+                    CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, picture_height, chroma_height));
+                    CHECK_ROCJPEG(GetPlanarYUVOutputFormat(hip_interop_dev_mem, picture_width,
+                                                        picture_height, chroma_height, &destinations[k + i], decode_params, is_roi_valid));
                     break;
                 case ROCJPEG_OUTPUT_Y:
-                    CHECK_ROCJPEG(GetYOutputFormat(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i], decode_params, is_roi_valid));
+                    CHECK_ROCJPEG(GetYOutputFormat(hip_interop_dev_mem, picture_width,
+                                                picture_height, &destinations[k + i], decode_params, is_roi_valid));
                     break;
                 case ROCJPEG_OUTPUT_RGB:
-                    CHECK_ROCJPEG(ColorConvertToRGB(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                            jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i], decode_params, is_roi_valid));
+                    CHECK_ROCJPEG(ColorConvertToRGB(hip_interop_dev_mem, picture_width,
+                                                            picture_height, &destinations[k + i], decode_params, is_roi_valid));
                     break;
                 case ROCJPEG_OUTPUT_RGB_PLANAR:
-                    CHECK_ROCJPEG(ColorConvertToRGBPlanar(hip_interop_dev_mem, jpeg_stream_params->picture_parameter_buffer.picture_width,
-                                                            jpeg_stream_params->picture_parameter_buffer.picture_height, &destinations[k + i], decode_params, is_roi_valid));
+                    CHECK_ROCJPEG(ColorConvertToRGBPlanar(hip_interop_dev_mem, picture_width,
+                                                            picture_height, &destinations[k + i], decode_params, is_roi_valid));
                     break;
                 default:
                     break;

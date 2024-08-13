@@ -77,7 +77,7 @@ void ThreadFunction(std::vector<std::string>& jpegFiles, RocJpegHandle rocjpeg_h
 
         CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t *>(file_data.data()), file_size, rocjpeg_stream));
         CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream, &num_components, &subsampling, widths, heights));
-        if (roi_width > 0 && roi_height > 0 && roi_width < widths[0] && roi_height < heights[0]) {
+        if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0] && roi_height <= heights[0]) {
             is_roi_valid = true; 
         }
 

@@ -94,7 +94,7 @@ int main(int argc, char **argv) {
         CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t*>(file_data.data()), file_size, rocjpeg_stream_handle));
         CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handle, &num_components, &subsampling, widths, heights));
 
-        if (roi_width > 0 && roi_height > 0 && roi_width < widths[0] && roi_height < heights[0]) {
+        if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0] && roi_height <= heights[0]) {
             is_roi_valid = true; 
         }
 

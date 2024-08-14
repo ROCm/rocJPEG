@@ -47,9 +47,13 @@ int main(int argc, char **argv) {
     RocJpegImage output_image = {};
     RocJpegDecodeParams decode_params = {};
     RocJpegUtils rocjpeg_utils;
+    uint64_t num_bad_jpegs = 0;
+    uint64_t num_jpegs_with_411_subsampling = 0;
+    uint64_t num_jpegs_with_unknown_subsampling = 0;
+    uint64_t num_jpegs_with_unsupported_resolution = 0;
 
     RocJpegUtils::ParseCommandLine(input_path, output_file_path, save_images, device_id, rocjpeg_backend, decode_params, nullptr, nullptr, argc, argv);
-    
+
     bool is_roi_valid = false;
     uint32_t roi_width;
     uint32_t roi_height;
@@ -91,20 +95,32 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
 
-        CHECK_ROCJPEG(rocJpegStreamParse(reinterpret_cast<uint8_t*>(file_data.data()), file_size, rocjpeg_stream_handle));
+        std::cout << "Input file name: " << file_path << std::endl;
+        RocJpegStatus rocjpeg_status = rocJpegStreamParse(reinterpret_cast<uint8_t*>(file_data.data()), file_size, rocjpeg_stream_handle);
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            if (is_dir) {
+                std::cout << std::endl;
+                num_bad_jpegs++;
+                continue;
+            } else {
+                std::cerr << "ERROR: Failed to parse the input jpeg stream with " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
         CHECK_ROCJPEG(rocJpegGetImageInfo(rocjpeg_handle, rocjpeg_stream_handle, &num_components, &subsampling, widths, heights));
 
         if (roi_width > 0 && roi_height > 0 && roi_width <= widths[0] && roi_height <= heights[0]) {
-            is_roi_valid = true; 
+            is_roi_valid = true;
         }
 
         rocjpeg_utils.GetChromaSubsamplingStr(subsampling, chroma_sub_sampling);
-        std::cout << "Input file name: " << base_file_name << std::endl;
         std::cout << "Input image resolution: " << widths[0] << "x" << heights[0] << std::endl;
         std::cout << "Chroma subsampling: " + chroma_sub_sampling  << std::endl;
         if (widths[0] < 64 || heights[0] < 64) {
             std::cerr << "The image resolution is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
+                num_jpegs_with_unsupported_resolution++;
                 std::cout << std::endl;
                 continue;
             } else
@@ -113,6 +129,8 @@ int main(int argc, char **argv) {
         if (subsampling == ROCJPEG_CSS_411 || subsampling == ROCJPEG_CSS_UNKNOWN) {
             std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
+                num_jpegs_with_411_subsampling = (subsampling == ROCJPEG_CSS_411) ? num_jpegs_with_411_subsampling + 1: num_jpegs_with_411_subsampling;
+                num_jpegs_with_unknown_subsampling = (subsampling == ROCJPEG_CSS_UNKNOWN) ? num_jpegs_with_unknown_subsampling + 1: num_jpegs_with_unknown_subsampling;
                 std::cout << std::endl;
                 continue;
             } else
@@ -183,6 +201,22 @@ int main(int argc, char **argv) {
         images_per_sec = 1000 / time_per_image_all;
         double mpixels_per_sec = mpixels_all * images_per_sec / total_images;
         std::cout << "Total decoded images: " << total_images << std::endl;
+        if (num_bad_jpegs || num_jpegs_with_411_subsampling || num_jpegs_with_unknown_subsampling || num_jpegs_with_unsupported_resolution) {
+            std::cout << "Total skipped images: " << num_bad_jpegs + num_jpegs_with_411_subsampling + num_jpegs_with_unknown_subsampling + num_jpegs_with_unsupported_resolution;
+            if (num_bad_jpegs) {
+                std::cout << " ,total images that cannot be parsed: " << num_bad_jpegs;
+            }
+            if (num_jpegs_with_411_subsampling) {
+                std::cout << " ,total images with YUV 4:1:1 chroam subsampling: " << num_jpegs_with_411_subsampling;
+            }
+            if (num_jpegs_with_unknown_subsampling) {
+                std::cout << " ,total images with unknwon chroam subsampling: " << num_jpegs_with_unknown_subsampling;
+            }
+            if (num_jpegs_with_unsupported_resolution) {
+                std::cout << " ,total images with unsupported_resolution: " << num_jpegs_with_unsupported_resolution;
+            }
+            std::cout << std::endl;
+        }
         if (total_images) {
             std::cout << "Average processing time per image (ms): " << time_per_image_all << std::endl;
             std::cout << "Average decoded images per sec (Images/Sec): " << images_per_sec << std::endl;

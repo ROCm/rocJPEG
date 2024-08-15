@@ -129,8 +129,10 @@ int main(int argc, char **argv) {
         if (subsampling == ROCJPEG_CSS_411 || subsampling == ROCJPEG_CSS_UNKNOWN) {
             std::cerr << "The chroma sub-sampling is not supported by VCN Hardware" << std::endl;
             if (is_dir) {
-                num_jpegs_with_411_subsampling = (subsampling == ROCJPEG_CSS_411) ? num_jpegs_with_411_subsampling + 1: num_jpegs_with_411_subsampling;
-                num_jpegs_with_unknown_subsampling = (subsampling == ROCJPEG_CSS_UNKNOWN) ? num_jpegs_with_unknown_subsampling + 1: num_jpegs_with_unknown_subsampling;
+                if (subsampling == ROCJPEG_CSS_411)
+                    num_jpegs_with_411_subsampling++;
+                if (subsampling == ROCJPEG_CSS_UNKNOWN)
+                    num_jpegs_with_unknown_subsampling++;
                 std::cout << std::endl;
                 continue;
             } else

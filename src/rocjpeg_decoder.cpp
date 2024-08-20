@@ -110,13 +110,6 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
     auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
 
-    VASurfaceID current_surface_id;
-    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, decode_params));
-
-    HipInteropDeviceMem hip_interop_dev_mem = {};
-    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
-    CHECK_ROCJPEG(jpeg_vaapi_decoder_.GetHipInteropMem(current_surface_id, hip_interop_dev_mem));
-
     uint16_t chroma_height = 0;
     uint16_t picture_width = 0;
     uint16_t picture_height = 0;
@@ -127,12 +120,34 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
     roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
     
     if (roi_width > 0 && roi_height > 0 && roi_width <= jpeg_stream_params->picture_parameter_buffer.picture_width && roi_height <= jpeg_stream_params->picture_parameter_buffer.picture_height) {
-        is_roi_valid = true; 
+        is_roi_valid = true;
     }
 
     picture_width = is_roi_valid ? roi_width : jpeg_stream_params->picture_parameter_buffer.picture_width;
     picture_height = is_roi_valid ? roi_height : jpeg_stream_params->picture_parameter_buffer.picture_height;
-    
+
+    VcnJpegSpec current_vcn_jpeg_spec = jpeg_vaapi_decoder_.GetCurrentVcnJpegSpec();
+    if (is_roi_valid && current_vcn_jpeg_spec.can_roi_decode) {
+#if VA_CHECK_VERSION(1, 21, 0)
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.x = decode_params->crop_rectangle.left;
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.y = decode_params->crop_rectangle.top;
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.width = roi_width;
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.height = roi_height;
+#else
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[0] = decode_params->crop_rectangle.top << 16 | decode_params->crop_rectangle.left;
+        const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[1] = roi_height << 16 | roi_width;
+#endif
+        //make is_roi_valid false becuase in this case HW handles the ROI decode.
+        is_roi_valid = false;
+    }
+
+    VASurfaceID current_surface_id;
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, decode_params));
+
+    HipInteropDeviceMem hip_interop_dev_mem = {};
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
+    CHECK_ROCJPEG(jpeg_vaapi_decoder_.GetHipInteropMem(current_surface_id, hip_interop_dev_mem));
+
     switch (decode_params->output_format) {
         case ROCJPEG_OUTPUT_NATIVE:
             // Copy the native decoded output buffers from interop memory directly to the destination buffers

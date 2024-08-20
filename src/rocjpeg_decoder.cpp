@@ -118,7 +118,7 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
     uint32_t roi_height;
     roi_width = decode_params->crop_rectangle.right - decode_params->crop_rectangle.left;
     roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
-    
+
     if (roi_width > 0 && roi_height > 0 && roi_width <= jpeg_stream_params->picture_parameter_buffer.picture_width && roi_height <= jpeg_stream_params->picture_parameter_buffer.picture_height) {
         is_roi_valid = true;
     }
@@ -137,7 +137,8 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
         const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[0] = decode_params->crop_rectangle.top << 16 | decode_params->crop_rectangle.left;
         const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[1] = roi_height << 16 | roi_width;
 #endif
-        //make is_roi_valid false becuase in this case HW handles the ROI decode.
+        // Set is_roi_valid to false because in this case, the hardware handles the ROI decode and we don't
+        // need to calculate the roi_offset later in the following functions (e.g., CopyChannel, GetPlanarYUVOutputFormat, etc)
         is_roi_valid = false;
     }
 
@@ -220,6 +221,21 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
         for (int j = i; j < batch_end; j++) {
             auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_streams[j]);
             const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
+            uint32_t roi_width;
+            uint32_t roi_height;
+            roi_width = decode_params->crop_rectangle.right - decode_params->crop_rectangle.left;
+            roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
+            if (current_vcn_jpeg_spec.can_roi_decode && roi_width > 0 && roi_height > 0 && roi_width <= jpeg_stream_params->picture_parameter_buffer.picture_width && roi_height <= jpeg_stream_params->picture_parameter_buffer.picture_height) {
+#if VA_CHECK_VERSION(1, 21, 0)
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.x = decode_params->crop_rectangle.left;
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.y = decode_params->crop_rectangle.top;
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.width = roi_width;
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.crop_rectangle.height = roi_height;
+#else
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[0] = decode_params->crop_rectangle.top << 16 | decode_params->crop_rectangle.left;
+                const_cast<JpegStreamParameters *>(jpeg_stream_params)->picture_parameter_buffer.reserved[1] = roi_height << 16 | roi_width;
+#endif
+            }
             jpeg_streams_params[j] = std::move(*jpeg_stream_params);
         }
 
@@ -242,11 +258,17 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
             roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
     
             if (roi_width > 0 && roi_height > 0 && roi_width <= jpeg_stream_params->picture_parameter_buffer.picture_width && roi_height <= jpeg_stream_params->picture_parameter_buffer.picture_height) {
-                is_roi_valid = true; 
+                is_roi_valid = true;
             }
 
             picture_width = is_roi_valid ? roi_width : jpeg_stream_params->picture_parameter_buffer.picture_width;
             picture_height = is_roi_valid ? roi_height : jpeg_stream_params->picture_parameter_buffer.picture_height;
+
+            if (is_roi_valid && current_vcn_jpeg_spec.can_roi_decode) {
+                // Set is_roi_valid to false because in this case, the hardware handles the ROI decode and we don't
+                // need to calculate the roi_offset later in the following functions (e.g., CopyChannel, GetPlanarYUVOutputFormat, etc)
+                is_roi_valid = false;
+            }
 
             switch (decode_params->output_format) {
                 case ROCJPEG_OUTPUT_NATIVE:

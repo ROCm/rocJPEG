@@ -571,6 +571,26 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         }
     }
 
+    // if the HW JPEG decoder has a built-in ROI-decode capability then fill the requested crop rectangle to the picture parameter buffer
+    void *picture_parameter_buffer = (void*)&jpeg_stream_params->picture_parameter_buffer;
+    if (current_vcn_jpeg_spec_.can_roi_decode) {
+        uint32_t roi_width;
+        uint32_t roi_height;
+        roi_width = decode_params->crop_rectangle.right - decode_params->crop_rectangle.left;
+        roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
+        if (roi_width > 0 && roi_height > 0 && roi_width <= jpeg_stream_params->picture_parameter_buffer.picture_width && roi_height <= jpeg_stream_params->picture_parameter_buffer.picture_height) {
+#if VA_CHECK_VERSION(1, 21, 0)
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.x = decode_params->crop_rectangle.left;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.y = decode_params->crop_rectangle.top;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.width = roi_width;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.height = roi_height;
+#else
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->va_reserved[0] = decode_params->crop_rectangle.top << 16 | decode_params->crop_rectangle.left;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->va_reserved[1] = roi_height << 16 | roi_width;
+#endif
+        }
+    }
+
     uint32_t surface_pixel_format = static_cast<uint32_t>(surface_attrib.value.value.i);
     RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
     VAContextID va_context_id;
@@ -592,7 +612,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
 
     CHECK_ROCJPEG(DestroyDataBuffers());
 
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->picture_parameter_buffer, &va_picture_parameter_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
     CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
     CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->huffman_table_buffer, &va_huffmantable_buf_id_));
     CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->slice_parameter_buffer, &va_slice_param_buf_id_));
@@ -680,6 +700,10 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
     surface_attrib.type = VASurfaceAttribPixelFormat;
     surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
     surface_attrib.value.type = VAGenericValueTypeInteger;
+    uint32_t roi_width;
+    uint32_t roi_height;
+    roi_width = decode_params->crop_rectangle.right - decode_params->crop_rectangle.left;
+    roi_height = decode_params->crop_rectangle.bottom - decode_params->crop_rectangle.top;
 
     // Iterate through all entries of jpeg_stream_groups.
     // Check if there is a matching entry in the memory pool.
@@ -715,8 +739,23 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
         }
 
         for (int idx : indices) {
+            // if the HW JPEG decoder has a built-in ROI-decode capability then fill the requested crop rectangle to the picture parameter buffer
+            void* picture_parameter_buffer = &jpeg_streams_params[idx].picture_parameter_buffer;
+            if (current_vcn_jpeg_spec_.can_roi_decode && roi_width > 0 && roi_height > 0 &&
+                roi_width <= jpeg_streams_params[idx].picture_parameter_buffer.picture_width &&
+                roi_height <= jpeg_streams_params[idx].picture_parameter_buffer.picture_height) {
+#if VA_CHECK_VERSION(1, 21, 0)
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.x = decode_params->crop_rectangle.left;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.y = decode_params->crop_rectangle.top;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.width = roi_width;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->crop_rectangle.height = roi_height;
+#else
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->va_reserved[0] = decode_params->crop_rectangle.top << 16 | decode_params->crop_rectangle.left;
+            reinterpret_cast<VAPictureParameterBufferJPEGBaseline*>(picture_parameter_buffer)->va_reserved[1] = roi_height << 16 | roi_width;
+#endif
+            }
             CHECK_ROCJPEG(DestroyDataBuffers());
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].picture_parameter_buffer, &va_picture_parameter_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
             CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
             CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].huffman_table_buffer, &va_huffmantable_buf_id_));
             CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].slice_parameter_buffer, &va_slice_param_buf_id_));

@@ -376,12 +376,12 @@ public:
             case ROCJPEG_OUTPUT_RGB:
                 num_channels = 1;
                 output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
-                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), 524288);
+                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
                 num_channels = 3;
                 output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), 524288);
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
                 break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
@@ -620,6 +620,7 @@ public:
     }
 
 private:
+    static const int mem_alignment = 1024 * 1024;
     /**
      * @brief Shows the help message and exits.
      *
@@ -645,6 +646,15 @@ private:
         }
         exit(0);
     }
+    /**
+     * @brief Aligns a value to a specified alignment.
+     *
+     * This function takes a value and aligns it to the specified alignment. It returns the aligned value.
+     *
+     * @param value The value to be aligned.
+     * @param alignment The alignment value.
+     * @return The aligned value.
+     */
     static inline int align(int value, int alignment) {
         return (value + alignment - 1) & ~(alignment - 1);
     }

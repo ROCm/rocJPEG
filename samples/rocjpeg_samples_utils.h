@@ -376,12 +376,12 @@ public:
             case ROCJPEG_OUTPUT_RGB:
                 num_channels = 1;
                 output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
-                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), 524288);
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
                 num_channels = 3;
                 output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), 524288);
                 break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
@@ -644,6 +644,9 @@ private:
             std::cout << "-b     [batch_size] - decode images from input by batches of a specified size - [optional - default: 2]\n";
         }
         exit(0);
+    }
+    static inline int align(int value, int alignment) {
+        return (value + alignment - 1) & ~(alignment - 1);
     }
 };
 #endif //ROC_JPEG_SAMPLES_COMMON

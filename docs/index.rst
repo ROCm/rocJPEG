@@ -12,8 +12,6 @@ the GPU using Video Acceleration API (VA-API)/HIP. To learn more, see :doc:`what
 
 The code is open and hosted at `GitHub repository <https://github.com/ROCm/rocJPEG>`_.
 
-Our documentation is structured as follows:
-
 .. grid:: 2
   :gutter: 3
 

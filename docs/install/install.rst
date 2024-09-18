@@ -9,15 +9,6 @@ Installation
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API,
 you can access the JPEG decoding features available on your GPU.
 
-Supported JPEG chroma subsampling
-========================================
-
-* YUV 4:4:4
-* YUV 4:4:0
-* YUV 4:2:2
-* YUV 4:2:0
-* YUV 4:0:0
-
 Prerequisites
 ========================================
 
@@ -196,22 +187,15 @@ Docker
 You can find rocJPEG Docker containers in our
 `GitHub repository <https://github.com/ROCm/rocJPEG/tree/develop/docker>`_.
 
-Documentation
-========================================
-
-Run the following code to build our documentation locally.
-
-.. code:: shell
-
-  cd docs
-  pip3 install -r sphinx/requirements.txt
-  python3 -m sphinx -T -E -b html -d _build/doctrees -D language=en . _build/html
-
-For more information on documentation builds, refer to the
-:doc:`Building documentation <rocm:contribute/building>` page.
-
 Hardware capabilities
 ===================================================
+
+* Supported JPEG chroma subsampling
+  * YUV 4:4:4
+  * YUV 4:4:0
+  * YUV 4:2:2
+  * YUV 4:2:0
+  * YUV 4:0:0
 
 The following table shows the capabilities of the VCN and total number of JPEG cores for each supported GPU
 architecture.

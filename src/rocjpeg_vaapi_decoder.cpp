@@ -94,6 +94,65 @@ void RocJpegVaapiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
 }
 
 /**
+ * @brief Retrieves the total size of the memory pool.
+ *
+ * This function iterates through the memory pool and sums up the sizes of all entries.
+ *
+ * @return The total size of the memory pool.
+ */
+size_t RocJpegVaapiMemoryPool::GetTotalMemPoolSize() const {
+    size_t total_mem_pool_size = 0;
+    for (const auto& pair : mem_pool_) {
+        total_mem_pool_size += pair.second.size();
+    }
+    return total_mem_pool_size;
+}
+
+/**
+ * @brief Deletes an idle entry from the memory pool.
+ *
+ * This function iterates through the memory pool and searches for an entry
+ * with the status `kIdle`. If such an entry is found, it performs the following
+ * cleanup operations:
+ * - Destroys the VAAPI context if it exists.
+ * - Destroys the VAAPI surfaces if they exist.
+ * - Frees HIP mapped device memory and destroys HIP external memory if they exist.
+ * - Resets the HIP interop entries.
+ *
+ * After performing the cleanup, the idle entry is removed from the memory pool.
+ *
+ * @return true if an idle entry was found and deleted, false otherwise.
+ */
+bool RocJpegVaapiMemoryPool::DeleteIdleEntry() {
+    for (auto& pair : mem_pool_) {
+        auto it = std::find_if(pair.second.begin(), pair.second.end(), [](const RocJpegVaapiMemPoolEntry& entry) {return entry.entry_status == kIdle;});
+        if (it != pair.second.end()) {
+            auto index = std::distance(pair.second.begin(), it);
+            if (pair.second[index].va_context_id != 0) {
+                CHECK_VAAPI(vaDestroyContext(va_display_, pair.second[index].va_context_id));
+                pair.second[index].va_context_id = 0;
+            }
+            if (!pair.second[index].va_surface_ids.empty()) {
+                CHECK_VAAPI(vaDestroySurfaces(va_display_, pair.second[index].va_surface_ids.data(), pair.second[index].va_surface_ids.size()));
+                std::fill(pair.second[index].va_surface_ids.begin(), pair.second[index].va_surface_ids.end(), 0);
+            }
+            if (!pair.second[index].hip_interops.empty()) {
+                for(auto& hip_interop_entry : pair.second[index].hip_interops) {
+                    if (hip_interop_entry.hip_mapped_device_mem != nullptr)
+                        CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
+                    if (hip_interop_entry.hip_ext_mem != nullptr)
+                        CHECK_HIP(hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem));
+                    memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
+                }
+            }
+            pair.second.erase(it);
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Adds a pool entry to the memory pool for a specific surface format.
  *
  * This function adds a pool entry to the memory pool for a specific surface format.
@@ -106,31 +165,12 @@ void RocJpegVaapiMemoryPool::SetVaapiDisplay(const VADisplay& va_display) {
  * @return The status of the operation. Returns ROCJPEG_STATUS_SUCCESS if the operation is successful.
  */
 RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, const RocJpegVaapiMemPoolEntry& pool_entry) {
+    size_t total_mem_pool_size = GetTotalMemPoolSize();
     auto& entries = mem_pool_[surface_format];
-    if (entries.size() < max_pool_size_) {
+    if (total_mem_pool_size < max_pool_size_) {
         entries.push_back(pool_entry);
     } else {
-        auto it = std::find_if(entries.begin(), entries.end(), [](const RocJpegVaapiMemPoolEntry& entry) {return entry.entry_status == kIdle;});
-        if (it != entries.end()) {
-            auto index = std::distance(entries.begin(), it);
-            if (entries[index].va_context_id != 0) {
-                CHECK_VAAPI(vaDestroyContext(va_display_, entries[index].va_context_id));
-                entries[index].va_context_id = 0;
-            }
-            if (!entries[index].va_surface_ids.empty()) {
-                CHECK_VAAPI(vaDestroySurfaces(va_display_, entries[index].va_surface_ids.data(), entries[index].va_surface_ids.size()));
-                std::fill(entries[index].va_surface_ids.begin(), entries[index].va_surface_ids.end(), 0);
-            }
-            if (!entries[index].hip_interops.empty()) {
-                for(auto& hip_interop_entry : entries[index].hip_interops) {
-                    if (hip_interop_entry.hip_mapped_device_mem != nullptr)
-                        CHECK_HIP(hipFree(hip_interop_entry.hip_mapped_device_mem));
-                    if (hip_interop_entry.hip_ext_mem != nullptr)
-                        CHECK_HIP(hipDestroyExternalMemory(hip_interop_entry.hip_ext_mem));
-                    memset((void*)&hip_interop_entry, 0, sizeof(hip_interop_entry));
-                }
-            }
-            entries.erase(it);
+        if (DeleteIdleEntry()) {
             entries.push_back(pool_entry);
         } else {
             ERR("cannot find an idle entry in the the memory pool!");

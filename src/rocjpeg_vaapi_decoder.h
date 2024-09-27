@@ -198,6 +198,21 @@ class RocJpegVaapiMemoryPool {
         VADisplay va_display_; // The VADisplay associated with the memory pool.
         uint32_t max_pool_size_; // The maximum pool size of the memory pool (mem_pool_) per entry.
         std::unordered_map<uint32_t, std::vector<RocJpegVaapiMemPoolEntry>> mem_pool_; // The memory pool.
+        /**
+         * @brief Retrieves the total size of the memory pool.
+         *
+         * @return The total size of the memory pool in bytes.
+         */
+        size_t GetTotalMemPoolSize() const;
+        /**
+         * @brief  Deletes an idle entry from the memory pool.
+         *
+         * This function is responsible for removing an idle entry from the memory pool.
+         * It ensures that resources associated with the idle entry are properly released.
+         *
+         * @return true if the idle entry was successfully deleted, false otherwise.
+         */
+        bool DeleteIdleEntry();
 };
 
 /**

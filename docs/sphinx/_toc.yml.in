@@ -8,29 +8,35 @@ subtrees:
 
 - caption: Install
   entries:
-  - file: install/quick-start.rst
-    title: Quick-start
-  - file: install/install.md
-    title: Installation guide
+  - file: install/rocjpeg-prerequisites.rst
+    title: rocJPEG installation prerequisites
+  - file: install/rocjpeg-package-install.rst
+    title: Installing rocJPEG with the package installer
+  - file: install/rocjpeg-build-and-install.rst
+    title: Building and installing rocJPEG from source code
 
-- caption: API reference
+- caption: Reference
   entries:
+  - file: reference/rocjpeg-formats-and-architectures.rst
+    title: rocJPEG subsampling and hardware capabilities
+  - file: reference/rocjpeg-tested-configs.rst
+    title: rocJPEG tested configurations
   - file: doxygen/html/files
-    title: API library
+    title: rocJPEG API library
   - file: doxygen/html/globals
-    title: Functions
+    title: rocJPEG functions
   - file: doxygen/html/annotated
-    title: Data structures
+    title: rocJPEG data structures
 
 - caption: How to
   entries:
   - file: how-to/using-rocjpeg.rst
-    title: Use rocJPEG
+    title: Using rocJPEG
 
-- caption: Tutorials
+- caption: Samples
   entries:
   - url: https://github.com/ROCm/rocJPEG/tree/develop/samples
-    title: GitHub samples
+    title: rocJPEG samples on GitHub
 
 - caption: About
   entries:

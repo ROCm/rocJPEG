@@ -74,7 +74,7 @@ message("-- ${BoldBlue}rocJPEG Install Path -- ${CMAKE_INSTALL_PREFIX}${ColourRe
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH} ${ROCM_PATH}/hip)
-set(CMAKE_CXX_COMPILER ${ROCM_PATH}/llvm/bin/clang++)
+set(CMAKE_CXX_COMPILER ${ROCM_PATH}/lib/llvm/bin/clang++)
 
 # rocJPEG Default Options
 option(BUILD_WITH_AMD_ADVANCE "Build rocJPEG for advanced AMD GPU Architecture" OFF)

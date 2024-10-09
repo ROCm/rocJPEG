@@ -1,6 +1,6 @@
 * @AryanSalmanpour @rrawther @kiritigowda
 # Documentation files
-docs/ @ROCm/rocm-documentation @AryanSalmanpour
-*.md @ROCm/rocm-documentation @AryanSalmanpour
-*.rst @ROCm/rocm-documentation @AryanSalmanpour
-.readthedocs.yaml @ROCm/rocm-documentation @AryanSalmanpour
+docs/ @ROCm/rocm-documentation
+*.md @ROCm/rocm-documentation
+*.rst @ROCm/rocm-documentation
+.readthedocs.yaml @ROCm/rocm-documentation

@@ -574,7 +574,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     // If RGB output format is requested, and the HW JPEG decoder has a built-in format conversion,
     // set the RGB surface format and attributes to obtain the RGB output directly from the JPEG HW decoder.
     // otherwise set the appropriate surface format and attributes based on the chroma subsampling of the image.
-    if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+    if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb && jpeg_stream_params->chroma_subsampling != CSS_440) {
         if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
             surface_format = VA_RT_FORMAT_RGB32;
             surface_attrib.value.value.i = VA_FOURCC_RGBA;
@@ -696,7 +696,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
                 return ROCJPEG_STATUS_JPEG_NOT_SUPPORTED;
             }
 
-        if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb) {
+        if ((decode_params->output_format == ROCJPEG_OUTPUT_RGB || decode_params->output_format == ROCJPEG_OUTPUT_RGB_PLANAR) && current_vcn_jpeg_spec_.can_convert_to_rgb && jpeg_streams_params[i].chroma_subsampling != CSS_440) {
             if (decode_params->output_format == ROCJPEG_OUTPUT_RGB) {
                 jpeg_stream_key.surface_format = VA_RT_FORMAT_RGB32;
                 jpeg_stream_key.pixel_format = VA_FOURCC_RGBA;

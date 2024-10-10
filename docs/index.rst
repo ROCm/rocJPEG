@@ -21,13 +21,15 @@ The rocJPEG public repository is located at `https://github.com/ROCm/rocJPEG <ht
     * :doc:`Installing rocJPEG with the package installer <./install/rocjpeg-package-install>`
     * :doc:`Building rocJPEG from source code <./install/rocjpeg-build-and-install>`
 
-  .. grid-item-card:: Samples
-
-    * `rocJPEG samples on GitHub <https://github.com/ROCm/rocJPEG/tree/develop/samples>`_
-
   .. grid-item-card:: How to
 
     * :doc:`Using rocJPEG <how-to/using-rocjpeg>`
+    * :doc:`Retrieving image information with rocJPEG <how-to/rocjpeg-retrieve-image-info>`
+    * :doc:`Decoding a JPEG stream with rocJPEG <how-to/rocjpeg-decoding-a-jpeg-stream>`
+
+  .. grid-item-card:: Samples
+
+    * `rocJPEG samples on GitHub <https://github.com/ROCm/rocJPEG/tree/develop/samples>`_
 
   .. grid-item-card:: Reference
 

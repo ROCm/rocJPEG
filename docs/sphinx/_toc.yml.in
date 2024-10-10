@@ -15,6 +15,15 @@ subtrees:
   - file: install/rocjpeg-build-and-install.rst
     title: Building and installing rocJPEG from source code
 
+- caption: How to
+  entries:
+  - file: how-to/using-rocjpeg.rst
+    title: Using rocJPEG
+  - file: how-to/rocjpeg-retrieve-image-info.rst
+    title: Retrieving image information with rocJPEG
+  - file: how-to/rocjpeg-decoding-a-jpeg-stream.rst
+    title: Decoding a JPEG stream with rocJPEG
+
 - caption: Reference
   entries:
   - file: reference/rocjpeg-formats-and-architectures.rst
@@ -27,11 +36,6 @@ subtrees:
     title: rocJPEG functions
   - file: doxygen/html/annotated
     title: rocJPEG data structures
-
-- caption: How to
-  entries:
-  - file: how-to/using-rocjpeg.rst
-    title: Using rocJPEG
 
 - caption: Samples
   entries:

@@ -160,36 +160,30 @@ commonPackages = [
 # Debian packages
 coreDebianPackages = [
     'rocm-hip-runtime-dev',
-    'libva2',
-    'libva-dev',
+    'libva-amdgpu-dev'
 ]
 coreDebianU22Packages = [
     'libstdc++-12-dev'
 ]
 runtimeDebianPackages = [
-    'libdrm-amdgpu1',
+    'libva2-amdgpu',
+    'libva-amdgpu-drm2',
+    'libva-amdgpu-wayland2',
+    'libva-amdgpu-x11-2',
     'mesa-amdgpu-va-drivers',
     'vainfo'
 ]
 
 # RPM Packages
-libvaNameRPM = "libva"
-if "SLES" in os_info_data or "Mariner" in os_info_data:
-    libvaNameRPM = "libva2"
 coreRPMPackages = [
     'rocm-hip-runtime-devel',
-    str(libvaNameRPM),
-    'libva-devel'
+    'libva-amdgpu-devel'
 ]
 
-libvaUtilsNameRPM = "libva-utils"
-if "Mariner" in os_info_data:
-    libvaUtilsNameRPM = "libva2" #TBD - no utils package available 
 runtimeRPMPackages = [
-    'libdrm-amdgpu',
+    'libva-amdgpu',
     'mesa-amdgpu-va-drivers',
-    'mesa-amdgpu-dri-drivers',
-    str(libvaUtilsNameRPM)
+    'libva-utils'
 ]
 
 # update

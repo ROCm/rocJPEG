@@ -19,7 +19,7 @@ Retrieving image information is done using ``rocJpegGetImageInfo()``.
       uint32_t *widths,
       uint32_t *heights);
 
-``rocJpegGetImageInfo()`` takes the RocJpegHandle and a RocJpegStreamHandle as inputs, and returns the subsampling, number of components, and widths and heights of the components. These are passed to the ``subsampling``, ``num_components``, and ``widths`` and ``heights`` output parameters.
+``rocJpegGetImageInfo()`` takes the ``RocJpegHandle`` and a ``RocJpegStreamHandle`` as inputs, and returns the subsampling, number of components, and widths and heights of the components. These are passed to the ``subsampling``, ``num_components``, and ``widths`` and ``heights`` output parameters.
 
 The ``subsampling`` output parameter is a ``RocJpegChromaSubsampling`` enum. 
 

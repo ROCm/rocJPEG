@@ -8,12 +8,12 @@ Using rocJPEG
 
 This document provides a high-level overview of how to do common operations using the rocJPEG APIs exposed in the ``rocjpeg.h`` header file. 
 
-Creating and destroying handles 
-================================
+Creating handles 
+==================
 
 Handles need to be created to decode and parse JPEG streams.
 
-``rocJpegCreate()`` returns an instance of a RocJpegHandle based on the specified backend and GPU device ID. The RocJpegHandle instance must be retained for the entire decode session. 
+``rocJpegCreate()`` returns an instance of a ``RocJpegHandle`` based on the specified backend and GPU device ID. The ``RocJpegHandle`` instance must be retained for the entire decode session. 
 
 .. code:: cpp
 
@@ -70,8 +70,6 @@ For example:
 
 ``rocJpegGetErrorName()`` returns error codes in text format from rocJPEG APIs.
 
-``rocJpegDestroy()`` and ``rocJpegStreamDestroy()`` must be called to free resources once the RocJpegStreamHandle is no lognger needed and the session is done. 
-
 
 Parsing a stream
 =================
@@ -116,6 +114,7 @@ Getting image information
       uint32_t *widths,
       uint32_t *heights);
 
+
 For more information on ``rocJpegGetImageInfo()``, see `Retrieving image information with rocJPEG <./rocjpeg-retrieve-image-info.html>`_.
 
 Decoding a stream
@@ -123,7 +122,7 @@ Decoding a stream
 
 ``rocJpegDecode()`` takes the image passed to it through the ``jpeg_stream_handle`` input parameter and decodes it based on the backend used to create ``handle`` input parameter. 
 
-The ``decode_params`` input parameter is used to specify the decoding parameters.
+The ``decode_params`` input parameter is used to specify the decoding parameters. Memory needs to be allocated for each channel of the destination image.
 
 .. code:: cpp
 
@@ -134,3 +133,31 @@ The ``decode_params`` input parameter is used to specify the decoding parameters
       RocJpegImage *destination);
 
 For more information on decoding streams, see `Decoding a JPEG stream with rocJPEG <./rocjpeg-decoding-a-jpeg-stream.html>`_.
+
+
+Destroying handles and freeing resources
+==========================================
+
+Once the JPEG stream is decoded, resources need to be freed. 
+
+Use |hipfree|_ to release the memory allocated for decoding the JPEG.
+
+.. |hipfree| replace:: ``hipFree()``
+.. _hipfree: https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/virtual_memory.html
+
+Use ``rocJpegStreamDestroy()`` to release the ``rocJpegStreamHandle`` and its resources, and use ``rocJPegDestroy()`` to release ``RocJpegHandle`` and destroy the session. 
+
+.. code:: cpp
+
+  RocJpegStatus rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_handle)
+
+  RocJpegStatus rocJpegDestroy(RocJpegHandle handle)
+
+For example:
+
+.. code:: cpp
+  
+  hipFree((void *)output_image.channel[0]);
+  hipFree((void *)output_image.channel[1]);
+  rocJpegStreamDestroy(rocjpeg_stream_handle);
+  rocJpegDestroy(handle);

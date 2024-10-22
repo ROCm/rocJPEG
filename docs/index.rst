@@ -34,7 +34,6 @@ The rocJPEG public repository is located at `https://github.com/ROCm/rocJPEG <ht
   .. grid-item-card:: Reference
 
     * :doc:`rocJPEG subsampling and hardware capabilities <./reference/rocjpeg-formats-and-architectures>`
-    * :doc:`rocJPEG tested configurations <./reference/rocjpeg-tested-configs>`
     * :doc:`rocJPEG API library <../doxygen/html/files>`
     * :doc:`rocJPEG Functions <../doxygen/html/globals>`
     * :doc:`rocJPEG Data structures <../doxygen/html/annotated>`

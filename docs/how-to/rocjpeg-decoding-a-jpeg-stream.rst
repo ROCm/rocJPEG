@@ -124,13 +124,12 @@ If RocJpegOutputFormat is set to ``ROCJPEG_OUTPUT_Y`` or   ``ROCJPEG_OUTPUT_RGB`
 
 If RocJpegOutputFormat is set to ``ROCJPEG_OUTPUT_YUV_PLANAR`` or ``ROCJPEG_OUTPUT_RGB_PLANAR``, the data is written to the corresponding channels of the ``RocJpegImage`` destination structure.
 
-The destination images must be large enough to store the output. 
+The destination images must be large enough to store the output.
 
 Use |rocjpegimageinfo|_ to extract information and calculate the required memory sizes for the destination image following these guidelines:.
 
-.. |rocjpegimageinfo| replace:: ``rocImageInfo()``
-.. _rocjpegimageinfo: https://rocm.docs.amd.com/projects/rocJPEG/en/latest/how-to/docs/how-to/rocjpeg-retrieve-image-info.html
-
+.. |rocjpegimageinfo| replace:: ``rocJpegGetImageInfo()``
+.. _rocjpegimageinfo: ./rocjpeg-retrieve-image-info.html
 
 .. csv-table::
   :header: "Output format", "Chroma subsampling", "Minimum size of destination.pitch[c]", "Minimum size of destination.channel[c]"

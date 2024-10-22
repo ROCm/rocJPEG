@@ -12,13 +12,13 @@ ROCm 6.3.0 or later must be installed before installing rocJPEG. See `Quick star
 
 rocJPEG can be installed on the following Linux environments:
   
-* Ubuntu 20.04 or 22.04
+* Ubuntu 20.04, 22.04, 24.04
 * RHEL 8 or 9
 * SLES: 15-SP5
 
 The following prerequisites are installed by the package installer. If you are building and installing using the source code, use the `rocJPEG-setup.py <https://github.com/ROCm/rocJPEG/blob/develop/rocJPEG-setup.py>`_ setup script available in the rocJPEG GitHub repository to install these prerequisites. 
 
-* Libva, an implementation for Video Acceleration API (VA-API), version 1.5.0 or later
+* Libva, an implementation for Video Acceleration API (VA-API), version 2.16 or later
 * AMD VA Drivers
 * CMake version 3.5 or later
 * pkg-config

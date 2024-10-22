@@ -116,7 +116,7 @@ Getting image information
       uint32_t *widths,
       uint32_t *heights);
 
-For more information on ``rocJpegGetImageInfo()``, see `Retrieving image information with rocJPEG <https://rocm.docs.amd.com/projects/rocJPEG/en/latest/how-to/docs/how-to/rocjpeg-retrieve-image-info.html>`_.
+For more information on ``rocJpegGetImageInfo()``, see `Retrieving image information with rocJPEG <./rocjpeg-retrieve-image-info.html>`_.
 
 Decoding a stream
 ====================
@@ -133,4 +133,4 @@ The ``decode_params`` input parameter is used to specify the decoding parameters
       const RocJpegDecodeParams *decode_params,
       RocJpegImage *destination);
 
-For more information on decoding streams, see `Decoding a JPEG stream with rocJPEG <https://rocm.docs.amd.com/projects/rocJPEG/en/latest/how-to/docs/how-to/docs/how-to/rocjpeg-decoding-a-jpeg-stream.html>`_.
+For more information on decoding streams, see `Decoding a JPEG stream with rocJPEG <./rocjpeg-decoding-a-jpeg-stream.html>`_.

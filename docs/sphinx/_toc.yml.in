@@ -28,8 +28,6 @@ subtrees:
   entries:
   - file: reference/rocjpeg-formats-and-architectures.rst
     title: rocJPEG subsampling and hardware capabilities
-  - file: reference/rocjpeg-tested-configs.rst
-    title: rocJPEG tested configurations
   - file: doxygen/html/files
     title: rocJPEG API library
   - file: doxygen/html/globals

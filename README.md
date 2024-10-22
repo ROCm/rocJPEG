@@ -4,6 +4,9 @@
 
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API, you can access the JPEG decoding features available on your GPU.
 
+>[!Note]
+>The published documentation is available at [rocJPEG](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/) in an organized, easy-to-read format, with search and a table of contents. The documentation source files reside in the `docs` folder of this repository. As with all ROCm projects, the documentation is open source. For more information on contributing to the documentation, see [Contribute to ROCm documentation](https://rocm.docs.amd.com/en/latest/contribute/contributing.html)
+
 ## Supported JPEG chroma subsampling
 
 * YUV 4:4:4
@@ -188,16 +191,3 @@ individual folders to build and run the samples.
 You can find rocJPEG Docker containers in our
 [GitHub repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).
 
-## Documentation
-
-Run the following code to build our documentation locally.
-
-```shell
-cd docs
-pip3 install -r sphinx/requirements.txt
-python3 -m sphinx -T -E -b html -d _build/doctrees -D language=en . _build/html
-```
-
-For more information on documentation builds, refer to the
-[Building documentation](https://rocm.docs.amd.com/en/latest/contribute/building.html)
-page.

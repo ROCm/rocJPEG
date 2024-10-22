@@ -140,7 +140,7 @@ Destroying handles and freeing resources
 
 Once the JPEG stream is decoded, resources need to be freed. 
 
-Use |hipfree|_ to release the memory allocated for decoding the JPEG.
+Use |hipfree|_ to release the memory previously allocated  by ``hipMalloc()`` for each channel of the destination ``rocJpegImage``.
 
 .. |hipfree| replace:: ``hipFree()``
 .. _hipfree: https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/virtual_memory.html

@@ -18,7 +18,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 ## Prerequisites
 
 * Linux distribution
-  * Ubuntu - `20.04` / `22.04`
+  * Ubuntu - `20.04` / `22.04` / `24.04`
   * RHEL - `8` / `9`
   * SLES - `15-SP5`
 
@@ -32,17 +32,19 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
-* Video Acceleration API (VA-API) Version `1.5.0+` - `Libva` is an implementation for VA-API
+* Video Acceleration API (VA-API) Version `2.16.0+` - `Libva` is an implementation for VA-API
    ```shell
-   sudo apt install libva-dev
+   sudo apt install libva-amdgpu-dev
    ```
  > [!NOTE]
- > RPM Packages for `RHEL`/`SLES` - `libva-devel`
+ > RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel`
 
 * AMD VA Drivers
    ```shell
-   sudo apt install mesa-amdgpu-va-drivers
+   sudo apt install libva2-amdgpu libva-amdgpu-drm2 libva-amdgpu-wayland2 libva-amdgpu-x11-2 mesa-amdgpu-va-drivers
    ```
+ > [!NOTE]
+ > RPM Packages for `RHEL`/`SLES` - `libva-amdgpu mesa-amdgpu-va-drivers`
 
 * CMake `3.5` or later
 
@@ -64,7 +66,6 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 >  sudo apt install libstdc++-12-dev
 >  ```
 >
-> * Additional RPM Packages required for `RHEL`/`SLES` - `libdrm-amdgpu mesa-amdgpu-dri-drivers`
 
 >[!NOTE]
 >
@@ -190,16 +191,3 @@ individual folders to build and run the samples.
 You can find rocJPEG Docker containers in our
 [GitHub repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).
 
-
-## Tested configurations
-
-* Linux
-  * Ubuntu - `20.04` / `22.04`
-  * RHEL - `8` / `9`
-* ROCm:
-  * rocm-core - `6.3.0.60300-14317`
-  * amdgpu-core - `6.3.60300-1798298`
-* libva-dev - `2.7.0-2` / `2.14.0-1`
-* mesa-amdgpu-va-drivers - `24.2.0.60300-1798298`
-* mesa-amdgpu-dri-drivers - `24.2.0.60300-1798298`
-* rocJPEG Setup Script - `V2.1.0`

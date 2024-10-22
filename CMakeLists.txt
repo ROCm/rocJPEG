@@ -201,16 +201,13 @@ if(HIP_FOUND AND Libva_FOUND)
   string(REGEX MATCH "Mariner" MARINER_FOUND ${OS_RELEASE})
 
   # Set the dependent packages
-  set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, libva2, libdrm-amdgpu1, mesa-amdgpu-va-drivers")
-  set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, libva, libdrm-amdgpu, mesa-amdgpu-va-drivers, mesa-amdgpu-dri-drivers")
-  if(SLES_FOUND OR MARINER_FOUND)
-    set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, libva2, libdrm-amdgpu, mesa-amdgpu-va-drivers, mesa-amdgpu-dri-drivers")
-  endif()
-  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-dev, pkg-config")
+  set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, libva2-amdgpu, libva-amdgpu-drm2, libva-amdgpu-wayland2, libva-amdgpu-x11-2, mesa-amdgpu-va-drivers")
+  set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, (libva >= 2.16.0 or libva2 >= 2.16.0 or libva-amdgpu), mesa-amdgpu-va-drivers")
+  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-amdgpu-dev, pkg-config")
   if(UBUNTU_22_FOUND)
     set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")
   endif()
-  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, libva-devel, pkg-config")
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, libva-amdgpu-devel, pkg-config")
 
   # '%{?dist}' breaks manual builds on debian systems due to empty Provides
   execute_process(

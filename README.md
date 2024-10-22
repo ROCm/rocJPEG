@@ -15,7 +15,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 ## Prerequisites
 
 * Linux distribution
-  * Ubuntu - `20.04` / `22.04`
+  * Ubuntu - `20.04` / `22.04` / `24.04`
   * RHEL - `8` / `9`
   * SLES - `15-SP5`
 
@@ -201,16 +201,3 @@ python3 -m sphinx -T -E -b html -d _build/doctrees -D language=en . _build/html
 For more information on documentation builds, refer to the
 [Building documentation](https://rocm.docs.amd.com/en/latest/contribute/building.html)
 page.
-
-## Tested configurations
-
-* Linux
-  * Ubuntu - `20.04` / `22.04`
-  * RHEL - `8` / `9`
-* ROCm:
-  * rocm-core - `6.3.0.60300-14317`
-  * amdgpu-core - `6.3.60300-1798298`
-* libva-dev - `2.7.0-2` / `2.14.0-1`
-* mesa-amdgpu-va-drivers - `24.2.0.60300-1798298`
-* mesa-amdgpu-dri-drivers - `24.2.0.60300-1798298`
-* rocJPEG Setup Script - `V2.1.0`

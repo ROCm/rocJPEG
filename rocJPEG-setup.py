@@ -29,7 +29,7 @@ else:
     import subprocess
 
 __copyright__ = "Copyright (c) 2024, AMD ROCm rocJPEG"
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 __email__ = "mivisionx.support@amd.com"
 __status__ = "Shipping"
 
@@ -100,9 +100,11 @@ linuxCMake = 'cmake'
 linuxSystemInstall_check = ''
 linuxFlag = ''
 sudoValidateOption= '-v'
+osUpdate = ''
 if "centos" in os_info_data or "redhat" in os_info_data:
     linuxSystemInstall = 'yum -y'
     linuxSystemInstall_check = '--nogpgcheck'
+    osUpdate = 'makecache'
     if "VERSION_ID=7" in os_info_data:
         linuxCMake = 'cmake3'
         platfromInfo = platfromInfo+'-redhat-7'
@@ -116,6 +118,7 @@ elif "Ubuntu" in os_info_data:
     linuxSystemInstall = 'apt-get -y'
     linuxSystemInstall_check = '--allow-unauthenticated'
     linuxFlag = '-S'
+    osUpdate = 'update'
     if "VERSION_ID=20" in os_info_data:
         platfromInfo = platfromInfo+'-Ubuntu-20'
     elif "VERSION_ID=22" in os_info_data:
@@ -128,14 +131,16 @@ elif "SLES" in os_info_data:
     linuxSystemInstall = 'zypper -n'
     linuxSystemInstall_check = '--no-gpg-checks'
     platfromInfo = platfromInfo+'-SLES'
+    osUpdate = 'refresh'
 elif "Mariner" in os_info_data:
     linuxSystemInstall = 'tdnf -y'
     linuxSystemInstall_check = '--nogpgcheck'
     platfromInfo = platfromInfo+'-Mariner'
     runtimeInstall = 'OFF'
+    osUpdate = 'makecache'
 else:
     print("\nrocJPEG Setup on "+platfromInfo+" is unsupported\n")
-    print("\nrocJPEG Setup Supported on: Ubuntu 20/22, RedHat 8/9, & SLES 15\n")
+    print("\nrocJPEG Setup Supported on: Ubuntu 20/22/24, RedHat 8/9, & SLES 15\n")
     exit(-1)
 
 # rocJPEG Setup
@@ -143,7 +148,7 @@ print("\nrocJPEG Setup on: "+platfromInfo+"\n")
 print("\nrocJPEG Dependencies Installation with rocJPEG-setup.py V-"+__version__+"\n")
 
 if userName == 'root':
-    ERROR_CHECK(os.system(linuxSystemInstall+' update'))
+    ERROR_CHECK(os.system(linuxSystemInstall+' '+osUpdate))
     ERROR_CHECK(os.system(linuxSystemInstall+' install sudo'))
 
 # source install - common package dependencies
@@ -187,7 +192,7 @@ runtimeRPMPackages = [
 ]
 
 # update
-ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +' '+linuxSystemInstall_check+' update'))
+ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +' '+linuxSystemInstall_check+' '+osUpdate))
 
 # common packages
 ERROR_CHECK(os.system('sudo '+sudoValidateOption))

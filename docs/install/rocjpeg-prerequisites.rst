@@ -18,7 +18,7 @@ rocJPEG can be installed on the following Linux environments:
 
 The following prerequisites are installed by the package installer. If you are building and installing using the source code, use the `rocJPEG-setup.py <https://github.com/ROCm/rocJPEG/blob/develop/rocJPEG-setup.py>`_ setup script available in the rocJPEG GitHub repository to install these prerequisites. 
 
-* Libva, an implementation for Video Acceleration API (VA-API), version 2.16 or later
+* Libva, an implementation for Video Acceleration API (VA-API), version 1.16 or later
 * AMD VA Drivers
 * CMake version 3.5 or later
 * pkg-config

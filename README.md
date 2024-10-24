@@ -32,7 +32,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
-* Video Acceleration API (VA-API) Version `2.16.0+` - `Libva` is an implementation for VA-API
+* Video Acceleration API (VA-API) Version `1.16.0+` - `Libva` is an implementation for VA-API
    ```shell
    sudo apt install libva-amdgpu-dev
    ```

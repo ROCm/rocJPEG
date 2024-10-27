@@ -53,12 +53,6 @@ void RocJpegVaapiMemoryPool::ReleaseResources() {
     hipError_t hip_status;
     for (auto& pair : mem_pool_) {
         for (auto& entry : pair.second) {
-            if (entry.va_context_id != 0) {
-                va_status = vaDestroyContext(va_display_, entry.va_context_id);
-                if (va_status != VA_STATUS_SUCCESS) {
-                    ERR("ERROR: vaDestroyContext failed!");
-                }
-            }
             if (!entry.va_surface_ids.empty()) {
                 va_status = vaDestroySurfaces(va_display_, entry.va_surface_ids.data(), entry.va_surface_ids.size());
                 if (va_status != VA_STATUS_SUCCESS) {
@@ -128,10 +122,6 @@ bool RocJpegVaapiMemoryPool::DeleteIdleEntry() {
         auto it = std::find_if(pair.second.begin(), pair.second.end(), [](const RocJpegVaapiMemPoolEntry& entry) {return entry.entry_status == kIdle;});
         if (it != pair.second.end()) {
             auto index = std::distance(pair.second.begin(), it);
-            if (pair.second[index].va_context_id != 0) {
-                CHECK_VAAPI(vaDestroyContext(va_display_, pair.second[index].va_context_id));
-                pair.second[index].va_context_id = 0;
-            }
             if (!pair.second[index].va_surface_ids.empty()) {
                 CHECK_VAAPI(vaDestroySurfaces(va_display_, pair.second[index].va_surface_ids.data(), pair.second[index].va_surface_ids.size()));
                 std::fill(pair.second[index].va_surface_ids.begin(), pair.second[index].va_surface_ids.end(), 0);
@@ -196,7 +186,7 @@ RocJpegVaapiMemPoolEntry RocJpegVaapiMemoryPool::GetEntry(uint32_t surface_forma
             return entry;
         }
     }
-    return {0, 0, 0 , kIdle, {}, {}};
+    return {0, 0, kIdle, {}, {}};
 }
 
 bool RocJpegVaapiMemoryPool::FindSurfaceId(VASurfaceID surface_id) {
@@ -337,6 +327,18 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
             ERR("Error: Failed to destroy VAAPI buffer");
         }
         VAStatus va_status;
+        if (va_surface_id_ != 0) {
+            va_status = vaDestroySurfaces(va_display_, &va_surface_id_, 1);
+            if (va_status != VA_STATUS_SUCCESS) {
+                ERR("ERROR: vaDestroySurfaces failed!");
+            }
+        }
+        if (va_context_id_ != 0) {
+            va_status = vaDestroyContext(va_display_, va_context_id_);
+            if (va_status != VA_STATUS_SUCCESS) {
+                ERR("ERROR: vaDestroyContext failed!");
+            }
+        }
         if (va_config_id_) {
             va_status = vaDestroyConfig(va_display_, va_config_id_);
             if (va_status != VA_STATUS_SUCCESS) {
@@ -407,6 +409,7 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     }
     CHECK_ROCJPEG(InitVAAPI(drm_node));
     CHECK_ROCJPEG(CreateDecoderConfig());
+    CHECK_ROCJPEG(CreateDecoderContext());
 
     vaapi_mem_pool_->SetVaapiDisplay(va_display_);
 
@@ -496,6 +499,33 @@ RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
     } else {
         return ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED;
     }
+}
+
+/**
+ * @brief Creates the decoder context for the VAAPI-based JPEG decoder.
+ *
+ * This function initializes the VAAPI decoder context.
+ *
+ * @return RocJpegStatus indicating the success or failure of the context creation.
+ */
+RocJpegStatus RocJpegVappiDecoder::CreateDecoderContext() {
+
+    uint32_t surface_format;
+    surface_format = VA_RT_FORMAT_YUV420;
+
+    VASurfaceAttrib surface_attrib;
+    surface_attrib.type = VASurfaceAttribPixelFormat;
+    surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
+    surface_attrib.value.type = VAGenericValueTypeInteger;
+    surface_attrib.value.value.i = VA_FOURCC_NV12;
+
+    // Create a dummy surface with a resolution of min_picture_width_ x min_picture_height_ supported by the hardware.
+    // This surface is only used to create the context for the decoding pipeline, as context creation requires an initial surface.
+    // During the actual submission, the appropriate surfaces with the correct resolution will be created.
+    CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, min_picture_width_, min_picture_height_, &va_surface_id_, 1, &surface_attrib, 1));
+    CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, min_picture_width_, min_picture_height_, VA_PROGRESSIVE, &va_surface_id_, 1, &va_context_id_));
+
+    return ROCJPEG_STATUS_SUCCESS;
 }
 
 /**
@@ -633,38 +663,34 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
 
     uint32_t surface_pixel_format = static_cast<uint32_t>(surface_attrib.value.value.i);
     RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
-    VAContextID va_context_id;
-    if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
+    if (mem_pool_entry.va_surface_ids.empty()) {
         mem_pool_entry.va_surface_ids.resize(1);
         CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, mem_pool_entry.va_surface_ids.data(), 1, &surface_attrib, 1));
-        CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, VA_PROGRESSIVE, mem_pool_entry.va_surface_ids.data(), 1, &va_context_id));
         mem_pool_entry.image_width = jpeg_stream_params->picture_parameter_buffer.picture_width;
         mem_pool_entry.image_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
-        mem_pool_entry.va_context_id = va_context_id;
         mem_pool_entry.hip_interops.resize(1);
         surface_id = mem_pool_entry.va_surface_ids[0];
         mem_pool_entry.entry_status = kBusy;
         CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(surface_pixel_format, mem_pool_entry));
     } else {
         surface_id = mem_pool_entry.va_surface_ids[0];
-        va_context_id = mem_pool_entry.va_context_id;
     }
 
     CHECK_ROCJPEG(DestroyDataBuffers());
 
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->huffman_table_buffer, &va_huffmantable_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->slice_parameter_buffer, &va_slice_param_buf_id_));
-    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceDataBufferType, jpeg_stream_params->slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_stream_params->slice_data_buffer, &va_slice_data_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->huffman_table_buffer, &va_huffmantable_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_stream_params->slice_parameter_buffer, &va_slice_param_buf_id_));
+    CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceDataBufferType, jpeg_stream_params->slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_stream_params->slice_data_buffer, &va_slice_data_buf_id_));
 
-    CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id,  surface_id));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_picture_parameter_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_quantization_matrix_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_huffmantable_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
-    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
-    CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
+    CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id_,  surface_id));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_picture_parameter_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_quantization_matrix_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_huffmantable_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_param_buf_id_, 1));
+    CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_data_buf_id_, 1));
+    CHECK_VAAPI(vaEndPicture(va_display_, va_context_id_));
 
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -757,17 +783,14 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
         surface_attrib.value.value.i = key.pixel_format;
 
         RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height, indices.size());
-        VAContextID va_context_id;
-        if (mem_pool_entry.va_context_id == 0 && mem_pool_entry.va_surface_ids.empty()) {
+        if (mem_pool_entry.va_surface_ids.empty()) {
             mem_pool_entry.va_surface_ids.resize(indices.size());
             CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), &surface_attrib, 1));
-            CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, key.width, key.height, VA_PROGRESSIVE, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), &va_context_id));
             mem_pool_entry.image_width = key.width;
             mem_pool_entry.image_height = key.height;
             for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
                 surface_ids[indices[i]] = mem_pool_entry.va_surface_ids[i];
             }
-            mem_pool_entry.va_context_id = va_context_id;
             mem_pool_entry.hip_interops.resize(indices.size());
             mem_pool_entry.entry_status = kBusy;
             CHECK_ROCJPEG(vaapi_mem_pool_->AddPoolEntry(key.pixel_format, mem_pool_entry));
@@ -775,7 +798,6 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
             for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
                 surface_ids[indices[i]] = mem_pool_entry.va_surface_ids[i];
             }
-            va_context_id = mem_pool_entry.va_context_id;
         }
 
         for (int idx : indices) {
@@ -795,19 +817,19 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
 #endif
             }
             CHECK_ROCJPEG(DestroyDataBuffers());
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].huffman_table_buffer, &va_huffmantable_buf_id_));
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].slice_parameter_buffer, &va_slice_param_buf_id_));
-            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id, VASliceDataBufferType, jpeg_streams_params[idx].slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_streams_params[idx].slice_data_buffer, &va_slice_data_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAPictureParameterBufferType, sizeof(VAPictureParameterBufferJPEGBaseline), 1, picture_parameter_buffer, &va_picture_parameter_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAIQMatrixBufferType, sizeof(VAIQMatrixBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].quantization_matrix_buffer, &va_quantization_matrix_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VAHuffmanTableBufferType, sizeof(VAHuffmanTableBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].huffman_table_buffer, &va_huffmantable_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceParameterBufferType, sizeof(VASliceParameterBufferJPEGBaseline), 1, (void *)&jpeg_streams_params[idx].slice_parameter_buffer, &va_slice_param_buf_id_));
+            CHECK_VAAPI(vaCreateBuffer(va_display_, va_context_id_, VASliceDataBufferType, jpeg_streams_params[idx].slice_parameter_buffer.slice_data_size, 1, (void *)jpeg_streams_params[idx].slice_data_buffer, &va_slice_data_buf_id_));
 
-            CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id, surface_ids[idx]));
-            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_picture_parameter_buf_id_, 1));
-            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_quantization_matrix_buf_id_, 1));
-            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_huffmantable_buf_id_, 1));
-            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_param_buf_id_, 1));
-            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id, &va_slice_data_buf_id_, 1));
-            CHECK_VAAPI(vaEndPicture(va_display_, va_context_id));
+            CHECK_VAAPI(vaBeginPicture(va_display_, va_context_id_, surface_ids[idx]));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_picture_parameter_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_quantization_matrix_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_huffmantable_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_param_buf_id_, 1));
+            CHECK_VAAPI(vaRenderPicture(va_display_, va_context_id_, &va_slice_data_buf_id_, 1));
+            CHECK_VAAPI(vaEndPicture(va_display_, va_context_id_));
         }
     }
 

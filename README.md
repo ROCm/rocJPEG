@@ -7,10 +7,6 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 >[!Note]
 >The published documentation that includes installation and build instructions is available at [rocJPEG](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/) in an organized, easy-to-read format, with search and a table of contents. The documentation source files reside in the `docs` folder of this repository. As with all ROCm projects, the documentation is open source. For more information on contributing to the documentation, see [Contribute to ROCm documentation](https://rocm.docs.amd.com/en/latest/contribute/contributing.html)
 
-# Docker
-
-You can find rocJPEG Docker containers [under `develop/docker` in this repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).
-
 # Installation folders
 
 * Libraries are located in: `/opt/rocm/lib`
@@ -40,3 +36,7 @@ mkdir rocjpeg-test && cd rocjpeg-test
 cmake /opt/rocm/share/rocjpeg/test/
 ctest -VV
 ```
+
+# Docker
+
+You can find rocJPEG Docker containers [under `develop/docker` in this repository](https://github.com/ROCm/rocJPEG/tree/develop/docker).

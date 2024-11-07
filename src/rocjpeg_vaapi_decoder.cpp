@@ -293,8 +293,6 @@ RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id},
     va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {
         vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
                           {"gfx90a", {2, false, false}},
-                          {"gfx940", {24, true, true}},
-                          {"gfx941", {32, true, true}},
                           {"gfx942_mi300a", {24, true, true}},
                           {"gfx942_mi300x", {32, true, true}},
                           {"gfx1030", {1, false, false}},
@@ -384,9 +382,7 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     GetVisibleDevices(visible_devices);
 
     int offset = 0;
-    if (gcn_arch_name_base.compare("gfx940") == 0 ||
-        gcn_arch_name_base.compare("gfx941") == 0 ||
-        gcn_arch_name_base.compare("gfx942") == 0) {
+    if (gcn_arch_name_base.compare("gfx942") == 0) {
             std::vector<ComputePartition> current_compute_partitions;
             GetCurrentComputePartition(current_compute_partitions);
             if (current_compute_partitions.empty()) {

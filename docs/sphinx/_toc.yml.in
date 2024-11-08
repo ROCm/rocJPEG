@@ -24,6 +24,12 @@ subtrees:
   - file: how-to/rocjpeg-decoding-a-jpeg-stream.rst
     title: Decoding a JPEG stream with rocJPEG
 
+- caption: Samples
+  entries:
+  - url: https://github.com/ROCm/rocJPEG/tree/develop/samples
+    title: rocJPEG samples on GitHub
+
+    
 - caption: Reference
   entries:
   - file: reference/rocjpeg-formats-and-architectures.rst
@@ -34,11 +40,6 @@ subtrees:
     title: rocJPEG functions
   - file: doxygen/html/annotated
     title: rocJPEG data structures
-
-- caption: Samples
-  entries:
-  - url: https://github.com/ROCm/rocJPEG/tree/develop/samples
-    title: rocJPEG samples on GitHub
 
 - caption: About
   entries:

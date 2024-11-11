@@ -107,13 +107,12 @@ typedef enum {
  * @brief Structure representing an entry in the RocJpegVaapiMemPool.
  *
  * This structure holds information about a memory pool entry used by the RocJpegVaapiDecoder.
- * It contains the image width and height, the VA context ID, the entry status, an array of VA surface IDs,
+ * It contains the image width and height, the entry status, an array of VA surface IDs,
  * and an array of HipInteropDeviceMem objects.
  */
 struct RocJpegVaapiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
-    VAContextID va_context_id;
     MemPoolEntryStatus entry_status;
     std::vector<VASurfaceID> va_surface_ids;
     std::vector<HipInteropDeviceMem> hip_interops;
@@ -346,6 +345,8 @@ private:
     uint32_t max_picture_width_; // The maximum width of the picture
     uint32_t max_picture_height_; // The maximum height of the picture
     VADisplay va_display_; // The VAAPI display
+    VAContextID va_context_id_; // The VAAPI context ID
+    VASurfaceID va_surface_id_; // The VAAPI surface IDs
     std::vector<VAConfigAttrib> va_config_attrib_; // The VAAPI configuration attributes
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile
@@ -370,6 +371,16 @@ private:
      * @return The status of the configuration creation.
      */
     RocJpegStatus CreateDecoderConfig();
+
+    /**
+     * @brief Creates the decoder context.
+     *
+     * This function initializes and sets up the necessary context for decoding
+     * JPEG images using the VA-API.
+     *
+     * @return RocJpegStatus indicating the success or failure of the context creation.
+     */
+    RocJpegStatus CreateDecoderContext();
 
     /**
      * @brief Destroys the data buffers.

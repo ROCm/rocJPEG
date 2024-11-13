@@ -96,7 +96,7 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fPIC")
 endif()
 message("-- ${BoldBlue}rocJPEG Build Type -- ${CMAKE_BUILD_TYPE}${ColourReset}")
-set(DEFAULT_AMDGPU_TARGETS "gfx908;gfx90a;gfx940;gfx941;gfx942;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201")
+set(DEFAULT_AMDGPU_TARGETS "gfx908;gfx90a;;gfx942;gfx1030;gfx1031;gfx1032;gfx1100;gfx1101;gfx1102;gfx1200;gfx1201")
 
 # Set AMDGPU_TARGETS
 if(DEFINED ENV{AMDGPU_TARGETS})

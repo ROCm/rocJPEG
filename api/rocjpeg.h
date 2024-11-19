@@ -122,20 +122,20 @@ typedef struct {
  * - `ROCJPEG_OUTPUT_FORMAT_MAX`: Maximum allowed value for the output format.
  */
 typedef enum {
-    /**< return native unchanged decoded YUV image from the VCN JPEG deocder.
+    /**< return native unchanged decoded YUV image from the VCN JPEG decoder.
          For ROCJPEG_CSS_444 and ROCJPEG_CSS_440 write Y, U, and V to first, second, and third channels of RocJpegImage
          For ROCJPEG_CSS_422 write YUYV (packed) to first channel of RocJpegImage
          For ROCJPEG_CSS_420 write Y to first channel and UV (interleaved) to second channel of RocJpegImage
          For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_NATIVE = 0,
-    /**< extract Y, U, and V channels from the decoded YUV image from the VCN JPEG deocder and write into first, second, and thrid channel of RocJpegImage.
+    /**< extract Y, U, and V channels from the decoded YUV image from the VCN JPEG decoder and write into first, second, and third channel of RocJpegImage.
          For ROCJPEG_CSS_400 write Y to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_YUV_PLANAR = 1,
     /**< return luma component (Y) and write to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_Y = 2,
     /**< convert to interleaved RGB using VCN JPEG decoder (on MI300+) or using HIP kernels and write to first channel of RocJpegImage */
     ROCJPEG_OUTPUT_RGB = 3,
-    /**< convert to RGB PLANAR using VCN JPEG decoder (on MI300+) or HIP kernels and write to first, second, and thrid channel of RocJpegImage. */
+    /**< convert to RGB PLANAR using VCN JPEG decoder (on MI300+) or HIP kernels and write to first, second, and third channel of RocJpegImage. */
     ROCJPEG_OUTPUT_RGB_PLANAR = 4,
     ROCJPEG_OUTPUT_FORMAT_MAX = 5 /**< maximum allowed value */
 } RocJpegOutputFormat;
@@ -145,7 +145,7 @@ typedef enum {
  * @ingroup group_amd_rocjpeg
  * @brief Structure containing parameters for JPEG decoding.
  *
- * This structure defines the parameters for decoding a JPEG image using the RocJpeg library.
+ * This structure defines the parameters for decoding a JPEG image using the rocJpeg library.
  * It specifies the output format, crop rectangle, and target dimensions for the decoded image.
  * Note that if both the crop rectangle and target dimensions are defined, cropping is done first,
  * followed by resizing the resulting ROI to the target dimension.
@@ -168,9 +168,9 @@ typedef struct {
 /**
  * @enum RocJpegBackend
  * @ingroup group_amd_rocjpeg
- * @brief The backend options for the RocJpeg library.
+ * @brief The backend options for the rocJpeg library.
  *
- * This enum defines the available backend options for the RocJpeg library.
+ * This enum defines the available backend options for the rocJpeg library.
  * The backend can be either hardware or hybrid.
  */
 typedef enum {
@@ -179,7 +179,7 @@ typedef enum {
 } RocJpegBackend;
 
 /**
- * @brief A handle representing a RocJpeg stream.
+ * @brief A handle representing a RocJpegStream instance.
  *
  * The `RocJpegStreamHandle` is a pointer type used to represent a RocJpegStream instance.
  * It is used as a handle to parse and store various parameters from a JPEG stream.
@@ -237,7 +237,7 @@ RocJpegStatus ROCJPEGAPI rocJpegStreamDestroy(RocJpegStreamHandle jpeg_stream_ha
  * @brief A handle representing a RocJpeg instance.
  *
  * The `RocJpegHandle` is a pointer type used to represent a RocJpeg instance.
- * It is used as a handle to perform various operations on the RocJpeg library.
+ * It is used as a handle to perform various operations on the rocJpeg library.
  */
 typedef void *RocJpegHandle;
 

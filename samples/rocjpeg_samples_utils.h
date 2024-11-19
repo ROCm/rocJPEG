@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <algorithm>
 #if __cplusplus >= 201703L && __has_include(<filesystem>)
     #include <filesystem>
     namespace fs = std::filesystem;
@@ -127,7 +128,7 @@ public:
                 std::string selected_output_format = argv[i];
                 if (selected_output_format == "native") {
                     decode_params.output_format = ROCJPEG_OUTPUT_NATIVE;
-                } else if (selected_output_format == "yuv") {
+                } else if (selected_output_format == "yuv_planar") {
                     decode_params.output_format = ROCJPEG_OUTPUT_YUV_PLANAR;
                 } else if (selected_output_format == "y") {
                     decode_params.output_format = ROCJPEG_OUTPUT_Y;
@@ -375,12 +376,12 @@ public:
             case ROCJPEG_OUTPUT_RGB:
                 num_channels = 1;
                 output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
-                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
                 num_channels = 3;
                 output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]);
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
                 break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
@@ -619,6 +620,7 @@ public:
     }
 
 private:
+    static const int mem_alignment = 4 * 1024 * 1024;
     /**
      * @brief Shows the help message and exits.
      *
@@ -632,9 +634,9 @@ private:
         "-i     [input path] - input path to a single JPEG image or a directory containing JPEG images - [required]\n"
         "-be    [backend] - select rocJPEG backend (0 for hardware-accelerated JPEG decoding using VCN,\n"
         "                                           1 for hybrid JPEG decoding using CPU and GPU HIP kernels (currently not supported)) [optional - default: 0]\n"
-        "-fmt   [output format] - select rocJPEG output format for decoding, one of the [native, yuv, y, rgb, rgb_planar] - [optional - default: native]\n"
+        "-fmt   [output format] - select rocJPEG output format for decoding, one of the [native, yuv_planar, y, rgb, rgb_planar] - [optional - default: native]\n"
         "-o     [output path] - path to an output file or a path to an existing directory - write decoded images to a file or an existing directory based on selected output format - [optional]\n"
-        "-crop  -crop [crop rectangle] - crop rectangle for output in a comma-separated format: left,top,right,bottom - [optional]\n"
+        "-crop  [crop rectangle] - crop rectangle for output in a comma-separated format: left,top,right,bottom - [optional]\n"
         "-d     [device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]\n";
         if (show_threads) {
             std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";
@@ -643,6 +645,18 @@ private:
             std::cout << "-b     [batch_size] - decode images from input by batches of a specified size - [optional - default: 2]\n";
         }
         exit(0);
+    }
+    /**
+     * @brief Aligns a value to a specified alignment.
+     *
+     * This function takes a value and aligns it to the specified alignment. It returns the aligned value.
+     *
+     * @param value The value to be aligned.
+     * @param alignment The alignment value.
+     * @return The aligned value.
+     */
+    static inline int align(int value, int alignment) {
+        return (value + alignment - 1) & ~(alignment - 1);
     }
 };
 #endif //ROC_JPEG_SAMPLES_COMMON

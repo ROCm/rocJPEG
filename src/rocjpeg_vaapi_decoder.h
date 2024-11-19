@@ -107,13 +107,12 @@ typedef enum {
  * @brief Structure representing an entry in the RocJpegVaapiMemPool.
  *
  * This structure holds information about a memory pool entry used by the RocJpegVaapiDecoder.
- * It contains the image width and height, the VA context ID, the entry status, an array of VA surface IDs,
+ * It contains the image width and height, the entry status, an array of VA surface IDs,
  * and an array of HipInteropDeviceMem objects.
  */
 struct RocJpegVaapiMemPoolEntry {
     uint32_t image_width;
     uint32_t image_height;
-    VAContextID va_context_id;
     MemPoolEntryStatus entry_status;
     std::vector<VASurfaceID> va_surface_ids;
     std::vector<HipInteropDeviceMem> hip_interops;
@@ -198,6 +197,21 @@ class RocJpegVaapiMemoryPool {
         VADisplay va_display_; // The VADisplay associated with the memory pool.
         uint32_t max_pool_size_; // The maximum pool size of the memory pool (mem_pool_) per entry.
         std::unordered_map<uint32_t, std::vector<RocJpegVaapiMemPoolEntry>> mem_pool_; // The memory pool.
+        /**
+         * @brief Retrieves the total size of the memory pool.
+         *
+         * @return The total size of the memory pool in bytes.
+         */
+        size_t GetTotalMemPoolSize() const;
+        /**
+         * @brief  Deletes an idle entry from the memory pool.
+         *
+         * This function is responsible for removing an idle entry from the memory pool.
+         * It ensures that resources associated with the idle entry are properly released.
+         *
+         * @return true if the idle entry was successfully deleted, false otherwise.
+         */
+        bool DeleteIdleEntry();
 };
 
 /**
@@ -331,6 +345,8 @@ private:
     uint32_t max_picture_width_; // The maximum width of the picture
     uint32_t max_picture_height_; // The maximum height of the picture
     VADisplay va_display_; // The VAAPI display
+    VAContextID va_context_id_; // The VAAPI context ID
+    VASurfaceID va_surface_id_; // The VAAPI surface IDs
     std::vector<VAConfigAttrib> va_config_attrib_; // The VAAPI configuration attributes
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile
@@ -355,6 +371,16 @@ private:
      * @return The status of the configuration creation.
      */
     RocJpegStatus CreateDecoderConfig();
+
+    /**
+     * @brief Creates the decoder context.
+     *
+     * This function initializes and sets up the necessary context for decoding
+     * JPEG images using the VA-API.
+     *
+     * @return RocJpegStatus indicating the success or failure of the context creation.
+     */
+    RocJpegStatus CreateDecoderContext();
 
     /**
      * @brief Destroys the data buffers.

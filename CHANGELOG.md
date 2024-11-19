@@ -1,39 +1,26 @@
 # rocJPEG changelog
 
 Documentation for rocJPEG is available at
-[https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](TBD)
+[https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
-## rocJPEG 0.3.0 (Unreleased)
-
-## Additions
-
-* Changelog.md
-
-## Optimizations
-
-* Setup Script - Error Check install & cleanup
+## rocJPEG 0.6.0
 
 ### Changes
 
-* Dependencies - Updates to core dependencies
-* LibVA Headers - Use public headers
-* mesa-amdgpu-va-drivers - RPM Package available on RPM from ROCm 6.2
-* add the RocJpegDecodeParams struct for passing the decode parameters
-
-### Fixes
-
-* Package deps
-* RHEL/SLES - Additional required packages `mesa-amdgpu-dri-drivers libdrm-amdgpu`
-
-### Tested configurations
-
-* Linux
-  * Ubuntu - `20.04` / `22.04`
-  * RHEL - `8` / `9`
-* ROCm:
-  * rocm-core - `6.1.0.60100-64`
-  * amdgpu-core - `1:6.1.60100-1741643`
-* libva-dev - `2.7.0-2` / `2.14.0-1`
-* mesa-amdgpu-va-drivers - `1:24.1.0`
-* mesa-amdgpu-dri-drivers - `24.1.0.60200`
-* rocJPEG Setup Script - `V2.1.0`
+* Supported initial enablement of the rocJPEG library
+* Supported JPEG chroma subsampling:
+  * YUV 4:4:4
+  * YUV 4:4:0
+  * YUV 4:2:2
+  * YUV 4:2:0
+  * YUV 4:0:0
+* Supported various output image format:
+  * Native (i.e., native unchanged output from VCN Hardware, it can be either packed YUV or planar YUV)​
+  * YUV planar​
+  * Y only​
+  * RGB​
+  * RGB planar
+* Supported single-image and batch-image decoding​
+* Supported Different partition modes on MI300 series​
+* Supported region-of-interest (ROI) decoding​
+* Supported color space conversion from YUV to RGB

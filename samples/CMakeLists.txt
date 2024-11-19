@@ -43,7 +43,7 @@ add_test(
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv_planar
 )
 
 add_test(
@@ -127,7 +127,7 @@ add_test(
                               "${CMAKE_CURRENT_BINARY_DIR}/jpegDecode"
             --build-generator "${CMAKE_GENERATOR}"
             --test-command "jpegdecode"
-            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv -crop 960,540,2880,1620
+            -i ${CMAKE_SOURCE_DIR}/data/images/ -fmt yuv_planar -crop 960,540,2880,1620
 )
 
 add_test(

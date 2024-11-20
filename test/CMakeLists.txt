@@ -115,11 +115,11 @@ add_test(
     jpeg-decode-threads-fmt-native
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecodeMultiThreads"
-                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeMultiThreads"
+            --build-and-test "${ROCM_PATH}/share/rocjpeg/samples/jpegDecodePerf"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodePerf"
             --build-generator "${CMAKE_GENERATOR}"
-            --test-command "jpegdecodemultithreads"
-            -i ${ROCM_PATH}/share/rocjpeg/images/ -t 2
+            --test-command "jpegdecodeperf"
+            -i ${ROCM_PATH}/share/rocjpeg/images/
 )
 
 add_test(

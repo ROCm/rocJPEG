@@ -51,7 +51,9 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
   ```shell
   sudo apt install cmake
   ```
-
+ 
+* AMD Clang++ Version 18.0.0 or later - installed with ROCm
+  
 * pkg-config
 
   ```shell

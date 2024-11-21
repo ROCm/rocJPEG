@@ -22,8 +22,27 @@ THE SOFTWARE.
 
 #include "../rocjpeg_samples_utils.h"
 
-void ThreadFunction(std::vector<std::string>& file_paths, RocJpegHandle rocjpeg_handle, std::vector<RocJpegStreamHandle>& rocjpeg_stream_handles, RocJpegUtils rocjpeg_utils,
-    RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *total_decode_time_in_milli_sec, double *image_size_in_mpixels_per_sec_all, double *images_per_sec,
+/**
+ * @brief Decodes a batch of JPEG images and optionally saves the decoded images.
+ *
+ * @param file_paths A vector of file paths to the JPEG images to be decoded.
+ * @param rocjpeg_handle The handle to the RocJpeg library.
+ * @param rocjpeg_stream_handles A vector of stream handles for the JPEG images.
+ * @param rocjpeg_utils Utility functions for RocJpeg operations.
+ * @param decode_params Parameters for decoding the JPEG images.
+ * @param save_images A boolean flag indicating whether to save the decoded images.
+ * @param output_file_path The file path where the decoded images will be saved.
+ * @param num_decoded_images A pointer to a variable that will store the number of successfully decoded images.
+ * @param image_size_in_mpixels_per_sec_all A pointer to a variable that will store the decoding speed in megapixels per second.
+ * @param images_per_sec A pointer to a variable that will store the number of images decoded per second.
+ * @param num_bad_jpegs A pointer to a variable that will store the number of bad JPEG images.
+ * @param num_jpegs_with_411_subsampling A pointer to a variable that will store the number of JPEG images with 4:1:1 subsampling.
+ * @param num_jpegs_with_unknown_subsampling A pointer to a variable that will store the number of JPEG images with unknown subsampling.
+ * @param num_jpegs_with_unsupported_resolution A pointer to a variable that will store the number of JPEG images with unsupported resolution.
+ * @param batch_size The number of images to be processed in each batch.
+ */
+void DecodeImages(std::vector<std::string>& file_paths, RocJpegHandle rocjpeg_handle, std::vector<RocJpegStreamHandle>& rocjpeg_stream_handles, RocJpegUtils rocjpeg_utils,
+    RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, uint64_t *num_decoded_images, double *image_size_in_mpixels_per_sec_all, double *images_per_sec,
     uint64_t *num_bad_jpegs, uint64_t *num_jpegs_with_411_subsampling, uint64_t *num_jpegs_with_unknown_subsampling, uint64_t *num_jpegs_with_unsupported_resolution, int batch_size) {
 
     bool is_roi_valid = false;
@@ -52,6 +71,7 @@ void ThreadFunction(std::vector<std::string>& file_paths, RocJpegHandle rocjpeg_
     std::vector<RocJpegImage> valid_output_images;
     std::vector<std::string> valid_base_file_names;
     double image_size_in_mpixels_all = 0;
+    double total_decode_time_in_milli_sec = 0;
 
     batch_images.resize(batch_size);
     output_images.resize(batch_size);
@@ -199,13 +219,13 @@ void ThreadFunction(std::vector<std::string>& file_paths, RocJpegHandle rocjpeg_
             }
         }
 
-        *total_decode_time_in_milli_sec += time_per_batch_in_milli_sec;
+        total_decode_time_in_milli_sec += time_per_batch_in_milli_sec;
         image_size_in_mpixels_all += image_size_in_mpixels;
 
         bad_image_indices.clear();
     }
 
-    double avg_time_per_image = *total_decode_time_in_milli_sec / *num_decoded_images;
+    double avg_time_per_image = total_decode_time_in_milli_sec / *num_decoded_images;
     *images_per_sec = 1000 / avg_time_per_image;
     *image_size_in_mpixels_per_sec_all = *images_per_sec * (image_size_in_mpixels_all / *num_decoded_images);
 
@@ -233,7 +253,6 @@ int main(int argc, char **argv) {
     std::vector<std::vector<RocJpegStreamHandle>> rocjpeg_streams;
     std::vector<uint64_t> num_decoded_images_per_thread;
     std::vector<double> image_size_in_mpixels_per_sec_per_thread;
-    std::vector<double> decode_time_per_thread;
     std::vector<double> images_per_sec_per_thread;
     std::vector<uint64_t> num_bad_jpegs;
     std::vector<uint64_t> num_jpegs_with_411_subsampling;
@@ -270,7 +289,6 @@ int main(int argc, char **argv) {
     }
     num_decoded_images_per_thread.resize(num_threads, 0);
     image_size_in_mpixels_per_sec_per_thread.resize(num_threads, 0);
-    decode_time_per_thread.resize(num_threads, 0);
     images_per_sec_per_thread.resize(num_threads, 0);
     num_bad_jpegs.resize(num_threads, 0);
     num_jpegs_with_411_subsampling.resize(num_threads, 0);
@@ -291,8 +309,8 @@ int main(int argc, char **argv) {
 
     std::cout << "Decoding started with " << num_threads << " threads, please wait!" << std::endl;
     for (int i = 0; i < num_threads; ++i) {
-        thread_pool.ExecuteJob(std::bind(ThreadFunction, std::ref(jpeg_files_per_thread[i]), rocjpeg_handles[i], std::ref(rocjpeg_streams[i]), rocjpeg_utils, std::ref(decode_params), save_images,
-            std::ref(output_file_path), &num_decoded_images_per_thread[i], &decode_time_per_thread[i], &image_size_in_mpixels_per_sec_per_thread[i], &images_per_sec_per_thread[i], &num_bad_jpegs[i],
+        thread_pool.ExecuteJob(std::bind(DecodeImages, std::ref(jpeg_files_per_thread[i]), rocjpeg_handles[i], std::ref(rocjpeg_streams[i]), rocjpeg_utils, std::ref(decode_params), save_images,
+            std::ref(output_file_path), &num_decoded_images_per_thread[i], &image_size_in_mpixels_per_sec_per_thread[i], &images_per_sec_per_thread[i], &num_bad_jpegs[i],
             &num_jpegs_with_411_subsampling[i], &num_jpegs_with_unknown_subsampling[i], &num_jpegs_with_unsupported_resolution[i], batch_size));
     }
     thread_pool.JoinThreads();

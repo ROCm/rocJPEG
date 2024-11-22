@@ -18,7 +18,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 ## Prerequisites
 
 * Linux distribution
-  * Ubuntu - `20.04` / `22.04` / `24.04`
+  * Ubuntu - `22.04` / `24.04`
   * RHEL - `8` / `9`
   * SLES - `15-SP5`
 
@@ -32,19 +32,20 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 > [!IMPORTANT]
 > `sudo amdgpu-install --usecase=rocm`
 
-* Video Acceleration API (VA-API) Version `2.16.0+` - `Libva` is an implementation for VA-API
-   ```shell
-   sudo apt install libva-amdgpu-dev
-   ```
- > [!NOTE]
- > RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel`
+* Video Acceleration API - `libva-amdgpu-dev` is an AMD implementation for VA-API
+  ```shell
+  sudo apt install libva-amdgpu-dev
+  ```
+> [!NOTE]
+> * RPM Packages for `RHEL`/`SLES` - `libva-amdgpu-devel`
+> * `libva-amdgpu` is strongly recommended over system `libva` as it is used for building mesa-amdgpu-va-driver
 
 * AMD VA Drivers
-   ```shell
-   sudo apt install libva2-amdgpu libva-amdgpu-drm2 libva-amdgpu-wayland2 libva-amdgpu-x11-2 mesa-amdgpu-va-drivers
-   ```
- > [!NOTE]
- > RPM Packages for `RHEL`/`SLES` - `libva-amdgpu mesa-amdgpu-va-drivers`
+  ```shell
+  sudo apt install libva2-amdgpu libva-amdgpu-drm2 libva-amdgpu-wayland2 libva-amdgpu-x11-2 mesa-amdgpu-va-drivers
+  ```
+> [!NOTE]
+> RPM Packages for `RHEL`/`SLES` - `libva-amdgpu mesa-amdgpu-va-drivers`
 
 * CMake `3.10` or later
 
@@ -72,7 +73,6 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 >[!NOTE]
 >
 > * All package installs are shown with the `apt` package manager. Use the appropriate package manager for your operating system.
-> * To install rocJPEG with minimum requirements, follow the [quick-start](./docs/install/quick-start.rst) instructions
 
 ### Prerequisites setup script for Linux
 
@@ -95,7 +95,8 @@ The installation process uses the following steps:
 
 * Install ROCm `6.3.0` or later with [amdgpu-install](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/how-to/amdgpu-install.html) with `--usecase=rocm`
 
-* Use either [Package install](#package-install) or [Source install](#source-install) as described below.
+>[!IMPORTANT]
+> Use **either** [package install](#package-install) **or** [source install](#source-install) as described below.
 
 ### Package install
 

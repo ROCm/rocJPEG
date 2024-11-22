@@ -84,14 +84,14 @@ add_test(
 
 add_test(
   NAME
-  jpeg-decode-threads-fmt-native
+  jpeg-decode-perf-fmt-native
   COMMAND
     "${CMAKE_CTEST_COMMAND}"
-            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecodeMultiThreads"
-                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodeMultiThreads"
+            --build-and-test "${CMAKE_CURRENT_SOURCE_DIR}/jpegDecodePerf"
+                              "${CMAKE_CURRENT_BINARY_DIR}/jpegDecodePerf"
             --build-generator "${CMAKE_GENERATOR}"
-            --test-command "jpegdecodemultithreads"
-            -i ${CMAKE_SOURCE_DIR}/data/images/ -t 2
+            --test-command "jpegdecodeperf"
+            -i ${CMAKE_SOURCE_DIR}/data/images/
 )
 
 add_test(

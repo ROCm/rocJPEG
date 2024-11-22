@@ -9,6 +9,7 @@ Documentation for rocJPEG is available at
 
 * AMD Clang++ is now the default CXX compiler.
 * `rocJPEG-setup.py` setup script updates to common package install: Setup no longer installs public compiler package.
+* The jpegDecodeMultiThreads sample has been renamed to jpegDecodePerf, and batch decoding has been added to this sample instead of single image decoding for improved performance.
 
 ### Removed
 

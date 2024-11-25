@@ -148,10 +148,11 @@ public:
                 if (++i == argc) {
                     ShowHelpAndExit("-t", num_threads != nullptr, batch_size != nullptr);
                 }
-                if (num_threads != nullptr)
+                if (num_threads != nullptr) {
                     *num_threads = atoi(argv[i]);
-                if (*num_threads <= 0 || *num_threads > 32) {
-                    ShowHelpAndExit(argv[i], num_threads != nullptr, batch_size != nullptr);
+                    if (*num_threads <= 0 || *num_threads > 32) {
+                        ShowHelpAndExit(argv[i], num_threads != nullptr, batch_size != nullptr);
+                    }
                 }
                 continue;
             }

@@ -24,5 +24,5 @@ make -j
                     -o     <[output path] - path to an output file or a path to a directory - write decoded images to a file or directory based on selected output format [optional]>
                     -d     <[device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) - [optional - default: 0]>
                     -crop  <[crop rectangle] - crop rectangle for output in a comma-separated format: left,top,right,bottom - [optional]>
-                    -b     <[batch_size] - decode images from input by batches of a specified size - [optional - default: 2]>
+                    -b     <[batch_size] - decode images from input by batches of a specified size - [optional - default: 1]>
 ```

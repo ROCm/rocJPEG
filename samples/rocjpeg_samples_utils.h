@@ -31,6 +31,9 @@ THE SOFTWARE.
 #include <thread>
 #include <mutex>
 #include <algorithm>
+#include <functional>
+#include <condition_variable>
+#include <queue>
 #if __cplusplus >= 201703L && __has_include(<filesystem>)
     #include <filesystem>
     namespace fs = std::filesystem;
@@ -145,8 +148,12 @@ public:
                 if (++i == argc) {
                     ShowHelpAndExit("-t", num_threads != nullptr, batch_size != nullptr);
                 }
-                if (num_threads != nullptr)
+                if (num_threads != nullptr) {
                     *num_threads = atoi(argv[i]);
+                    if (*num_threads <= 0 || *num_threads > 32) {
+                        ShowHelpAndExit(argv[i], num_threads != nullptr, batch_size != nullptr);
+                    }
+                }
                 continue;
             }
             if (!strcmp(argv[i], "-b")) {
@@ -204,6 +211,7 @@ public:
      * @return True if successful, false otherwise.
      */
     static bool GetFilePaths(std::string &input_path, std::vector<std::string> &file_paths, bool &is_dir, bool &is_file) {
+        std::cout << "Reading images from disk, please wait!" << std::endl;
         if (!fs::exists(input_path)) {
             std::cerr << "ERROR: the input path does not exist!" << std::endl;
             return false;
@@ -639,10 +647,10 @@ private:
         "-crop  [crop rectangle] - crop rectangle for output in a comma-separated format: left,top,right,bottom - [optional]\n"
         "-d     [device id] - specify the GPU device id for the desired device (use 0 for the first device, 1 for the second device, and so on) [optional - default: 0]\n";
         if (show_threads) {
-            std::cout << "-t     [threads] - number of threads for parallel JPEG decoding - [optional - default: 2]\n";
+            std::cout << "-t     [threads] - number of threads (<= 32) for parallel JPEG decoding - [optional - default: 1]\n";
         }
         if (show_batch_size) {
-            std::cout << "-b     [batch_size] - decode images from input by batches of a specified size - [optional - default: 2]\n";
+            std::cout << "-b     [batch_size] - decode images from input by batches of a specified size - [optional - default: 1]\n";
         }
         exit(0);
     }
@@ -658,5 +666,65 @@ private:
     static inline int align(int value, int alignment) {
         return (value + alignment - 1) & ~(alignment - 1);
     }
+};
+
+class ThreadPool {
+    public:
+        ThreadPool(int nthreads) : shutdown_(false) {
+            // Create the specified number of threads
+            threads_.reserve(nthreads);
+            for (int i = 0; i < nthreads; ++i)
+                threads_.emplace_back(std::bind(&ThreadPool::ThreadEntry, this, i));
+        }
+
+        ~ThreadPool() {}
+
+        void JoinThreads() {
+            {
+                // Unblock any threads and tell them to stop
+                std::unique_lock<std::mutex> lock(mutex_);
+                shutdown_ = true;
+                cond_var_.notify_all();
+            }
+
+            // Wait for all threads to stop
+            for (auto& thread : threads_)
+                thread.join();
+        }
+
+        void ExecuteJob(std::function<void()> func) {
+            // Place a job on the queue and unblock a thread
+            std::unique_lock<std::mutex> lock(mutex_);
+            decode_jobs_queue_.emplace(std::move(func));
+            cond_var_.notify_one();
+        }
+
+    protected:
+        void ThreadEntry(int i) {
+            std::function<void()> execute_decode_job;
+
+            while (true) {
+                {
+                    std::unique_lock<std::mutex> lock(mutex_);
+                    cond_var_.wait(lock, [&] {return shutdown_ || !decode_jobs_queue_.empty();});
+                    if (decode_jobs_queue_.empty()) {
+                        // No jobs to do; shutting down
+                        return;
+                    }
+
+                    execute_decode_job = std::move(decode_jobs_queue_.front());
+                    decode_jobs_queue_.pop();
+                }
+
+                // Execute the decode job without holding any locks
+                execute_decode_job();
+            }
+        }
+
+        std::mutex mutex_;
+        std::condition_variable cond_var_;
+        bool shutdown_;
+        std::queue<std::function<void()>> decode_jobs_queue_;
+        std::vector<std::thread> threads_;
 };
 #endif //ROC_JPEG_SAMPLES_COMMON

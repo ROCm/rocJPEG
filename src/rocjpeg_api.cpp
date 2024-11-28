@@ -24,6 +24,7 @@ THE SOFTWARE.
 #include "rocjpeg_api_decoder_handle.h"
 #include "rocjpeg_commons.h"
 
+namespace rocjpeg {
 /**
  * @brief Creates a RocJpegStreamHandle for JPEG stream processing.
  *
@@ -275,3 +276,4 @@ extern const char* ROCJPEGAPI rocJpegGetErrorName(RocJpegStatus rocjpeg_status) 
             return "UNKNOWN_ERROR";
     }
 }
+} //namespace rocjpeg

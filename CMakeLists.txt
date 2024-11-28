@@ -124,8 +124,17 @@ else()
 endif()
 message("-- ${White}${PROJECT_NAME} -- AMD GPU_TARGETS: ${GPU_TARGETS}${ColourReset}")
 
+# Add an option for enabling the rocprofiler-register
+option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support" OFF)
+
 find_package(HIP QUIET)
 find_package(Libva QUIET)
+
+if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
+  find_package(rocprofiler-register QUIET
+    HINTS $ENV{rocprofiler_register_ROOT} $ENV{ROCPROFILER_REGISTER_ROOT} ${CMAKE_INSTALL_PREFIX}
+    PATHS ${ROCM_PATH})
+endif()
 
 if(HIP_FOUND AND Libva_FOUND)
   # HIP
@@ -138,6 +147,11 @@ if(HIP_FOUND AND Libva_FOUND)
   #filesystem: c++ compilers less than equal to 8.5 need explicit link with stdc++fs
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL "8.5")
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
+  endif()
+
+  # rocprofiler
+  if(rocprofiler-register_FOUND)
+    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} rocprofiler-register::rocprofiler-register)
   endif()
 
   # local include files
@@ -154,6 +168,18 @@ if(HIP_FOUND AND Libva_FOUND)
   set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 
+  # rocprofiler
+  if(rocprofiler-register_FOUND)
+    string(REPLACE "." ";" VERSION_LIST ${VERSION})
+    list(GET VERSION_LIST 0 VERSION_MAJOR)
+    list(GET VERSION_LIST 1 VERSION_MINOR)
+    list(GET VERSION_LIST 2 VERSION_PATCH)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ROCJPEG_ROCPROFILER_REGISTER=1
+      ROCJPEG_ROCP_REG_VERSION_MAJOR=${VERSION_MAJOR}
+      ROCJPEG_ROCP_REG_VERSION_MINOR=${VERSION_MINOR}
+      ROCJPEG_ROCP_REG_VERSION_PATCH=${VERSION_PATCH})
+  endif()
+
   # install rocJPEG libs -- {ROCM_PATH}/lib
   install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime NAMELINK_SKIP)
   install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev NAMELINK_ONLY)
@@ -161,6 +187,10 @@ if(HIP_FOUND AND Libva_FOUND)
   # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
   install(FILES api/rocjpeg.h api/rocjpeg_version.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
+  # install rocDecode api trace include file -- {ROCM_PATH}/include/rocdecode/amd_detail
+  install(FILES api/amd_detail/rocjpeg_api_trace.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/amd_detail COMPONENT dev)
+
   # install rocJPEG samples -- {ROCM_PATH}/share/rocJPEG
   install(DIRECTORY cmake DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME} COMPONENT dev)
 
@@ -216,6 +246,12 @@ if(HIP_FOUND AND Libva_FOUND)
   # Set the dependent packages
   set(rocJPEG_DEBIAN_PACKAGE_LIST  "rocm-hip-runtime, libva2-amdgpu, libva-amdgpu-drm2, libva-amdgpu-wayland2, libva-amdgpu-x11-2, mesa-amdgpu-va-drivers")
   set(rocJPEG_RPM_PACKAGE_LIST     "rocm-hip-runtime, (libva >= 2.16.0 or libva2 >= 2.16.0 or libva-amdgpu), mesa-amdgpu-va-drivers")
+  # Add rocprofiler-register dependencies
+  if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
+    set(rocJPEG_DEBIAN_PACKAGE_LIST "${rocJPEG_DEBIAN_PACKAGE_LIST}, rocprofiler-register")
+    set(rocJPEG_RPM_PACKAGE_LIST "${rocJPEG_RPM_PACKAGE_LIST}, rocprofiler-register")
+  endif()
+
   set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-amdgpu-dev, pkg-config")
   if(UBUNTU_22_FOUND)
     set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")

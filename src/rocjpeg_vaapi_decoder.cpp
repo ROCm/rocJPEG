@@ -325,12 +325,6 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
             ERR("Error: Failed to destroy VAAPI buffer");
         }
         VAStatus va_status;
-        if (va_surface_id_ != 0) {
-            va_status = vaDestroySurfaces(va_display_, &va_surface_id_, 1);
-            if (va_status != VA_STATUS_SUCCESS) {
-                ERR("ERROR: vaDestroySurfaces failed!");
-            }
-        }
         if (va_context_id_ != 0) {
             va_status = vaDestroyContext(va_display_, va_context_id_);
             if (va_status != VA_STATUS_SUCCESS) {
@@ -506,20 +500,7 @@ RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
  */
 RocJpegStatus RocJpegVappiDecoder::CreateDecoderContext() {
 
-    uint32_t surface_format;
-    surface_format = VA_RT_FORMAT_YUV420;
-
-    VASurfaceAttrib surface_attrib;
-    surface_attrib.type = VASurfaceAttribPixelFormat;
-    surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
-    surface_attrib.value.type = VAGenericValueTypeInteger;
-    surface_attrib.value.value.i = VA_FOURCC_NV12;
-
-    // Create a dummy surface with a resolution of min_picture_width_ x min_picture_height_ supported by the hardware.
-    // This surface is only used to create the context for the decoding pipeline, as context creation requires an initial surface.
-    // During the actual submission, the appropriate surfaces with the correct resolution will be created.
-    CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, min_picture_width_, min_picture_height_, &va_surface_id_, 1, &surface_attrib, 1));
-    CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, min_picture_width_, min_picture_height_, VA_PROGRESSIVE, &va_surface_id_, 1, &va_context_id_));
+    CHECK_VAAPI(vaCreateContext(va_display_, va_config_id_, min_picture_width_, min_picture_height_, VA_PROGRESSIVE, nullptr, 0, &va_context_id_));
 
     return ROCJPEG_STATUS_SUCCESS;
 }

@@ -346,7 +346,6 @@ private:
     uint32_t max_picture_height_; // The maximum height of the picture
     VADisplay va_display_; // The VAAPI display
     VAContextID va_context_id_; // The VAAPI context ID
-    VASurfaceID va_surface_id_; // The VAAPI surface IDs
     std::vector<VAConfigAttrib> va_config_attrib_; // The VAAPI configuration attributes
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile

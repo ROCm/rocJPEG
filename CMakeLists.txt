@@ -187,7 +187,7 @@ if(HIP_FOUND AND Libva_FOUND)
   # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
   install(FILES api/rocjpeg.h api/rocjpeg_version.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
-  # install rocDecode api trace include file -- {ROCM_PATH}/include/rocdecode/amd_detail
+  # install rocJPEG api trace include file -- {ROCM_PATH}/include/rocjpeg/amd_detail
   install(FILES api/amd_detail/rocjpeg_api_trace.h
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/amd_detail COMPONENT dev)
 

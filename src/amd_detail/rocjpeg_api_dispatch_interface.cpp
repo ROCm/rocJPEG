@@ -23,7 +23,7 @@ THE SOFTWARE.
 
 namespace rocjpeg {
 const RocJpegDispatchTable* GetRocJpegDispatchTable();
-} //namespace rocdecode
+} //namespace rocjpeg
 
 
 RocJpegStatus ROCJPEGAPI rocJpegStreamCreate(RocJpegStreamHandle *jpeg_stream_handle) {

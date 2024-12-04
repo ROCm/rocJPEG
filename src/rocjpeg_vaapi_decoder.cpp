@@ -32,7 +32,7 @@ THE SOFTWARE.
  * @return None
  */
 RocJpegVaapiMemoryPool::RocJpegVaapiMemoryPool() {
-    std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, ROCJPEG_FOURCC_YUYV, VA_FOURCC_NV12, VA_FOURCC_Y800};
+    std::vector<uint32_t> surface_formats = {VA_FOURCC_RGBA, VA_FOURCC_RGBP, VA_FOURCC_444P, VA_FOURCC_422V, VA_FOURCC_YUY2, VA_FOURCC_NV12, VA_FOURCC_Y800};
     for (auto surface_format : surface_formats) {
         mem_pool_[surface_format] = std::vector<RocJpegVaapiMemPoolEntry>();
     }
@@ -244,7 +244,12 @@ RocJpegStatus RocJpegVaapiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
             external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
             CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interops[idx].hip_mapped_device_mem, it->hip_interops[idx].hip_ext_mem, &external_mem_buffer_desc));
 
-            it->hip_interops[idx].surface_format = va_drm_prime_surface_desc.fourcc;
+            uint32_t surface_format = va_drm_prime_surface_desc.fourcc;
+            // Workaround Mesa <= 24.3 returning non-standard VA fourcc
+            if (surface_format == VA_FOURCC('Y', 'U', 'Y', 'V'))
+                surface_format = VA_FOURCC_YUY2;
+
+            it->hip_interops[idx].surface_format = surface_format;
             it->hip_interops[idx].width = va_drm_prime_surface_desc.width;
             it->hip_interops[idx].height = va_drm_prime_surface_desc.height;
             it->hip_interops[idx].size = va_drm_prime_surface_desc.objects[0].size;
@@ -601,7 +606,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
                 break;
             case CSS_422:
                 surface_format = VA_RT_FORMAT_YUV422;
-                surface_attrib.value.value.i = ROCJPEG_FOURCC_YUYV;
+                surface_attrib.value.value.i = VA_FOURCC_YUY2;
                 break;
             case CSS_420:
                 surface_format = VA_RT_FORMAT_YUV420;
@@ -719,7 +724,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
                     break;
                 case CSS_422:
                     jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV422;
-                    jpeg_stream_key.pixel_format = ROCJPEG_FOURCC_YUYV;
+                    jpeg_stream_key.pixel_format = VA_FOURCC_YUY2;
                     break;
                 case CSS_420:
                     jpeg_stream_key.surface_format = VA_RT_FORMAT_YUV420;

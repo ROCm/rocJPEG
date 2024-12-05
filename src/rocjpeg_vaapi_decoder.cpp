@@ -293,7 +293,7 @@ bool RocJpegVaapiMemoryPool::SetSurfaceAsIdle(VASurfaceID surface_id) {
  * @param device_id The ID of the device to be used for decoding.
  */
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
-    max_picture_width_{4096}, max_picture_height_{4096}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
+    max_picture_width_{4096}, max_picture_height_{4096}, supports_modifiers_{false}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
     vaapi_mem_pool_(std::make_unique<RocJpegVaapiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
     va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {
         vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
@@ -490,6 +490,16 @@ RocJpegStatus RocJpegVappiDecoder::CreateDecoderConfig() {
         if (va_config_attrib_[2].value != VA_ATTRIB_NOT_SUPPORTED) {
             max_picture_height_ = va_config_attrib_[2].value;
         }
+        unsigned int num_attribs = 0;
+        CHECK_VAAPI(vaQuerySurfaceAttributes(va_display_, va_config_id_, nullptr, &num_attribs));
+        std::vector<VASurfaceAttrib> attribs(num_attribs);
+        CHECK_VAAPI(vaQuerySurfaceAttributes(va_display_, va_config_id_, attribs.data(), &num_attribs));
+        for (auto attrib : attribs) {
+            if (attrib.type == VASurfaceAttribDRMFormatModifiers) {
+                supports_modifiers_ = true;
+                break;
+            }
+        }
         return ROCJPEG_STATUS_SUCCESS;
     } else {
         return ROCJPEG_STATUS_HW_JPEG_DECODER_NOT_SUPPORTED;
@@ -578,6 +588,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
         }
 
     uint32_t surface_format;
+    std::vector<VASurfaceAttrib> surface_attribs;
     VASurfaceAttrib surface_attrib;
     surface_attrib.type = VASurfaceAttribPixelFormat;
     surface_attrib.flags = VA_SURFACE_ATTRIB_SETTABLE;
@@ -622,6 +633,19 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
                 break;
         }
     }
+    surface_attribs.push_back(surface_attrib);
+
+    uint64_t mod_linear = 0;
+    VADRMFormatModifierList modifier_list = {
+        .num_modifiers = 1,
+        .modifiers = &mod_linear,
+    };
+    if (supports_modifiers_) {
+        surface_attrib.type = VASurfaceAttribDRMFormatModifiers;
+        surface_attrib.value.type = VAGenericValueTypePointer;
+        surface_attrib.value.value.p = &modifier_list;
+        surface_attribs.push_back(surface_attrib);
+    }
 
     // if the HW JPEG decoder has a built-in ROI-decode capability then fill the requested crop rectangle to the picture parameter buffer
     void *picture_parameter_buffer = (void*)&jpeg_stream_params->picture_parameter_buffer;
@@ -647,7 +671,7 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
     if (mem_pool_entry.va_surface_ids.empty()) {
         mem_pool_entry.va_surface_ids.resize(1);
-        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, mem_pool_entry.va_surface_ids.data(), 1, &surface_attrib, 1));
+        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, mem_pool_entry.va_surface_ids.data(), 1, surface_attribs.data(), surface_attribs.size()));
         mem_pool_entry.image_width = jpeg_stream_params->picture_parameter_buffer.picture_width;
         mem_pool_entry.image_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
         mem_pool_entry.hip_interops.resize(1);
@@ -764,10 +788,25 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
         surface_format = key.surface_format;
         surface_attrib.value.value.i = key.pixel_format;
 
+        std::vector<VASurfaceAttrib> surface_attribs;
+        surface_attribs.push_back(surface_attrib);
+
+        uint64_t mod_linear = 0;
+        VADRMFormatModifierList modifier_list = {
+            .num_modifiers = 1,
+            .modifiers = &mod_linear,
+        };
+        if (supports_modifiers_) {
+            surface_attrib.type = VASurfaceAttribDRMFormatModifiers;
+            surface_attrib.value.type = VAGenericValueTypePointer;
+            surface_attrib.value.value.p = &modifier_list;
+            surface_attribs.push_back(surface_attrib);
+        }
+
         RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height, indices.size());
         if (mem_pool_entry.va_surface_ids.empty()) {
             mem_pool_entry.va_surface_ids.resize(indices.size());
-            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), &surface_attrib, 1));
+            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), surface_attribs.data(), surface_attribs.size()));
             mem_pool_entry.image_width = key.width;
             mem_pool_entry.image_height = key.height;
             for (int i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {

@@ -125,7 +125,7 @@ endif()
 message("-- ${White}${PROJECT_NAME} -- AMD GPU_TARGETS: ${GPU_TARGETS}${ColourReset}")
 
 # Add an option for enabling the rocprofiler-register
-option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support" OFF)
+option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support" ON)
 
 find_package(HIP QUIET)
 find_package(Libva QUIET)

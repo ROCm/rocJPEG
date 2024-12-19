@@ -16,7 +16,7 @@ beautifulsoup4==4.12.3
     # via pydata-sphinx-theme
 breathe==4.35.0
     # via rocm-docs-core
-certifi==2024.8.30
+certifi==2024.12.14
     # via requests
 cffi==1.17.1
     # via
@@ -49,7 +49,7 @@ doxysphinx==3.3.12
     # via rocm-docs-core
 fastjsonschema==2.21.1
     # via rocm-docs-core
-fonttools==4.55.1
+fonttools==4.55.3
     # via matplotlib
 gitdb==4.0.11
     # via gitpython
@@ -75,7 +75,7 @@ markdown-it-py==3.0.0
     #   myst-parser
 markupsafe==3.0.2
     # via jinja2
-matplotlib==3.9.3
+matplotlib==3.10.0
     # via doxysphinx
 mdit-py-plugins==0.4.2
     # via myst-parser
@@ -98,7 +98,7 @@ pillow==11.0.0
     # via matplotlib
 pycparser==2.22
     # via cffi
-pydata-sphinx-theme==0.16.0
+pydata-sphinx-theme==0.16.1
     # via
     #   rocm-docs-core
     #   sphinx-book-theme
@@ -131,9 +131,9 @@ requests==2.32.3
     # via
     #   pygithub
     #   sphinx
-rocm-docs-core[api-reference]==1.10.0
+rocm-docs-core[api-reference]==1.12.0
     # via -r requirements.in
-six==1.16.0
+six==1.17.0
     # via python-dateutil
 smmap==5.0.1
     # via gitdb

@@ -34,11 +34,13 @@ endif()
 
 # Set AMD Clang as default compiler
 if (NOT DEFINED CMAKE_CXX_COMPILER)
+  set(CMAKE_C_COMPILER ${ROCM_PATH}/bin/amdclang)
   set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/amdclang++)
 endif()
 
 set(VERSION "0.8.0")
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED On)
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -93,7 +95,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
   # -O0 -- Don't Optimize output file 
   # -g  -- generate debugging information, generate debugging information, dwarf-4 for making valgrind work
   # -Og -- Optimize for debugging experience rather than speed or size
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -gdwarf-4 -Og")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -gdwarf-4")
 else()
   # -O3       -- Optimize output file 
   # -DNDEBUG  -- turn off asserts 
@@ -144,10 +146,8 @@ if(HIP_FOUND AND Libva_FOUND)
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_LIBRARY})
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_DRM_LIBRARY})
 
-  #filesystem: c++ compilers less than equal to 8.5 need explicit link with stdc++fs
-  if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS_EQUAL "8.5")
-    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
-  endif()
+  # std filesystem
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
 
   # rocprofiler
   if(rocprofiler-register_FOUND)

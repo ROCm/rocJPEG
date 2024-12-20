@@ -79,7 +79,8 @@ RocJpegStatus RocJpegDecoder::InitializeDecoder() {
         return rocjpeg_status;
     }
     if (backend_ == ROCJPEG_BACKEND_HARDWARE) {
-        rocjpeg_status = jpeg_vaapi_decoder_.InitializeDecoder(hip_dev_prop_.name, hip_dev_prop_.gcnArchName, device_id_);
+        std::string gpu_uuid(hip_dev_prop_.uuid.bytes, sizeof(hip_dev_prop_.uuid.bytes));
+        rocjpeg_status = jpeg_vaapi_decoder_.InitializeDecoder(hip_dev_prop_.name, hip_dev_prop_.gcnArchName, device_id_, gpu_uuid);
         if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
             ERR("ERROR: Failed to initialize the VA-API JPEG decoder!");
             return rocjpeg_status;

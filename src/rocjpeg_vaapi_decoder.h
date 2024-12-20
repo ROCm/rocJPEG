@@ -282,9 +282,10 @@ public:
      * @param device_name The name of the device.
      * @param gcn_arch_name The name of the GCN architecture.
      * @param device_id The ID of the device.
+     * @param gpu_uuid The UUID of the GPU.
      * @return The status of the initialization.
      */
-    RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id);
+    RocJpegStatus InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id, std::string& gpu_uuid);
 
     /**
      * @brief Submits a JPEG stream for decoding.
@@ -355,6 +356,14 @@ private:
     VABufferID va_huffmantable_buf_id_; // The VAAPI Huffman table buffer ID
     VABufferID va_slice_param_buf_id_; // The VAAPI slice parameter buffer ID
     VABufferID va_slice_data_buf_id_; // The VAAPI slice data buffer ID
+    /**
+     * @brief A map that associates GPU UUIDs with their corresponding render node indices.
+     * 
+     * This unordered map uses GPU UUIDs as keys (std::string) and maps them to their 
+     * respective render node indices (int). It provides a fast lookup mechanism to 
+     * retrieve the render node index for a given GPU UUID.
+     */
+    std::unordered_map<std::string, int> gpu_uuids_to_render_nodes_map_;
 
     /**
      * @brief Initializes the VAAPI with the specified DRM node.
@@ -408,6 +417,10 @@ private:
     void GetDrmNodeOffset(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
                                     std::vector<ComputePartition> &current_compute_partitions,
                                     int &offset);
+    /**
+     * @brief Retrieves GPU UUIDs and maps them to render node IDs.
+    */
+    void GetGpuUuids();
 };
 
 #endif // ROC_JPEG_VAAPI_DECODER_H_

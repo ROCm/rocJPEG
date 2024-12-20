@@ -37,7 +37,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/amdclang++)
 endif()
 
-set(VERSION "0.7.0")
+set(VERSION "0.8.0")
 set(CMAKE_CXX_STANDARD 17)
 
 # Set Project Version and Language
@@ -214,7 +214,7 @@ if(HIP_FOUND AND Libva_FOUND)
   # make test with CTest
   enable_testing()
   include(CTest)
-  add_subdirectory(samples)
+  add_subdirectory(test)
 
   # set package information
   set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})

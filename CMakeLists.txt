@@ -203,8 +203,6 @@ if(HIP_FOUND AND Libva_FOUND)
   set(CPACK_RESOURCE_FILE_LICENSE  "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
   install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR} COMPONENT runtime)
   install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-asan COMPONENT asan)
-  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-dev COMPONENT dev)
-  install(FILES ${CPACK_RESOURCE_FILE_LICENSE} DESTINATION ${CMAKE_INSTALL_DOCDIR}-test COMPONENT test)
   # install test cmake
   install(FILES test/CMakeLists.txt DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/test COMPONENT test)
 
@@ -360,7 +358,7 @@ rocJPEG runtime package provides rocJPEG library and license.txt")
   cpack_add_component(dev
                     DISPLAY_NAME "rocJPEG Develop Package"
                     DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
-rocJPEG develop package provides rocJPEG library, header files, samples, and license.txt")
+rocJPEG develop package provides rocJPEG library, header files and samples")
 
   cpack_add_component(asan
                     DISPLAY_NAME "rocJPEG ASAN Package"

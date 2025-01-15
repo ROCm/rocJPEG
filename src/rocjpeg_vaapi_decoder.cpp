@@ -383,12 +383,10 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
     GetGpuUuids();
 
     int offset = 0;
-    if (gcn_arch_name_base.compare("gfx942") == 0) {
-        std::vector<ComputePartition> current_compute_partitions;
-        GetCurrentComputePartition(current_compute_partitions);
-        if (!current_compute_partitions.empty()) {
-            GetDrmNodeOffset(device_name, device_id_, visible_devices, current_compute_partitions, offset);
-        }
+    std::vector<ComputePartition> current_compute_partitions;
+    GetCurrentComputePartition(current_compute_partitions);
+    if (!current_compute_partitions.empty()) {
+        GetDrmNodeOffset(device_name, device_id_, visible_devices, current_compute_partitions, offset);
     }
 
     std::string drm_node = "/dev/dri/renderD";

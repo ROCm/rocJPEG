@@ -45,7 +45,7 @@ struct DecodeInfo {
  * @param output_file_path The file path where the decoded images will be saved.
  * @param batch_size The number of images to be processed in each batch.
  */
-void DecodeImages(DecodeInfo &decode_info, RocJpegUtils rocjpeg_utils, RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, int batch_size) {
+void DecodeImages(DecodeInfo &decode_info, RocJpegUtils rocjpeg_utils, RocJpegDecodeParams &decode_params, bool save_images, std::string &output_file_path, int batch_size, int device_id) {
 
     bool is_roi_valid = false;
     uint32_t roi_width;
@@ -72,6 +72,7 @@ void DecodeImages(DecodeInfo &decode_info, RocJpegUtils rocjpeg_utils, RocJpegDe
     RocJpegChromaSubsampling temp_subsampling;
     std::string temp_base_file_name;
 
+    CHECK_HIP(hipSetDevice(device_id));
     for (int i = 0; i < decode_info.file_paths.size(); i += batch_size) {
         int batch_end = std::min(i + batch_size, static_cast<int>(decode_info.file_paths.size()));
         for (int j = i; j < batch_end; j++) {
@@ -253,7 +254,7 @@ int main(int argc, char **argv) {
 
     std::cout << "Decoding started with " << num_threads << " threads, please wait!" << std::endl;
     for (int i = 0; i < num_threads; ++i) {
-        thread_pool.ExecuteJob(std::bind(DecodeImages, std::ref(decode_info_per_thread[i]), rocjpeg_utils, std::ref(decode_params), save_images, std::ref(output_file_path), batch_size));
+        thread_pool.ExecuteJob(std::bind(DecodeImages, std::ref(decode_info_per_thread[i]), rocjpeg_utils, std::ref(decode_params), save_images, std::ref(output_file_path), batch_size, device_id));
     }
     thread_pool.JoinThreads();
 

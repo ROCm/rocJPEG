@@ -366,6 +366,14 @@ private:
     std::unordered_map<std::string, int> gpu_uuids_to_render_nodes_map_;
 
     /**
+     * @brief A map that associates GPU UUIDs with their corresponding compute partitions.
+     *
+     * This unordered map uses GPU UUIDs as keys (represented as strings) and maps them to
+     * ComputePartition objects. It allows for efficient lookup and management of compute
+     * partitions based on the unique identifiers of GPUs.
+     */
+    std::unordered_map<std::string, ComputePartition> gpu_uuids_to_compute_partition_map_;
+    /**
      * @brief Initializes the VAAPI with the specified DRM node.
      * @param drm_node The DRM node to use for VAAPI initialization.
      * @return The status of the VAAPI initialization.
@@ -401,21 +409,15 @@ private:
     void GetVisibleDevices(std::vector<int>& visible_devices);
 
     /**
-     * @brief Retrieves the current compute partitions.
-     * @param current_compute_partitions The vector to store the current compute partitions.
-     */
-    void GetCurrentComputePartition(std::vector<ComputePartition> &currnet_compute_partitions);
-
-    /**
      * @brief Retrieves the DRM node offset.
      * @param device_name The name of the device.
      * @param device_id The ID of the device.
      * @param visible_devices The vector of visible devices.
-     * @param current_compute_partitions The vector of current compute partitions.
+     * @param current_compute_partition The current compute partition.
      * @param offset The offset of the DRM node.
      */
     void GetDrmNodeOffset(std::string device_name, uint8_t device_id, std::vector<int>& visible_devices,
-                                    std::vector<ComputePartition> &current_compute_partitions,
+                                    ComputePartition current_compute_partitions,
                                     int &offset);
     /**
      * @brief Retrieves GPU UUIDs and maps them to render node IDs.

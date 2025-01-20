@@ -41,6 +41,8 @@ THE SOFTWARE.
 #include <unordered_map>
 #include <memory>
 #include <functional>
+#include <libdrm/amdgpu.h>
+#include <libdrm/amdgpu_drm.h>
 #include <va/va.h>
 #include <va/va_drm.h>
 #include <va/va_drmcommon.h>
@@ -348,7 +350,6 @@ private:
     std::vector<VAConfigAttrib> va_config_attrib_; // The VAAPI configuration attributes
     VAConfigID va_config_id_; // The VAAPI configuration ID
     VAProfile va_profile_; // The VAAPI profile
-    std::unordered_map<std::string, VcnJpegSpec> vcn_jpeg_spec_; // The map of VCN JPEG specifications
     std::unique_ptr<RocJpegVaapiMemoryPool> vaapi_mem_pool_; // The VAAPI memory pool
     VcnJpegSpec current_vcn_jpeg_spec_; // The current VCN JPEG specification
     VABufferID va_picture_parameter_buf_id_; // The VAAPI picture parameter buffer ID
@@ -423,6 +424,14 @@ private:
      * @brief Retrieves GPU UUIDs and maps them to render node IDs.
     */
     void GetGpuUuids();
+
+    /**
+     * @brief Retrieves the number of JPEG cores available.
+     *
+     * This function is used to determine the number of JPEG decoding cores
+     * that are available for use.
+     */
+    void GetNumJpegCores();
 };
 
 #endif // ROC_JPEG_VAAPI_DECODER_H_

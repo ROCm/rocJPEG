@@ -295,20 +295,7 @@ bool RocJpegVaapiMemoryPool::SetSurfaceAsIdle(VASurfaceID surface_id) {
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
     max_picture_width_{4096}, max_picture_height_{4096}, supports_modifiers_{false}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
     vaapi_mem_pool_(std::make_unique<RocJpegVaapiMemoryPool>()), current_vcn_jpeg_spec_{0}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
-    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {
-        vcn_jpeg_spec_ = {{"gfx908", {2, false, false}},
-                          {"gfx90a", {2, false, false}},
-                          {"gfx942_mi300a", {24, true, true}},
-                          {"gfx942_mi300x", {32, true, true}},
-                          {"gfx1030", {1, false, false}},
-                          {"gfx1031", {1, false, false}},
-                          {"gfx1032", {1, false, false}},
-                          {"gfx1100", {1, false, false}},
-                          {"gfx1101", {1, false, false}},
-                          {"gfx1102", {1, false, false}},
-                          {"gfx1200", {1, false, false}},
-                          {"gfx1201", {1, false, false}}};
-};
+    va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {};
 
 /**
  * @brief Destructor for the RocJpegVappiDecoder class.
@@ -364,26 +351,11 @@ RocJpegVappiDecoder::~RocJpegVappiDecoder() {
  */
 RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, std::string gcn_arch_name, int device_id, std::string& gpu_uuid) {
     device_id_ = device_id;
-    std::size_t pos = gcn_arch_name.find_first_of(":");
-    std::string gcn_arch_name_base = (pos != std::string::npos) ? gcn_arch_name.substr(0, pos) : gcn_arch_name;
-
-    std::string gcn_arch_name_base_temp = gcn_arch_name_base;
-    // Check if the device name contains "MI300A" to identify if it is MI300A or MI300X ASIC
-    // as both have the same gfx942 architecture name.
-    bool is_gfx942_detected = (gcn_arch_name_base.compare("gfx942") == 0);
-    if (is_gfx942_detected) {
-        std::string mi300a = "MI300A";
-        size_t found_mi300a = device_name.find(mi300a);
-        gcn_arch_name_base_temp = (found_mi300a != std::string::npos) ? gcn_arch_name_base_temp + "_mi300a"
-                                                                      : gcn_arch_name_base_temp + "_mi300x";
-    }
-
     std::vector<int> visible_devices;
     GetVisibleDevices(visible_devices);
     GetGpuUuids();
 
     int offset = 0;
-
     ComputePartition current_compute_partition = (gpu_uuids_to_compute_partition_map_.find(gpu_uuid) != gpu_uuids_to_compute_partition_map_.end()) ? gpu_uuids_to_compute_partition_map_[gpu_uuid] : kSpx;
     GetDrmNodeOffset(device_name, device_id_, visible_devices, current_compute_partition, offset);
 
@@ -397,18 +369,40 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, st
 
     vaapi_mem_pool_->SetVaapiDisplay(va_display_);
 
-    auto it = vcn_jpeg_spec_.find(gcn_arch_name_base_temp);
-    if (it != vcn_jpeg_spec_.end()) {
-        current_vcn_jpeg_spec_ = it->second;
-    } else {
-        INFO("WARNING: didn't find the vcn jpeg spec for " + gcn_arch_name_base_temp + " using the default setting");
-        current_vcn_jpeg_spec_.num_jpeg_cores = 1;
-    }
+    GetNumJpegCores();
     vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores + 1);
 
     return ROCJPEG_STATUS_SUCCESS;
 }
-
+/**
+ * @brief Retrieves the number of JPEG cores available on the AMD GPU and updates the decoder's capabilities.
+ *
+ * This function initializes the AMD GPU device, queries the number of JPEG cores available, and updates
+ * the current VCN JPEG specifications based on the number of cores. If the number of JPEG cores is 8 or more,
+ * it sets the capabilities to support ROI decode and conversion to RGB.
+ *
+ * @note If the initialization of the AMD GPU device fails or querying the number of JPEG cores fails,
+ *       appropriate error messages are logged.
+ */
+void RocJpegVappiDecoder::GetNumJpegCores() {
+    amdgpu_device_handle dev_handle;
+    uint32_t major_version = 0, minor_version = 0;
+    uint32_t num_jpeg_cores = 0;
+    int error_code = 0;
+    if (amdgpu_device_initialize(drm_fd_, &major_version, &minor_version, &dev_handle)) {
+        ERR("amdgpu_device_initialize failed!");
+        return;
+    }
+    error_code = amdgpu_query_hw_ip_count(dev_handle, AMDGPU_HW_IP_VCN_JPEG, &num_jpeg_cores);
+    if (!error_code) {
+        current_vcn_jpeg_spec_.num_jpeg_cores = num_jpeg_cores;
+        // Set the capabilities based on the number of JPEG cores
+        current_vcn_jpeg_spec_.can_roi_decode = current_vcn_jpeg_spec_.can_convert_to_rgb = (num_jpeg_cores >= 8);
+    } else {
+        ERR("Failed to get the number of jpeg cores.");
+    }
+    amdgpu_device_deinitialize(dev_handle);
+}
 /**
  * @brief Initializes the VAAPI decoder.
  *

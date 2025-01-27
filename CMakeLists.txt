@@ -146,9 +146,6 @@ if(HIP_FOUND AND Libva_FOUND)
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_LIBRARY})
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_DRM_LIBRARY})
 
-  # std filesystem
-  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
-
   # rocprofiler
   if(rocprofiler-register_FOUND)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} rocprofiler-register::rocprofiler-register)

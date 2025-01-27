@@ -31,13 +31,8 @@ THE SOFTWARE.
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
-#if __cplusplus >= 201703L && __has_include(<filesystem>)
-    #include <filesystem>
-    namespace fs = std::filesystem;
-#else
-    #include <experimental/filesystem>
-    namespace fs = std::experimental::filesystem;
-#endif
+#include <dirent.h>
+#include <sys/stat.h>
 #include <unordered_map>
 #include <memory>
 #include <functional>

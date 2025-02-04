@@ -10,25 +10,6 @@ Documentation for rocJPEG is available at
 * AMD Clang++ is now the default CXX compiler.
 * The jpegDecodeMultiThreads sample has been renamed to jpegDecodePerf, and batch decoding has been added to this sample instead of single image decoding for improved performance.
 
-### Removed
-
-* 
-
-### Resolved issues
-
-* 
-
-### Tested configurations
-
-* Linux
-  * Ubuntu - `22.04` / `24.04`
-  * RHEL - `8` / `9`
-  * SLES - `15 SP5`
-* ROCm: `6.3.0`
-* libva-amdgpu-dev - `2.16.0`
-* mesa-amdgpu-va-drivers - `1:24.3.0`
-* rocJPEG Setup Script - `V2.3.0`
-
 ## rocJPEG 0.6.0 for ROCm 6.3.0
 
 ### Changes

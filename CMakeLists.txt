@@ -31,17 +31,16 @@ elseif(ROCM_PATH)
 else()
   set(ROCM_PATH /opt/rocm CACHE PATH "Default ROCm installation path")
 endif()
-
 # Set AMD Clang as default compiler
-if (NOT DEFINED CMAKE_CXX_COMPILER)
+if(NOT DEFINED CMAKE_CXX_COMPILER)
   set(CMAKE_C_COMPILER ${ROCM_PATH}/bin/amdclang)
   set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/amdclang++)
 endif()
-
-set(VERSION "0.8.0")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 
+# NOTE: Match version with api/rocjpeg_version.h
+set(VERSION "0.9.0")
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
 

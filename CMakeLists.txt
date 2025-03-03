@@ -261,11 +261,11 @@ if(HIP_FOUND AND Libva_FOUND)
     set(rocJPEG_RPM_PACKAGE_LIST "${rocJPEG_RPM_PACKAGE_LIST}, rocprofiler-register")
   endif()
 
-  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-amdgpu-dev, pkg-config")
+  set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST  "rocm-hip-runtime-dev, libva-amdgpu-dev")
   if(UBUNTU_22_FOUND)
     set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")
   endif()
-  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, libva-amdgpu-devel, pkg-config")
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "rocm-hip-runtime-devel, libva-amdgpu-devel")
 
   # '%{?dist}' breaks manual builds on debian systems due to empty Provides
   execute_process(

@@ -193,7 +193,7 @@ if(HIP_FOUND AND Libva_FOUND)
   endif()
 
   #Generate BUILD_INFO
-  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/api/rocjpeg_version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/api/rocjpeg_version.h @ONLY )
+  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/api/rocjpeg_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_version.h @ONLY )
   install(TARGETS ${PROJECT_NAME} EXPORT rocjpegTargets DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dev)
 
   # install rocJPEG libs -- {ROCM_PATH}/lib
@@ -203,7 +203,7 @@ if(HIP_FOUND AND Libva_FOUND)
   # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
   install(FILES api/rocjpeg.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
-  install(FILES api/rocjpeg_version.h
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_version.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
   # install rocJPEG api trace include file -- {ROCM_PATH}/include/rocjpeg/amd_detail
   install(FILES api/amd_detail/rocjpeg_api_trace.h

@@ -14,5 +14,5 @@ set_and_check(ROCJPEG_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
 set_and_check(ROCM_PATH "${PACKAGE_PREFIX_DIR}")
 
 get_filename_component(ROCJPEG_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
-include("${ROCJPEG_CMAKE_DIR}/rocjpegTargets.cmake")
+include("${ROCJPEG_CMAKE_DIR}/rocjpeg-targets.cmake")
 

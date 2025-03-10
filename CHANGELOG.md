@@ -7,6 +7,7 @@ Documentation for rocJPEG is available at
 
 ## Added
 * cmake config files
+* CTEST - New tests were introduced for JPEG batch decoding using various output formats, such as yuv_planar, y, rgb, and rgb_planar, both with and without region-of-interest (ROI).
 
 ## Changed
 * Readme - cleanup and updates to pre-reqs

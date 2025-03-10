@@ -42,6 +42,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED On)
 # rocJPEG Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
 set(VERSION "0.11.0")
+
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
 

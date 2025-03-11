@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 #pragma once
 
-#include "rocjpeg/rocjpeg.h"
+#include "rocjpeg.h"
 
 // Define version macros for the rocJPEG API dispatch table, specifying the MAJOR and STEP versions.
 //

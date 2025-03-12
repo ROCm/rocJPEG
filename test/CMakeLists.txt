@@ -53,8 +53,8 @@ project(rocjpeg-test)
 enable_testing()
 include(CTest)
 
-# add ROCm find modules
-list(APPEND CMAKE_MODULE_PATH ${ROCM_PATH}/lib/cmake)
+# add ROCm find Config location
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 
 # find rocDecode
 find_package(ROCJPEG QUIET)

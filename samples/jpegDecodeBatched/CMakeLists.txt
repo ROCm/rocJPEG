@@ -41,8 +41,7 @@ project(jpegdecodebatched)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 
-list(APPEND CMAKE_MODULE_PATH ${ROCM_PATH}/lib/cmake)
-list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/hip ${ROCM_PATH})
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 
 find_package(HIP QUIET)
 find_package(ROCJPEG QUIET)

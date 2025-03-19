@@ -73,6 +73,7 @@ def runPackageCommand(platform, project) {
         packageType = 'rpm'
         packageInfo = 'rpm -qlp'
         packageDetail = 'rpm -qi'
+        packageInstall = 'rpm -i'
         packageRunTime = 'rocjpeg-*'
 
         if (platform.jenkinsLabel.contains('sles')) {
@@ -90,6 +91,7 @@ def runPackageCommand(platform, project) {
         packageType = 'deb'
         packageInfo = 'dpkg -c'
         packageDetail = 'dpkg -I'
+        packageInstall = 'dpkg -i'
         packageRunTime = 'rocjpeg_*'
 
         if (platform.jenkinsLabel.contains('ubuntu20')) {
@@ -116,6 +118,9 @@ def runPackageCommand(platform, project) {
                 ${packageInfo} package/${osType}-rocjpeg-dev.${packageType}
                 ${packageInfo} package/${osType}-rocjpeg-test.${packageType}
                 ${packageInfo} package/${osType}-rocjpeg.${packageType}
+                ${packageInstall} package/${osType}-rocjpeg-dev.${packageType}
+                ${packageInstall} package/${osType}-rocjpeg-test.${packageType}
+                ${packageInstall} package/${osType}-rocjpeg.${packageType}
                 """
 
     platform.runCommand(this, command)

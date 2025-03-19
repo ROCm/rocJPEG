@@ -66,6 +66,7 @@ def runPackageCommand(platform, project) {
     String packageType = ''
     String packageInfo = ''
     String packageDetail = ''
+    String packageInstall = ''
     String osType = ''
     String packageRunTime = ''
 

@@ -119,9 +119,9 @@ def runPackageCommand(platform, project) {
                 ${packageInfo} package/${osType}-rocjpeg-dev.${packageType}
                 ${packageInfo} package/${osType}-rocjpeg-test.${packageType}
                 ${packageInfo} package/${osType}-rocjpeg.${packageType}
-                ${packageInstall} package/${osType}-rocjpeg.${packageType}
-                ${packageInstall} package/${osType}-rocjpeg-dev.${packageType}
-                ${packageInstall} package/${osType}-rocjpeg-test.${packageType}
+                sudo ${packageInstall} package/${osType}-rocjpeg.${packageType}
+                sudo ${packageInstall} package/${osType}-rocjpeg-dev.${packageType}
+                sudo ${packageInstall} package/${osType}-rocjpeg-test.${packageType}
                 """
 
     platform.runCommand(this, command)

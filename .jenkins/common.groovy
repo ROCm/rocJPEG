@@ -48,11 +48,14 @@ def runTestCommand (platform, project) {
                 cmake /opt/rocm/share/rocjpeg/samples/jpegDecode/
                 make -j8
                 LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i /opt/rocm/share/rocjpeg/images/
+                echo rocjpeg additional tests
+                wget http://math-ci.amd.com/userContent/computer-vision/rocJPEG/jpeg_samples.zip
+                unzip jpeg_samples.zip
+                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples
                 echo rocjpeg-test package verification
                 cd ../ && mkdir -p rocjpeg-test && cd rocjpeg-test
                 cmake /opt/rocm/share/rocjpeg/test/
                 LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ctest -VV --rerun-failed --output-on-failure
-                echo rocjpeg conformance tests
                 """
 
     platform.runCommand(this, command)

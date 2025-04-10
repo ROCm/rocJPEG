@@ -42,52 +42,59 @@ def runTestCommand (platform, project) {
         toolsPackage = 'llvm-amdgpu-devel'
     }
 
-    def command = """#!/usr/bin/env bash
-                set -ex
-                export HOME=/home/jenkins
-                ${libvaDriverPath}
-                echo make test
-                cd ${project.paths.project_build_prefix}/build
-                export LLVM_PROFILE_FILE=\"\$(pwd)/rawdata/rocdecode-%p.profraw\"
-                echo \$LLVM_PROFILE_FILE
-                cd release
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} make test ARGS="-VV --rerun-failed --output-on-failure"
-                echo rocjpeg-sample - jpegDecode
-                mkdir -p rocjpeg-sample && cd rocjpeg-sample
-                cmake /opt/rocm/share/rocjpeg/samples/jpegDecode/
-                make -j8
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i /opt/rocm/share/rocjpeg/images/
-                echo rocjpeg additional tests
-                wget http://math-ci.amd.com/userContent/computer-vision/rocJPEG/jpeg_samples.zip
-                unzip jpeg_samples.zip
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt yuv_planar
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt y
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb_planar
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -crop 0,0,100,100
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt yuv_planar -crop 0,0,100,100
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt y -crop 0,0,100,100
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb -crop 0,0,100,100
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb_planar -crop 0,0,100,100
-                echo rocjpeg-test package verification
-                cd ../ && mkdir -p rocjpeg-test && cd rocjpeg-test
-                cmake /opt/rocm/share/rocjpeg/test/
-                LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ctest -VV --rerun-failed --output-on-failure
-                cd  ../../
-                echo \$(pwd)
-                sudo ${packageManager} install lcov ${toolsPackage}
-                opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocdecode.profdata
-                opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocdecode.so --instr-profile=rocdecode.profdata --format=lcov > coverage.info
-                lcov --remove coverage.info '/opt/*' --output-file coverage.info
-                lcov --list coverage.info
-                lcov --summary  coverage.info
-                curl -Os https://uploader.codecov.io/latest/linux/codecov
-                chmod +x codecov
-                ./codecov -v -U \$http_proxy -t ${CODECOV_TOKEN} --file coverage.info --name rocDecode --sha ${commitSha}
-                """
+    String commitSha
+    String repoUrl
+    (commitSha, repoUrl) = util.getGitHubCommitInformation(project.paths.project_src_prefix)
 
-    platform.runCommand(this, command)
+    withCredentials([string(credentialsId: "mathlibs-codecov-token-rocjpeg", variable: 'CODECOV_TOKEN')])
+    {
+        def command = """#!/usr/bin/env bash
+                    set -ex
+                    export HOME=/home/jenkins
+                    ${libvaDriverPath}
+                    echo make test
+                    cd ${project.paths.project_build_prefix}/build
+                    export LLVM_PROFILE_FILE=\"\$(pwd)/rawdata/rocdecode-%p.profraw\"
+                    echo \$LLVM_PROFILE_FILE
+                    cd release
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} make test ARGS="-VV --rerun-failed --output-on-failure"
+                    echo rocjpeg-sample - jpegDecode
+                    mkdir -p rocjpeg-sample && cd rocjpeg-sample
+                    cmake /opt/rocm/share/rocjpeg/samples/jpegDecode/
+                    make -j8
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i /opt/rocm/share/rocjpeg/images/
+                    echo rocjpeg additional tests
+                    wget http://math-ci.amd.com/userContent/computer-vision/rocJPEG/jpeg_samples.zip
+                    unzip jpeg_samples.zip
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt yuv_planar
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt y
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb_planar
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -crop 0,0,100,100
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt yuv_planar -crop 0,0,100,100
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt y -crop 0,0,100,100
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb -crop 0,0,100,100
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ./jpegdecode -i jpeg_samples -fmt rgb_planar -crop 0,0,100,100
+                    echo rocjpeg-test package verification
+                    cd ../ && mkdir -p rocjpeg-test && cd rocjpeg-test
+                    cmake /opt/rocm/share/rocjpeg/test/
+                    LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ctest -VV --rerun-failed --output-on-failure
+                    cd  ../../
+                    echo \$(pwd)
+                    sudo ${packageManager} install lcov ${toolsPackage}
+                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocdecode.profdata
+                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocdecode.so --instr-profile=rocdecode.profdata --format=lcov > coverage.info
+                    lcov --remove coverage.info '/opt/*' --output-file coverage.info
+                    lcov --list coverage.info
+                    lcov --summary  coverage.info
+                    curl -Os https://uploader.codecov.io/latest/linux/codecov
+                    chmod +x codecov
+                    ./codecov -v -U \$http_proxy -t ${CODECOV_TOKEN} --file coverage.info --name rocDecode --sha ${commitSha}
+                    """
+
+        platform.runCommand(this, command)
+    }
 // Unit tests - TBD
 }
 

@@ -29,17 +29,20 @@ def runTestCommand (platform, project) {
     String libvaDriverPath = ""
     String packageManager = 'apt -y'
     String toolsPackage = 'llvm-amdgpu-dev'
+    String llvmLocation = '/opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin'
 
     if (platform.jenkinsLabel.contains('rhel')) {
         libLocation = ':/usr/local/lib'
         packageManager = 'yum -y'
         toolsPackage = 'llvm-amdgpu-devel'
+        llvmLocation = '/opt/amdgpu/lib64/llvm-20.1/bin'
     }
     else if (platform.jenkinsLabel.contains('sles')) {
         libLocation = ':/usr/local/lib'
         libvaDriverPath = "export LIBVA_DRIVERS_PATH=/opt/amdgpu/lib64/dri"
         packageManager = 'zypper -n'
         toolsPackage = 'llvm-amdgpu-devel'
+        llvmLocation = '/opt/amdgpu/lib64/llvm-20.1/bin'
     }
 
     String commitSha
@@ -83,8 +86,8 @@ def runTestCommand (platform, project) {
                     cd  ../../
                     echo \$(pwd)
                     sudo ${packageManager} install lcov ${toolsPackage}
-                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocjpeg.profdata
-                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocjpeg.so --instr-profile=rocjpeg.profdata --format=lcov > coverage.info
+                    ${llvmLocation}/llvm-profdata merge -sparse rawdata/*.profraw -o rocjpeg.profdata
+                    ${llvmLocation}/llvm-cov export -object release/lib/librocjpeg.so --instr-profile=rocjpeg.profdata --format=lcov > coverage.info
                     lcov --remove coverage.info '/opt/*' --output-file coverage.info
                     lcov --list coverage.info
                     lcov --summary  coverage.info

@@ -54,7 +54,7 @@ def runTestCommand (platform, project) {
                     ${libvaDriverPath}
                     echo make test
                     cd ${project.paths.project_build_prefix}/build
-                    export LLVM_PROFILE_FILE=\"\$(pwd)/rawdata/rocdecode-%p.profraw\"
+                    export LLVM_PROFILE_FILE=\"\$(pwd)/rawdata/rocjpeg-%p.profraw\"
                     echo \$LLVM_PROFILE_FILE
                     cd release
                     LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} make test ARGS="-VV --rerun-failed --output-on-failure"
@@ -83,8 +83,8 @@ def runTestCommand (platform, project) {
                     cd  ../../
                     echo \$(pwd)
                     sudo ${packageManager} install lcov ${toolsPackage}
-                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocdecode.profdata
-                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocdecode.so --instr-profile=rocdecode.profdata --format=lcov > coverage.info
+                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocjpeg.profdata
+                    opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocjpeg.so --instr-profile=rocjpeg.profdata --format=lcov > coverage.info
                     lcov --remove coverage.info '/opt/*' --output-file coverage.info
                     lcov --list coverage.info
                     lcov --summary  coverage.info

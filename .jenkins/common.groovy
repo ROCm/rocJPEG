@@ -12,7 +12,7 @@ def runCompileCommand(platform, project, jobName, boolean debug=false, boolean s
                 echo Build rocJPEG - ${buildTypeDir}
                 cd ${project.paths.project_build_prefix}
                 mkdir -p build/${buildTypeDir} && cd build/${buildTypeDir}
-                cmake ${buildTypeArg} ../..
+                cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="-fprofile-instr-generate -fcoverage-mapping" ../..
                 make -j\$(nproc)
                 sudo make install
                 sudo make package
@@ -27,13 +27,19 @@ def runTestCommand (platform, project) {
 
     String libLocation = ''
     String libvaDriverPath = ""
+    String packageManager = 'apt -y'
+    String toolsPackage = 'llvm-amdgpu-dev'
 
     if (platform.jenkinsLabel.contains('rhel')) {
         libLocation = ':/usr/local/lib'
+        packageManager = 'yum -y'
+        toolsPackage = 'llvm-amdgpu-devel'
     }
     else if (platform.jenkinsLabel.contains('sles')) {
         libLocation = ':/usr/local/lib'
         libvaDriverPath = "export LIBVA_DRIVERS_PATH=/opt/amdgpu/lib64/dri"
+        packageManager = 'zypper -n'
+        toolsPackage = 'llvm-amdgpu-devel'
     }
 
     def command = """#!/usr/bin/env bash
@@ -41,7 +47,10 @@ def runTestCommand (platform, project) {
                 export HOME=/home/jenkins
                 ${libvaDriverPath}
                 echo make test
-                cd ${project.paths.project_build_prefix}/build/release
+                cd ${project.paths.project_build_prefix}/build
+                export LLVM_PROFILE_FILE=\"\$(pwd)/rawdata/rocdecode-%p.profraw\"
+                echo \$LLVM_PROFILE_FILE
+                cd release
                 LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} make test ARGS="-VV --rerun-failed --output-on-failure"
                 echo rocjpeg-sample - jpegDecode
                 mkdir -p rocjpeg-sample && cd rocjpeg-sample
@@ -65,6 +74,17 @@ def runTestCommand (platform, project) {
                 cd ../ && mkdir -p rocjpeg-test && cd rocjpeg-test
                 cmake /opt/rocm/share/rocjpeg/test/
                 LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:/opt/rocm/lib${libLocation} ctest -VV --rerun-failed --output-on-failure
+                cd  ../../
+                echo \$(pwd)
+                sudo ${packageManager} install lcov ${toolsPackage}
+                opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-profdata merge -sparse rawdata/*.profraw -o rocdecode.profdata
+                opt/amdgpu/lib/x86_64-linux-gnu/llvm-20.1/bin/llvm-cov export -object release/lib/librocdecode.so --instr-profile=rocdecode.profdata --format=lcov > coverage.info
+                lcov --remove coverage.info '/opt/*' --output-file coverage.info
+                lcov --list coverage.info
+                lcov --summary  coverage.info
+                curl -Os https://uploader.codecov.io/latest/linux/codecov
+                chmod +x codecov
+                ./codecov -v -U \$http_proxy -t ${CODECOV_TOKEN} --file coverage.info --name rocDecode --sha ${commitSha}
                 """
 
     platform.runCommand(this, command)

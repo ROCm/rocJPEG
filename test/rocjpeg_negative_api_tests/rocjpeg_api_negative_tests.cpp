@@ -1,6 +1,6 @@
 
 /*
-Copyright (c) 2023 - 2025 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2024 - 2025 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -94,7 +94,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 6: Invalid number of quantization tables
+    // Scenario 6: Invalid number of quantization tables in the DQT marker
     std::vector<uint8_t> invalid_quantization_data = {0xFF, 0xD8, 0xFF, 0xDB, 0x00, 0x03, 0x1F}; // Invalid quantization table
     rocjpeg_status = rocJpegStreamParse(invalid_quantization_data.data(), invalid_quantization_data.size(), rocjpeg_stream_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_BAD_JPEG) {
@@ -102,7 +102,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 7: Invalid number of Huffman tables
+    // Scenario 7: Invalid number of Huffman tables in the DHT marker
     std::vector<uint8_t> invalid_huffman_table_data = {0xFF, 0xD8, 0xFF, 0xC4, 0x00, 0x03, 0x02}; // Too many Huffman tables
     rocjpeg_status = rocJpegStreamParse(invalid_huffman_table_data.data(), invalid_huffman_table_data.size(), rocjpeg_stream_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_BAD_JPEG) {
@@ -110,7 +110,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 8: Invalid AC Huffman table
+    // Scenario 8: Invalid AC Huffman table in the DHT marker
     std::vector<uint8_t> invalid_ac_huffman_table_data = {
         0xFF, 0xD8, //SOI
         0xFF, 0xC4, 0x00, 0x03, 0x10, // DHT with AC Hufman table
@@ -122,7 +122,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 9: Invalid DC Huffman table
+    // Scenario 9: Invalid DC Huffman table in the DHT marker
     std::vector<uint8_t> invalid_dc_huffman_table_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xC4, 0x00, 0x03, 0x01, // DHT with DC Hufman table
@@ -134,7 +134,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 10: invalid number of JPEG component in SOF
+    // Scenario 10: invalid number of JPEG component in the SOF marker
     std::vector<uint8_t> invalid_num_component_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xC0, 0x00, 0x08, // Invalid SOF with the number of component is set to 4
@@ -146,7 +146,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 11: Invalid quantization table selector in SOF marker
+    // Scenario 11: Invalid quantization table selector specified in the SOF marker
     std::vector<uint8_t> Invalid_quantization_table_selector_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xC0, 0x00, 0x0B, // SOF with 3 components with invalid quantization table selector is set to 4
@@ -158,7 +158,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 11: Component mismatch between SOS and SOF marker
+    // Scenario 11: Mismatch in the number of components between the SOS and SOF markers
     std::vector<uint8_t> component_mismatch_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xC0, 0x00, 0x11, // SOF with 3 components
@@ -172,7 +172,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 12: invalid number of AC Huffman table in SOS marker
+    // Scenario 12: Invalid AC Huffman table selector in the SOS marker
     std::vector<uint8_t> invalid_ac_huffman_sos_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xDA, 0x00, 0x07, // SOS with invalid number of AC Huffman table
@@ -184,7 +184,7 @@ int RocJpegApiNegativeTests::TestInvalidStreamParse() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 13: invalid number of DC Huffman table in SOS marker
+    // Scenario 13: Invalid DC Huffman table selector in the SOS marker
     std::vector<uint8_t> invalid_dc_huffman_sos_data = {
         0xFF, 0xD8, // SOI
         0xFF, 0xDA, 0x00, 0x07, // SOS with invalid number of DC Huffman table
@@ -219,7 +219,7 @@ int RocJpegApiNegativeTests::TestInvalidCreate() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 2: Pass valid pointer for handle but invalid device_id
+    // Scenario 2: Pass valid pointer for handle but invalid negative device_id
     int device_id = -1; // Invalid device ID
     rocjpeg_status = rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, device_id, &rocjpeg_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_EXECUTION_FAILED) {
@@ -227,7 +227,15 @@ int RocJpegApiNegativeTests::TestInvalidCreate() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 3: Pass valid pointer for handle but unsupported backend
+    // Scenario 3: Pass valid pointer for handle but invalid device_id
+    device_id = 255; // Invalid device ID
+    rocjpeg_status = rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, device_id, &rocjpeg_handle_);
+    if (rocjpeg_status != ROCJPEG_STATUS_INVALID_PARAMETER) {
+        std::cerr << "Expected ROCJPEG_STATUS_INVALID_PARAMETER but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Scenario 4: Pass valid pointer for handle but unsupported backend
     device_id = 0;
     rocjpeg_status = rocJpegCreate(ROCJPEG_BACKEND_HYBRID, device_id, &rocjpeg_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_NOT_IMPLEMENTED) {
@@ -235,7 +243,7 @@ int RocJpegApiNegativeTests::TestInvalidCreate() {
         return EXIT_FAILURE;
     }
 
-    // Scenario 4: Pass unsupported backend
+    // Scenario 5: Use an unsupported backend
     RocJpegBackend backend = static_cast<RocJpegBackend>(-1);
     rocjpeg_status = rocJpegCreate(backend, device_id, &rocjpeg_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_INVALID_PARAMETER) {
@@ -266,7 +274,6 @@ int RocJpegApiNegativeTests::TestInvalidDestroy() {
 
 int RocJpegApiNegativeTests::TestInvalidGetImageInfo() {
     std::cout << "info: Executing negative test cases for the rocJpegGetImageInfo API" << std::endl;
-
     // Scenario 1: Pass nullptr for all parameters
     RocJpegStatus rocjpeg_status = rocJpegGetImageInfo(rocjpeg_handle_, nullptr, nullptr, nullptr, nullptr, nullptr);
     if (rocjpeg_status != ROCJPEG_STATUS_INVALID_PARAMETER) {

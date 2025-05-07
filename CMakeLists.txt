@@ -181,6 +181,13 @@ if(HIP_FOUND AND Libva_FOUND)
   set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
 
+  # DRM
+  find_path(AMDGPU_DRM_INCLUDE_DIRS libdrm/amdgpu.h
+    PATHS /opt/amdgpu/include /usr/include /usr/ /usr/local/include
+    NO_DEFAULT_PATH
+  )
+  target_include_directories(${PROJECT_NAME} PRIVATE ${AMDGPU_DRM_INCLUDE_DIRS})
+
   # rocprofiler
   if(rocprofiler-register_FOUND)
     string(REPLACE "." ";" VERSION_LIST ${VERSION})

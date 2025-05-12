@@ -849,26 +849,10 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
  * @return The status of the synchronization operation.
  */
 RocJpegStatus RocJpegVappiDecoder::SyncSurface(VASurfaceID surface_id) {
-    VASurfaceStatus surface_status;
     if (!vaapi_mem_pool_->FindSurfaceId(surface_id)) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
-
-    CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));
-    while (surface_status != VASurfaceReady) {
-        VAStatus va_status = vaSyncSurface(va_display_, surface_id);
-        if (va_status != VA_STATUS_SUCCESS) {
-            if (va_status == 0x26 /*VA_STATUS_ERROR_TIMEDOUT*/) {
-                CHECK_VAAPI(vaQuerySurfaceStatus(va_display_, surface_id, &surface_status));
-            } else {
-                std::cout << "vaSyncSurface() failed with error code: 0x" << std::hex << va_status <<
-                    std::dec << "', status: " << vaErrorStr(va_status) << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;
-                return ROCJPEG_STATUS_RUNTIME_ERROR;
-            }
-        } else {
-            break;
-        }
-    }
+    CHECK_VAAPI(vaSyncSurface(va_display_, surface_id));
     return ROCJPEG_STATUS_SUCCESS;
 }
 

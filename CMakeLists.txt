@@ -42,7 +42,7 @@ endif()
 
 # rocJPEG Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "0.12.0")
+set(VERSION "0.12.1")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -83,7 +83,7 @@ message("-- ${BoldBlue}rocJPEG Version -- ${VERSION}${ColourReset}")
 message("-- ${BoldBlue}rocJPEG Install Path -- ${CMAKE_INSTALL_PREFIX}${ColourReset}")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
+list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH} ${ROCM_PATH}/lib/cmake)
 
 # rocJPEG Default Options
 option(BUILD_WITH_AMD_ADVANCE "Build rocJPEG for advanced AMD GPU Architecture" OFF)
@@ -93,18 +93,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "rocJPEG Default Build Type" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 endif()
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-  # -O0 -- Don't Optimize output file 
-  # -g  -- generate debugging information, generate debugging information, dwarf-4 for making valgrind work
-  # -Og -- Optimize for debugging experience rather than speed or size
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -gdwarf-4")
-else()
-  # -O3       -- Optimize output file 
-  # -DNDEBUG  -- turn off asserts 
-  # -fPIC     -- Generate position-independent code if possible
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fPIC")
-endif()
-message("-- ${BoldBlue}rocJPEG Build Type -- ${CMAKE_BUILD_TYPE}${ColourReset}")
 
 # Set supported GPU Targets
 if(NOT GPU_TARGETS AND NOT AMDGPU_TARGETS)
@@ -173,8 +161,22 @@ if(HIP_FOUND AND Libva_FOUND)
   file(GLOB_RECURSE SOURCES "./src/*.cpp")
   # rocJPEG.so
   add_library(${PROJECT_NAME} SHARED ${SOURCES})
-  # --all-warnings/-Wall       -- Enable most warning messages
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+  if(CMAKE_BUILD_TYPE MATCHES Debug)
+    # -O0 -- Don't Optimize output file
+    # -g  -- generate debugging information, generate debugging information, dwarf-4 for making valgrind work
+    # -Og -- Optimize for debugging experience rather than speed or size
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -gdwarf-4")
+    target_compile_options(${PROJECT_NAME} PRIVATE -O0 -gdwarf-4 -Wall)
+  else()
+    # -O3       -- Optimize output file
+    # -DNDEBUG  -- turn off asserts
+    # -fPIC     -- Generate position-independent code if possible
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -fPIC")
+    target_compile_options(${PROJECT_NAME} PRIVATE -O3 -DNDEBUG -fPIC -Wall)
+  endif()
+  message("-- ${BoldBlue}rocJPEG Build Type -- ${CMAKE_BUILD_TYPE}${ColourReset}")
+
   target_link_libraries(${PROJECT_NAME} ${LINK_LIBRARY_LIST})
 
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)

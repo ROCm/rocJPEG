@@ -42,7 +42,7 @@ endif()
 
 # rocJPEG Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "0.12.1")
+set(VERSION "0.12.2")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -135,6 +135,7 @@ option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support"
 
 find_package(HIP QUIET)
 find_package(Libva QUIET)
+find_package(Libdrm_amdgpu QUIET)
 
 if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
   find_package(rocprofiler-register QUIET
@@ -142,13 +143,17 @@ if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
     PATHS ${ROCM_PATH})
 endif()
 
-if(HIP_FOUND AND Libva_FOUND)
+if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   # HIP
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::device)
   # LibVA
   include_directories(${LIBVA_INCLUDE_DIR})
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_LIBRARY})
   set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBVA_DRM_LIBRARY})
+  # DRM
+  include_directories(${LIBDRM_AMDGPU_INCLUDE_DIR})
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBDRM_LIBRARY})
+  set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${LIBDRM_AMDGPU_LIBRARY})
 
   # rocprofiler
   if(rocprofiler-register_FOUND)
@@ -182,13 +187,6 @@ if(HIP_FOUND AND Libva_FOUND)
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
-
-  # DRM
-  find_path(AMDGPU_DRM_INCLUDE_DIRS libdrm/amdgpu.h
-    PATHS /opt/amdgpu/include /usr/include /usr/ /usr/local/include
-    NO_DEFAULT_PATH
-  )
-  target_include_directories(${PROJECT_NAME} PRIVATE ${AMDGPU_DRM_INCLUDE_DIRS})
 
   # rocprofiler
   if(rocprofiler-register_FOUND)
@@ -446,5 +444,8 @@ else()
   endif()
   if(NOT Libva_FOUND)
     message(FATAL_ERROR "-- ERROR!: libva Not Found - please install libva-amdgpu-dev(DEBIAN)/libva-amdgpu-devel(RPM) package!")
+  endif()
+  if(NOT Libdrm_amdgpu_FOUND)
+    message(FATAL_ERROR "-- ERROR!: libdrm_amdgpu Not Found - please install libdrm-amdgpu-dev(DEBIAN)/libdrm-amdgpu-devel(RPM) package!")
   endif()
 endif()

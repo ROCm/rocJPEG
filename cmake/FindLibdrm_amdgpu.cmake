@@ -21,26 +21,19 @@
 #
 ################################################################################
 
-find_library(LIBDRM_LIBRARY NAMES drm HINTS /opt/amdgpu/lib/x86_64-linux-gnu /opt/amdgpu/lib64 /usr/lib/x86_64-linux-gnu /usr/lib64)
 find_library(LIBDRM_AMDGPU_LIBRARY NAMES drm_amdgpu HINTS /opt/amdgpu/lib/x86_64-linux-gnu /opt/amdgpu/lib64 /usr/lib/x86_64-linux-gnu /usr/lib64)
 find_path(LIBDRM_AMDGPU_INCLUDE_DIR NAMES libdrm/amdgpu.h libdrm/amdgpu_drm.h PATHS /opt/amdgpu/include /usr/include /usr/ /usr/local/include NO_DEFAULT_PATH)
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(Libdrm_amdgpu DEFAULT_MSG LIBDRM_AMDGPU_INCLUDE_DIR LIBDRM_LIBRARY LIBDRM_AMDGPU_LIBRARY)
-mark_as_advanced(LIBDRM_AMDGPU_INCLUDE_DIR LIBDRM_LIBRARY LIBDRM_AMDGPU_LIBRARY)
+find_package_handle_standard_args(Libdrm_amdgpu DEFAULT_MSG LIBDRM_AMDGPU_INCLUDE_DIR LIBDRM_AMDGPU_LIBRARY)
+mark_as_advanced(LIBDRM_AMDGPU_INCLUDE_DIR LIBDRM_AMDGPU_LIBRARY)
 
 if(Libdrm_amdgpu_FOUND)
-  if(NOT TARGET Libdrm::drm)
-    add_library(Libdrm::drm UNKNOWN IMPORTED)
-    set_target_properties(Libdrm::drm PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBDRM_AMDGPU_INCLUDE_DIR}"
-        IMPORTED_LOCATION "${LIBDRM_LIBRARY}")
-  endif()
-  if(NOT TARGET Libdrm::drm_amdgpu)
-    add_library(Libdrm::drm_amdgpu UNKNOWN IMPORTED)
-    set_target_properties(Libdrm::drm_amdgpu PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBDRM_AMDGPU_INCLUDE_DIR}"
+  if(NOT TARGET Libdrm_amdgpu::drm_amdgpu)
+    add_library(Libdrm_amdgpu::drm_amdgpu UNKNOWN IMPORTED)
+    set_target_properties(Libdrm_amdgpu::drm_amdgpu PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${LIBDRM_AMDGPU_INCLUDE_DIR}"
       IMPORTED_LOCATION "${LIBDRM_AMDGPU_LIBRARY}")
   endif()
-  message("-- ${White}Using Libdrm -- \n\tLibraries:${LIBDRM_LIBRARY} ${ColourReset}")
   message("-- ${White}Using Libdrm_amdgpu -- \n\tLibraries:${LIBDRM_AMDGPU_LIBRARY} \n\tIncludes:${LIBDRM_AMDGPU_INCLUDE_DIR} ${ColourReset}")
 else()
   if(Libdrm_amdgpu_FIND_REQUIRED)

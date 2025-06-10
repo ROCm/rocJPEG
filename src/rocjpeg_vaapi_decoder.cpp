@@ -223,47 +223,88 @@ RocJpegStatus RocJpegVaapiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
                               [surface_id](const RocJpegVaapiMemPoolEntry& entry){return std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end();});
         if (it != entries.end()) {
             auto idx = std::distance(it->va_surface_ids.begin(), std::find(it->va_surface_ids.begin(), it->va_surface_ids.end(), surface_id));
-            if (it->hip_interops[idx].hip_mapped_device_mem != nullptr) {
-                CHECK_HIP(hipFree(it->hip_interops[idx].hip_mapped_device_mem));
-                if (it->hip_interops[idx].hip_ext_mem != nullptr) {
-                    CHECK_HIP(hipDestroyExternalMemory(it->hip_interops[idx].hip_ext_mem));
+            #if defined(reuse_interop_buffer) && reuse_interop_buffer > 0
+                // Perform the VA-API/HIP interop once for each surface in the memory pool and store it for reuse.
+                if (it->hip_interops[idx].hip_mapped_device_mem == nullptr) {
+                    VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
+                    CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                        VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                        &va_drm_prime_surface_desc));
+
+                    hipExternalMemoryHandleDesc external_mem_handle_desc = {};
+                    hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
+                    external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
+                    external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
+                    external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
+
+                    CHECK_HIP(hipImportExternalMemory(&it->hip_interops[idx].hip_ext_mem, &external_mem_handle_desc));
+                    external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
+                    CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interops[idx].hip_mapped_device_mem, it->hip_interops[idx].hip_ext_mem, &external_mem_buffer_desc));
+
+                    uint32_t surface_format = va_drm_prime_surface_desc.fourcc;
+                    // Workaround Mesa <= 24.3 returning non-standard VA fourcc
+                    if (surface_format == VA_FOURCC('Y', 'U', 'Y', 'V'))
+                        surface_format = VA_FOURCC_YUY2;
+
+                    it->hip_interops[idx].surface_format = surface_format;
+                    it->hip_interops[idx].width = va_drm_prime_surface_desc.width;
+                    it->hip_interops[idx].height = va_drm_prime_surface_desc.height;
+                    it->hip_interops[idx].size = va_drm_prime_surface_desc.objects[0].size;
+                    it->hip_interops[idx].offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+                    it->hip_interops[idx].offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+                    it->hip_interops[idx].offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+                    it->hip_interops[idx].pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+                    it->hip_interops[idx].pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+                    it->hip_interops[idx].pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+                    it->hip_interops[idx].num_layers = va_drm_prime_surface_desc.num_layers;
+
+                    for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
+                        close(va_drm_prime_surface_desc.objects[i].fd);
+                    }
                 }
-            }
-            VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
-            CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
-                VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
-                &va_drm_prime_surface_desc));
+            #else
+                if (it->hip_interops[idx].hip_mapped_device_mem != nullptr) {
+                    CHECK_HIP(hipFree(it->hip_interops[idx].hip_mapped_device_mem));
+                    if (it->hip_interops[idx].hip_ext_mem != nullptr) {
+                        CHECK_HIP(hipDestroyExternalMemory(it->hip_interops[idx].hip_ext_mem));
+                    }
+                }
+                VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};
+                CHECK_VAAPI(vaExportSurfaceHandle(va_display_, surface_id, VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME_2,
+                    VA_EXPORT_SURFACE_READ_ONLY | VA_EXPORT_SURFACE_SEPARATE_LAYERS,
+                    &va_drm_prime_surface_desc));
 
-            hipExternalMemoryHandleDesc external_mem_handle_desc = {};
-            hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
-            external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
-            external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
-            external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
+                hipExternalMemoryHandleDesc external_mem_handle_desc = {};
+                hipExternalMemoryBufferDesc external_mem_buffer_desc = {};
+                external_mem_handle_desc.type = hipExternalMemoryHandleTypeOpaqueFd;
+                external_mem_handle_desc.handle.fd = va_drm_prime_surface_desc.objects[0].fd;
+                external_mem_handle_desc.size = va_drm_prime_surface_desc.objects[0].size;
 
-            CHECK_HIP(hipImportExternalMemory(&it->hip_interops[idx].hip_ext_mem, &external_mem_handle_desc));
-            external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
-            CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interops[idx].hip_mapped_device_mem, it->hip_interops[idx].hip_ext_mem, &external_mem_buffer_desc));
+                CHECK_HIP(hipImportExternalMemory(&it->hip_interops[idx].hip_ext_mem, &external_mem_handle_desc));
+                external_mem_buffer_desc.size = va_drm_prime_surface_desc.objects[0].size;
+                CHECK_HIP(hipExternalMemoryGetMappedBuffer((void**)&it->hip_interops[idx].hip_mapped_device_mem, it->hip_interops[idx].hip_ext_mem, &external_mem_buffer_desc));
 
-            uint32_t surface_format = va_drm_prime_surface_desc.fourcc;
-            // Workaround Mesa <= 24.3 returning non-standard VA fourcc
-            if (surface_format == VA_FOURCC('Y', 'U', 'Y', 'V'))
-                surface_format = VA_FOURCC_YUY2;
+                uint32_t surface_format = va_drm_prime_surface_desc.fourcc;
+                // Workaround Mesa <= 24.3 returning non-standard VA fourcc
+                if (surface_format == VA_FOURCC('Y', 'U', 'Y', 'V'))
+                    surface_format = VA_FOURCC_YUY2;
 
-            it->hip_interops[idx].surface_format = surface_format;
-            it->hip_interops[idx].width = va_drm_prime_surface_desc.width;
-            it->hip_interops[idx].height = va_drm_prime_surface_desc.height;
-            it->hip_interops[idx].size = va_drm_prime_surface_desc.objects[0].size;
-            it->hip_interops[idx].offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
-            it->hip_interops[idx].offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
-            it->hip_interops[idx].offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
-            it->hip_interops[idx].pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
-            it->hip_interops[idx].pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
-            it->hip_interops[idx].pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
-            it->hip_interops[idx].num_layers = va_drm_prime_surface_desc.num_layers;
+                it->hip_interops[idx].surface_format = surface_format;
+                it->hip_interops[idx].width = va_drm_prime_surface_desc.width;
+                it->hip_interops[idx].height = va_drm_prime_surface_desc.height;
+                it->hip_interops[idx].size = va_drm_prime_surface_desc.objects[0].size;
+                it->hip_interops[idx].offset[0] = va_drm_prime_surface_desc.layers[0].offset[0];
+                it->hip_interops[idx].offset[1] = va_drm_prime_surface_desc.layers[1].offset[0];
+                it->hip_interops[idx].offset[2] = va_drm_prime_surface_desc.layers[2].offset[0];
+                it->hip_interops[idx].pitch[0] = va_drm_prime_surface_desc.layers[0].pitch[0];
+                it->hip_interops[idx].pitch[1] = va_drm_prime_surface_desc.layers[1].pitch[0];
+                it->hip_interops[idx].pitch[2] = va_drm_prime_surface_desc.layers[2].pitch[0];
+                it->hip_interops[idx].num_layers = va_drm_prime_surface_desc.num_layers;
 
-            for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
-                close(va_drm_prime_surface_desc.objects[i].fd);
-            }
+                for (uint32_t i = 0; i < va_drm_prime_surface_desc.num_objects; ++i) {
+                    close(va_drm_prime_surface_desc.objects[i].fd);
+                }
+            #endif
             hip_interop = it->hip_interops[idx];
             return ROCJPEG_STATUS_SUCCESS;
         }

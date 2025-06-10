@@ -42,7 +42,7 @@ endif()
 
 # rocJPEG Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "0.12.2")
+set(VERSION "0.13.0")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -197,6 +197,39 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
       ROCJPEG_ROCP_REG_VERSION_MAJOR=${VERSION_MAJOR}
       ROCJPEG_ROCP_REG_VERSION_MINOR=${VERSION_MINOR}
       ROCJPEG_ROCP_REG_VERSION_PATCH=${VERSION_PATCH})
+  endif()
+
+  # Set a default compile option to reuse the interop buffer. Disable this option if the ROCm version is below 7.0.0.
+  target_compile_definitions(${PROJECT_NAME} PRIVATE reuse_interop_buffer=1)
+  # rocm version
+  set(ROCM_VERSION_FILE  ${ROCM_PATH}/.info/version-rocm)
+  if(EXISTS "${ROCM_VERSION_FILE}")
+      file(READ "${ROCM_VERSION_FILE}" ROCM_VERSION_STRING)
+      string(STRIP "${ROCM_VERSION_STRING}" ROCM_VERSION_STRING)
+      message(STATUS "Full ROCm version string: ${ROCM_VERSION_STRING}")
+      # Match version string with regex
+      string(REGEX MATCH "^([0-9]+)\\.([0-9]+)\\.([0-9]+)-([0-9]+)$" _ "${ROCM_VERSION_STRING}")
+      if(CMAKE_MATCH_COUNT GREATER 0)
+          set(rocm_major_version "${CMAKE_MATCH_1}")
+          set(rocm_minor_version "${CMAKE_MATCH_2}")
+          set(rocm_patch_version "${CMAKE_MATCH_3}")
+          set(rocm_build_number "${CMAKE_MATCH_4}")
+          message(STATUS "ROCm Major Version: ${rocm_major_version}")
+          message(STATUS "ROCm Minor Version: ${rocm_minor_version}")
+          message(STATUS "ROCm Patch Version: ${rocm_patch_version}")
+          message(STATUS "ROCm Build Number: ${rocm_build_number}")
+          # Convert strings to integers
+          math(EXPR ROCM_VERSION_INT "${rocm_major_version} * 10000 + ${rocm_minor_version} * 100 + ${rocm_patch_version}")
+          set(TARGET_VERSION_INT 70000)
+          if(ROCM_VERSION_INT LESS TARGET_VERSION_INT)
+              message(STATUS "ROCm version is below the required threshold (>= 7.0.0) for reusing the interop buffer, so the compile option: reuse_interop_buffer is disabled.")
+              target_compile_definitions(${PROJECT_NAME} PRIVATE reuse_interop_buffer=0)
+          endif()
+      else()
+          message(WARNING "Failed to parse ROCm version string: ${ROCM_VERSION_STRING}")
+      endif()
+  else()
+    message(WARNING "ROCm version file not found at ${ROCM_VERSION_FILE}")
   endif()
 
   #Generate BUILD_INFO

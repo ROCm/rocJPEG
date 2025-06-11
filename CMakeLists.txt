@@ -42,7 +42,7 @@ endif()
 
 # rocJPEG Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "0.13.0")
+set(VERSION "0.14.0")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)

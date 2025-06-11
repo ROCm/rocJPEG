@@ -181,7 +181,7 @@ RocJpegStatus RocJpegVaapiMemoryPool::AddPoolEntry(uint32_t surface_format, cons
  */
 RocJpegVaapiMemPoolEntry RocJpegVaapiMemoryPool::GetEntry(uint32_t surface_format, uint32_t image_width, uint32_t image_height, uint32_t num_surfaces) {
     for (auto& entry : mem_pool_[surface_format]) {
-        if (entry.image_width == image_width && entry.image_height == image_height && entry.va_surface_ids.size() == num_surfaces && entry.entry_status == kIdle) {
+        if (entry.image_width >= image_width && entry.image_height >= image_height && entry.va_surface_ids.size() == num_surfaces && entry.entry_status == kIdle) {
             entry.entry_status = kBusy;
             return entry;
         }
@@ -334,7 +334,7 @@ bool RocJpegVaapiMemoryPool::SetSurfaceAsIdle(VASurfaceID surface_id) {
  * @param device_id The ID of the device to be used for decoding.
  */
 RocJpegVappiDecoder::RocJpegVappiDecoder(int device_id) : device_id_{device_id}, drm_fd_{-1}, min_picture_width_{64}, min_picture_height_{64},
-    max_picture_width_{4096}, max_picture_height_{4096}, supports_modifiers_{false}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
+    max_picture_width_{4096}, max_picture_height_{4096}, default_surface_width_{3840}, default_surface_height_{2160}, supports_modifiers_{false}, va_display_{0}, va_config_attrib_{{}}, va_config_id_{0}, va_profile_{VAProfileJPEGBaseline},
     vaapi_mem_pool_(std::make_unique<RocJpegVaapiMemoryPool>()), current_vcn_jpeg_spec_{}, va_picture_parameter_buf_id_{0}, va_quantization_matrix_buf_id_{0}, va_huffmantable_buf_id_{0},
     va_slice_param_buf_id_{0}, va_slice_data_buf_id_{0} {};
 
@@ -410,7 +410,7 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, in
     vaapi_mem_pool_->SetVaapiDisplay(va_display_);
 
     GetNumJpegCores();
-    vaapi_mem_pool_->SetPoolSize(current_vcn_jpeg_spec_.num_jpeg_cores + 1);
+    vaapi_mem_pool_->SetPoolSize(5 * current_vcn_jpeg_spec_.num_jpeg_cores + 1);
 
     return ROCJPEG_STATUS_SUCCESS;
 }
@@ -694,9 +694,11 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecode(const JpegStreamParameters *jpeg
     RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(surface_pixel_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, 1);
     if (mem_pool_entry.va_surface_ids.empty()) {
         mem_pool_entry.va_surface_ids.resize(1);
-        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, jpeg_stream_params->picture_parameter_buffer.picture_width, jpeg_stream_params->picture_parameter_buffer.picture_height, mem_pool_entry.va_surface_ids.data(), 1, surface_attribs.data(), surface_attribs.size()));
-        mem_pool_entry.image_width = jpeg_stream_params->picture_parameter_buffer.picture_width;
-        mem_pool_entry.image_height = jpeg_stream_params->picture_parameter_buffer.picture_height;
+        uint32_t surface_width = (jpeg_stream_params->picture_parameter_buffer.picture_width > default_surface_width_) ? jpeg_stream_params->picture_parameter_buffer.picture_width : default_surface_width_;
+        uint32_t surface_height = (jpeg_stream_params->picture_parameter_buffer.picture_height > default_surface_height_) ? jpeg_stream_params->picture_parameter_buffer.picture_height : default_surface_height_;
+        CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, surface_width, surface_height, mem_pool_entry.va_surface_ids.data(), 1, surface_attribs.data(), surface_attribs.size()));
+        mem_pool_entry.image_width = surface_width;
+        mem_pool_entry.image_height = surface_height;
         mem_pool_entry.hip_interops.resize(1, HipInteropDeviceMem());
         surface_id = mem_pool_entry.va_surface_ids[0];
         mem_pool_entry.entry_status = kBusy;
@@ -825,9 +827,11 @@ RocJpegStatus RocJpegVappiDecoder::SubmitDecodeBatched(JpegStreamParameters *jpe
         RocJpegVaapiMemPoolEntry mem_pool_entry = vaapi_mem_pool_->GetEntry(key.pixel_format, key.width, key.height, indices.size());
         if (mem_pool_entry.va_surface_ids.empty()) {
             mem_pool_entry.va_surface_ids.resize(indices.size());
-            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, key.width, key.height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), surface_attribs.data(), supports_modifiers_ ? 2 : 1));
-            mem_pool_entry.image_width = key.width;
-            mem_pool_entry.image_height = key.height;
+            uint32_t surface_width = (key.width > default_surface_width_) ? key.width : default_surface_width_;
+            uint32_t surface_height = (key.height > default_surface_height_) ? key.height : default_surface_height_;
+            CHECK_VAAPI(vaCreateSurfaces(va_display_, surface_format, surface_width, surface_height, mem_pool_entry.va_surface_ids.data(), mem_pool_entry.va_surface_ids.size(), surface_attribs.data(), supports_modifiers_ ? 2 : 1));
+            mem_pool_entry.image_width = surface_width;
+            mem_pool_entry.image_height = surface_height;
             for (size_t i = 0; i < mem_pool_entry.va_surface_ids.size(); i++) {
                 surface_ids[indices[i]] = mem_pool_entry.va_surface_ids[i];
             }

@@ -119,12 +119,13 @@ private:
    /**
     * @brief Copies a channel from the HIP interop device memory to the destination image.
     * @param hip_interop The HIP interop device memory.
+    * @param channel_width The width of the channel.
     * @param channel_height The height of the channel.
     * @param channel_index The index of the channel.
     * @param destination Pointer to the destination image.
     * @return The status of the operation.
     */
-   RocJpegStatus CopyChannel(HipInteropDeviceMem& hip_interop, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid);
+   RocJpegStatus CopyChannel(HipInteropDeviceMem& hip_interop, uint16_t channel_width, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid);
 
    /**
     * @brief Converts the image to RGB color space.

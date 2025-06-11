@@ -338,6 +338,8 @@ private:
     uint32_t min_picture_height_; // The minimum height of the picture
     uint32_t max_picture_width_; // The maximum width of the picture
     uint32_t max_picture_height_; // The maximum height of the picture
+    uint32_t default_surface_width_; // The default width of the surface
+    uint32_t default_surface_height_; // The default height of the surface
     bool supports_modifiers_; // DRM format modifiers support
     VADisplay va_display_; // The VAAPI display
     VAContextID va_context_id_; // The VAAPI context ID

@@ -150,16 +150,16 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
             CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, picture_height, chroma_height));
 
             // Copy Luma (first channel) for any surface format
-            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, destination, decode_params, is_roi_valid));
+            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, picture_height, 0, destination, decode_params, is_roi_valid));
 
             if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
                 // Copy the second channel (UV interleaved) for NV12
-                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination, decode_params, is_roi_valid));
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 1, destination, decode_params, is_roi_valid));
             } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
                        hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
                 // Copy the second and third channels for YUV444 and YUV440 (i.e., YUV422V)
-                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination, decode_params, is_roi_valid));
-                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination, decode_params, is_roi_valid));
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 1, destination, decode_params, is_roi_valid));
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 2, destination, decode_params, is_roi_valid));
             }
             break;
         case ROCJPEG_OUTPUT_YUV_PLANAR:
@@ -255,15 +255,15 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
                     // Copy the native decoded output buffers from interop memory directly to the destination buffers
                     CHECK_ROCJPEG(GetChromaHeight(hip_interop_dev_mem.surface_format, picture_height, chroma_height));
                     // Copy Luma (first channel) for any surface format
-                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, &destinations[k + i], &decode_params[k + i], is_roi_valid));
+                    CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, picture_height, 0, &destinations[k + i], &decode_params[k + i], is_roi_valid));
                     if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
                         // Copy the second channel (UV interleaved) for NV12
-                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, &destinations[k + i], &decode_params[k + i], is_roi_valid));
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 1, &destinations[k + i], &decode_params[k + i], is_roi_valid));
                     } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
                             hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
                         // Copy the second and third channels for YUV444 and YUV440 (i.e., YUV422V)
-                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, &destinations[k + i], &decode_params[k + i], is_roi_valid));
-                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, &destinations[k + i], &decode_params[k + i], is_roi_valid));
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 1, &destinations[k + i], &decode_params[k + i], is_roi_valid));
+                        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 2, &destinations[k + i], &decode_params[k + i], is_roi_valid));
                     }
                     break;
                 case ROCJPEG_OUTPUT_YUV_PLANAR:
@@ -368,12 +368,13 @@ RocJpegStatus RocJpegDecoder::GetImageInfo(RocJpegStreamHandle jpeg_stream_handl
  * The `channel_height` parameter specifies the height of the channel.
  *
  * @param hip_interop_dev_mem The `HipInteropDeviceMem` object containing the source channel data.
+ * @param channel_width The width of the channel to be copied.
  * @param channel_height The height of the channel to be copied.
  * @param channel_index The index of the channel to be copied.
  * @param destination The `RocJpegImage` object representing the destination image.
  * @return The status of the operation. Returns `ROCJPEG_STATUS_SUCCESS` if the channel was copied successfully.
  */
-RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_mem, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
+RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_mem, uint16_t channel_width, uint16_t channel_height, uint8_t channel_index, RocJpegImage *destination, const RocJpegDecodeParams *decode_params, bool is_roi_valid) {
     if (hip_interop_dev_mem.pitch[channel_index] != 0 && destination->pitch[channel_index] != 0 && destination->channel[channel_index] != nullptr) {
         uint32_t roi_offset = 0;
         if (is_roi_valid) {
@@ -394,24 +395,24 @@ RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_m
 
         uint32_t channel_widths[ROCJPEG_MAX_COMPONENT] = {};
         uint32_t roi_width = decode_params->crop_rectangle.right - decode_params->crop_rectangle.left;
-        bool is_roi_width_valid = roi_width > 0 && roi_width <= hip_interop_dev_mem.width;
+        bool is_roi_width_valid = roi_width > 0 && roi_width <= channel_width;
         switch (decode_params->output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
                 switch (hip_interop_dev_mem.surface_format) {
                     case VA_FOURCC_444P:
-                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     case VA_FOURCC_422V:
-                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     case VA_FOURCC_YUY2:
-                        channel_widths[0] = (is_roi_width_valid ? roi_width : hip_interop_dev_mem.width) * 2;
+                        channel_widths[0] = (is_roi_width_valid ? roi_width : channel_width) * 2;
                         break;
                     case VA_FOURCC_NV12:
-                        channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     case VA_FOURCC_Y800:
-                        channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     default:
                         ERR("Unknown output format!");
@@ -421,21 +422,21 @@ RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_m
             case ROCJPEG_OUTPUT_YUV_PLANAR:
                 switch (hip_interop_dev_mem.surface_format) {
                     case VA_FOURCC_444P:
-                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     case VA_FOURCC_422V:
-                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     case VA_FOURCC_YUY2:
-                        channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         channel_widths[2] = channel_widths[1] = channel_widths[0] >> 1;
                         break;
                     case VA_FOURCC_NV12:
-                        channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         channel_widths[2] = channel_widths[1] = channel_widths[0] >> 1;
                         break;
                     case VA_FOURCC_Y800:
-                        channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                        channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                         break;
                     default:
                         ERR("Unknown output format!");
@@ -443,13 +444,13 @@ RocJpegStatus RocJpegDecoder::CopyChannel(HipInteropDeviceMem& hip_interop_dev_m
                     }
                 break;
             case ROCJPEG_OUTPUT_Y:
-                channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                 break;
             case ROCJPEG_OUTPUT_RGB:
-                channel_widths[0] = (is_roi_width_valid ? roi_width : hip_interop_dev_mem.width) * 3;
+                channel_widths[0] = (is_roi_width_valid ? roi_width : channel_width) * 3;
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
-                channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : hip_interop_dev_mem.width;
+                channel_widths[2] = channel_widths[1] = channel_widths[0] = is_roi_width_valid ? roi_width : channel_width;
                 break;
             default:
                 ERR("Unknown output format!");
@@ -615,7 +616,7 @@ RocJpegStatus RocJpegDecoder::ColorConvertToRGBPlanar(HipInteropDeviceMem& hip_i
         case VA_FOURCC_RGBP:
             // Copy red, green, and blue channels from the interop memory into the destination
             for (uint8_t channel_index = 0; channel_index < 3; channel_index++) {
-                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, channel_index, destination, decode_params, is_roi_valid));
+                CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, picture_height, channel_index, destination, decode_params, is_roi_valid));
             }
            break;
         default:
@@ -659,15 +660,15 @@ RocJpegStatus RocJpegDecoder::GetPlanarYUVOutputFormat(HipInteropDeviceMem& hip_
                                                   destination->pitch[0], destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
     } else {
         // Copy Luma
-        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, destination, decode_params, is_roi_valid));
+        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, picture_height, 0, destination, decode_params, is_roi_valid));
         if (hip_interop_dev_mem.surface_format == VA_FOURCC_NV12) {
             // Extract the interleaved UV channels and copy them into the second and third channels of the destination.
             ConvertInterleavedUVToPlanarUV(hip_stream_, picture_width >> 1, picture_height >> 1, destination->channel[1], destination->channel[2],
                 destination->pitch[1], hip_interop_dev_mem.hip_mapped_device_mem + hip_interop_dev_mem.offset[1] + roi_offset, hip_interop_dev_mem.pitch[1]);
         } else if (hip_interop_dev_mem.surface_format == VA_FOURCC_444P ||
                    hip_interop_dev_mem.surface_format == VA_FOURCC_422V) {
-            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 1, destination, decode_params, is_roi_valid));
-            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, chroma_height, 2, destination, decode_params, is_roi_valid));
+            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 1, destination, decode_params, is_roi_valid));
+            CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, chroma_height, 2, destination, decode_params, is_roi_valid));
         }
     }
     return ROCJPEG_STATUS_SUCCESS;
@@ -699,7 +700,7 @@ RocJpegStatus RocJpegDecoder::GetYOutputFormat(HipInteropDeviceMem& hip_interop_
                               hip_interop_dev_mem.hip_mapped_device_mem + roi_offset, hip_interop_dev_mem.pitch[0]);
     } else {
         // Copy Luma
-        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_height, 0, destination, decode_params, is_roi_valid));
+        CHECK_ROCJPEG(CopyChannel(hip_interop_dev_mem, picture_width, picture_height, 0, destination, decode_params, is_roi_valid));
     }
     return ROCJPEG_STATUS_SUCCESS;
 }

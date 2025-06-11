@@ -223,7 +223,7 @@ RocJpegStatus RocJpegVaapiMemoryPool::GetHipInteropMem(VASurfaceID surface_id, H
                               [surface_id](const RocJpegVaapiMemPoolEntry& entry){return std::find(entry.va_surface_ids.begin(), entry.va_surface_ids.end(), surface_id) != entry.va_surface_ids.end();});
         if (it != entries.end()) {
             auto idx = std::distance(it->va_surface_ids.begin(), std::find(it->va_surface_ids.begin(), it->va_surface_ids.end(), surface_id));
-            #if defined(reuse_interop_buffer) && reuse_interop_buffer > 0
+            #if defined(ENABLE_INTEROP_BUFFER_REUSE) && ENABLE_INTEROP_BUFFER_REUSE > 0
                 // Perform the VA-API/HIP interop once for each surface in the memory pool and store it for reuse.
                 if (it->hip_interops[idx].hip_mapped_device_mem == nullptr) {
                     VADRMPRIMESurfaceDescriptor va_drm_prime_surface_desc = {};

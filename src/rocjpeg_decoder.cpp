@@ -286,12 +286,14 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
                 default:
                     break;
             }
+        }
+        CHECK_HIP(hipStreamSynchronize(hip_stream_));
+        for (int k = 0; k < current_batch_size; k++) {
+            VASurfaceID current_surface_id = *(current_surface_ids.data() + k + i);
             CHECK_ROCJPEG(jpeg_vaapi_decoder_.SetSurfaceAsIdle(current_surface_id));
         }
-
     }
 
-    CHECK_HIP(hipStreamSynchronize(hip_stream_));
     return ROCJPEG_STATUS_SUCCESS;
 }
 /**

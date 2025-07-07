@@ -70,7 +70,7 @@ if(HIP_FOUND AND rocjpeg_FOUND AND rocprofiler-register_FOUND)
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::host)
     # rocJPEG and utils
     include_directories (${rocjpeg_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${rocjpeg_LIBRARY})
+    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} rocjpeg::rocjpeg)
     # rocprofiler-register
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} rocprofiler-register::rocprofiler-register)
     # sample app exe

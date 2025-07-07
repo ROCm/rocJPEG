@@ -20,13 +20,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#ifndef _ROCJPEG_VERSION_H_
-#define _ROCJPEG_VERSION_H_
+#ifndef _rocjpeg_VERSION_H_
+#define _rocjpeg_VERSION_H_
 
 /*!
  * \file
  * \brief rocJPEG version
- * \defgroup group_rocjpeg_version rocJPEG Version
+ * \defgroup group_rocjpeg_VERSION rocJPEG Version
  * \brief rocJPEG version
  */
 
@@ -56,4 +56,4 @@ extern "C" {
 }  // end extern "C" block
 #endif
 
-#endif  //_ROCJPEG_VERSION_H_  header guard
+#endif  //_rocjpeg_VERSION_H_  header guard

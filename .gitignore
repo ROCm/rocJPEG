@@ -3,4 +3,4 @@ samples/*/build
 .vscode/
 doxygen_output*
 _doxygen/
-api/rocjpeg_version.h
+api/rocjpeg_VERSION.h

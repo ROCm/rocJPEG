@@ -26,7 +26,7 @@ THE SOFTWARE.
 /*!
  * \file
  * \brief rocJPEG version
- * \defgroup group_rocjpeg_VERSION rocJPEG Version
+ * \defgroup group_rocjpeg_version rocJPEG Version
  * \brief rocJPEG version
  */
 

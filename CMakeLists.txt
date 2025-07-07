@@ -41,7 +41,7 @@ if(NOT DEFINED CMAKE_CXX_COMPILER)
 endif()
 
 # rocJPEG Version
-# NOTE: package version and rocjpeg_VERSION.h is generated with this version
+# NOTE: package version and rocjpeg_version.h is generated with this version
 set(VERSION "1.0.0")
 
 # Set Project Version and Language
@@ -233,7 +233,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   endif()
 
   #Generate BUILD_INFO
-  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/api/rocjpeg_VERSION.h.in ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_VERSION.h @ONLY )
+  configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/api/rocjpeg_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_version.h @ONLY )
 
   # install rocJPEG libs -- {ROCM_PATH}/lib
   install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT runtime NAMELINK_SKIP)
@@ -242,7 +242,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   # install rocJPEG include files -- {ROCM_PATH}/include/rocJPEG
   install(FILES api/rocjpeg/rocjpeg.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_VERSION.h
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rocjpeg_version.h
           DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME} COMPONENT dev)
   # install rocJPEG api trace include file -- {ROCM_PATH}/include/rocjpeg/amd_detail
   install(FILES api/amd_detail/rocjpeg_api_trace.h

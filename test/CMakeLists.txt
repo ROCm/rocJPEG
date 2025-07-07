@@ -59,7 +59,7 @@ list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 
 # find rocjpeg
 if(BUILD_FROM_SOURCE)
-  message("-- ${White}${PROJECT_NAME}: CTests requires rocdecode installed before running CTests")
+  message("-- ${White}${PROJECT_NAME}: CTests requires rocjpeg installed before running CTests")
 else()
   find_package(rocjpeg QUIET)
 

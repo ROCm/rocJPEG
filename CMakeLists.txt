@@ -61,7 +61,7 @@ find_program(DPKG_EXE dpkg)
 
 # avoid setting the default installation path to /usr/local
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX ${ROCM_PATH} CACHE PATH "rocJPEG default installation path" FORCE)
+  set(CMAKE_INSTALL_PREFIX ${ROCM_PATH} CACHE PATH "rocjpeg default installation path" FORCE)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 set(DEFAULT_BUILD_TYPE "Release")
@@ -326,14 +326,14 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   set(CPACK_PACKAGE_CONTACT "rocjpeg Support <mivisionx.support@amd.com>")
   set(CPACK_PACKAGE_VENDOR "AMD ROCm")
   set(CPACK_PACKAGE_GROUP "Development/Tools")
-  set(CPACK_PACKAGE_HOMEPAGE "https://github.com/ROCm/rocJPEG")
+  set(CPACK_PACKAGE_HOMEPAGE "https://github.com/ROCm/rocjpeg")
 
   if(ENABLE_ASAN_PACKAGING)
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "AMD rocjpeg address sanitizer libraries")
-    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocJPEG address sanitizer libraries")
+    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocjpeg address sanitizer libraries")
   else()
-    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs")
-    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs")
+    set(CPACK_RPM_PACKAGE_SUMMARY "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs")
   endif()
 
   if(DEFINED ENV{ROCM_LIBPATCH_VERSION})
@@ -442,39 +442,39 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   endif()
   if(EXISTS ${RPMBUILD_EXE})
     list(APPEND CPACK_GENERATOR "RPM")
-    message("-- ${White}AMD ROCm rocJPEG RunTime Package -- ${CPACK_RPM_RUNTIME_PACKAGE_REQUIRES}${ColourReset}")
-    message("-- ${White}AMD ROCm rocJPEG Dev Package -- ${CPACK_RPM_DEV_PACKAGE_REQUIRES}${ColourReset}")
+    message("-- ${White}AMD ROCm rocjpeg RunTime Package -- ${CPACK_RPM_RUNTIME_PACKAGE_REQUIRES}${ColourReset}")
+    message("-- ${White}AMD ROCm rocjpeg Dev Package -- ${CPACK_RPM_DEV_PACKAGE_REQUIRES}${ColourReset}")
   endif()
   if(EXISTS ${DPKG_EXE})
     list(APPEND CPACK_GENERATOR "DEB")
-    message("-- ${White}AMD ROCm rocJPEG RunTime Package -- ${CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS}${ColourReset}")
-    message("-- ${White}AMD ROCm rocJPEG Dev Package -- ${CPACK_DEBIAN_DEV_PACKAGE_DEPENDS}${ColourReset}")
+    message("-- ${White}AMD ROCm rocjpeg RunTime Package -- ${CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS}${ColourReset}")
+    message("-- ${White}AMD ROCm rocjpeg Dev Package -- ${CPACK_DEBIAN_DEV_PACKAGE_DEPENDS}${ColourReset}")
   endif()
 
   include(CPack)
 
   cpack_add_component(runtime
-                    DISPLAY_NAME "rocJPEG Runtime Package"
-                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
-rocJPEG runtime package provides rocJPEG library and license.txt")
+                    DISPLAY_NAME "rocjpeg Runtime Package"
+                    DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
+rocjpeg runtime package provides rocjpeg library and license.txt")
 
   cpack_add_component(dev
-                    DISPLAY_NAME "rocJPEG Develop Package"
-                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
-rocJPEG develop package provides rocJPEG library, header files and samples")
+                    DISPLAY_NAME "rocjpeg Develop Package"
+                    DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
+rocjpeg develop package provides rocjpeg library, header files and samples")
 
   cpack_add_component(asan
-                    DISPLAY_NAME "rocJPEG ASAN Package"
-                    DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
-rocJPEG ASAN package provides rocJPEG ASAN libraries")
+                    DISPLAY_NAME "rocjpeg ASAN Package"
+                    DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
+rocjpeg ASAN package provides rocjpeg ASAN libraries")
 
   cpack_add_component(test
-                  DISPLAY_NAME "rocJPEG Test Package"
-                  DESCRIPTION "AMD rocJPEG is a high performance JPEG decode SDK for AMD GPUs. \
-rocJPEG Test package provides rocJPEG Test Components")
+                  DISPLAY_NAME "rocjpeg Test Package"
+                  DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
+rocjpeg Test package provides rocjpeg Test Components")
 
 else()
-  message("-- ${Red}AMD ROCm rocJPEG -- unmet dependencies${ColourReset}")
+  message("-- ${Red}AMD ROCm rocjpeg -- unmet dependencies${ColourReset}")
   if(NOT HIP_FOUND)
     message(FATAL_ERROR "-- ERROR!: HIP Not Found! - please install rocm-hip-runtime-dev!")
   endif()

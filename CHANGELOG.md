@@ -3,7 +3,7 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
-## rocJPEG 0.14.1 for ROCm 7.0.0
+## rocjpeg 1.0.0 for ROCm 7.0.0
 
 ## Added
 * cmake config files
@@ -12,7 +12,7 @@ Documentation for rocJPEG is available at
 ## Changed
 * Readme - cleanup and updates to pre-reqs
 * The `decode_params` argument of the `rocJpegDecodeBatched` API is now an array of `RocJpegDecodeParams` structs representing the decode parameters for the batch of JPEG images.
-* `libdrm_amdgpu` is now explicitly linked with rocJPEG.
+* `libdrm_amdgpu` is now explicitly linked with rocjpeg.
 
 ## Removed
 * Dev Package - No longer installs pkg-config

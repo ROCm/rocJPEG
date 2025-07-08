@@ -45,15 +45,15 @@ project(jpegdecodebatched)
 list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 
 find_package(HIP QUIET)
-find_package(ROCJPEG QUIET)
+find_package(rocjpeg QUIET)
 find_package(rocprofiler-register QUIET)
 
-if(HIP_FOUND AND ROCJPEG_FOUND AND rocprofiler-register_FOUND)
+if(HIP_FOUND AND rocjpeg_FOUND AND rocprofiler-register_FOUND)
     # HIP
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} hip::host)
     # rocJPEG
-    include_directories (${ROCJPEG_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
-    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} ${ROCJPEG_LIBRARY})
+    include_directories (${rocjpeg_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} rocjpeg::rocjpeg)
     # std filesystem
     set(LINK_LIBRARY_LIST ${LINK_LIBRARY_LIST} stdc++fs)
     # rocprofiler-register
@@ -68,7 +68,7 @@ else()
     if (NOT HIP_FOUND)
         message(FATAL_ERROR "-- ERROR!: HIP Not Found! - please install ROCm and HIP!")
     endif()
-    if (NOT ROCJPEG_FOUND)
+    if (NOT rocjpeg_FOUND)
         message(FATAL_ERROR "-- ERROR!: rocJPEG Not Found! - please install rocJPEG!")
     endif()
     if (NOT rocprofiler-register_FOUND)

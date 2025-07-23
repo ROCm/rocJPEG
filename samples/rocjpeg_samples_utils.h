@@ -628,7 +628,7 @@ public:
     }
 
 private:
-    static const int mem_alignment = 4 * 1024 * 1024;
+    static const int mem_alignment = 32 * 1024 * 1024;
     /**
      * @brief Shows the help message and exits.
      *

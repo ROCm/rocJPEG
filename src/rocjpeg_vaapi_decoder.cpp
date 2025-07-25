@@ -429,6 +429,8 @@ void RocJpegVappiDecoder::GetNumJpegCores() {
     uint32_t major_version = 0, minor_version = 0;
     uint32_t num_jpeg_cores = 0;
     int error_code = 0;
+    const char *enable_vcn_hw_csc_str = std::getenv("ROCJPEG_ENABLE_VCN_HW_CSC");
+    bool enable_vcn_hw_csc = (enable_vcn_hw_csc_str != nullptr && strcmp(enable_vcn_hw_csc_str, "1") == 0);
     if (amdgpu_device_initialize(drm_fd_, &major_version, &minor_version, &dev_handle)) {
         ERR("amdgpu_device_initialize failed!");
         return;
@@ -437,7 +439,8 @@ void RocJpegVappiDecoder::GetNumJpegCores() {
     if (!error_code) {
         current_vcn_jpeg_spec_.num_jpeg_cores = num_jpeg_cores;
         // Set the capabilities based on the number of JPEG cores
-        current_vcn_jpeg_spec_.can_roi_decode = current_vcn_jpeg_spec_.can_convert_to_rgb = (num_jpeg_cores >= 8);
+        current_vcn_jpeg_spec_.can_roi_decode = (num_jpeg_cores >= 8);
+        current_vcn_jpeg_spec_.can_convert_to_rgb = (num_jpeg_cores >= 8) && enable_vcn_hw_csc;
     } else {
         ERR("Failed to get the number of jpeg cores.");
     }

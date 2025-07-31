@@ -331,30 +331,30 @@ public:
                 switch (subsampling) {
                     case ROCJPEG_CSS_444:
                         num_channels = 3;
-                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                        channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                         break;
                     case ROCJPEG_CSS_440:
                         num_channels = 3;
-                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
-                        channel_sizes[2] = channel_sizes[1] = align(output_image.pitch[0] * ((is_roi_valid ? roi_height : heights[0]) >> 1), mem_alignment);
+                        output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
+                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * ((is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment)) >> 1);
                         break;
                     case ROCJPEG_CSS_422:
                         num_channels = 1;
-                        output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 2;
-                        channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                        output_image.pitch[0] = (is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment)) * 2;
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                         break;
                     case ROCJPEG_CSS_420:
                         num_channels = 2;
-                        output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
-                        channel_sizes[1] = align(output_image.pitch[1] * ((is_roi_valid ? roi_height : heights[0]) >> 1), mem_alignment);
+                        output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
+                        channel_sizes[1] = output_image.pitch[1] * ((is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment)) >> 1);
                         break;
                     case ROCJPEG_CSS_400:
                         num_channels = 1;
-                        output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                        channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                        output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                        channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                         break;
                     default:
                         std::cout << "Unknown chroma subsampling!" << std::endl;
@@ -364,32 +364,32 @@ public:
             case ROCJPEG_OUTPUT_YUV_PLANAR:
                 if (subsampling == ROCJPEG_CSS_400) {
                     num_channels = 1;
-                    output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                    channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                    output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                    channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                 } else {
                     num_channels = 3;
-                    output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                    output_image.pitch[1] = is_roi_valid ? roi_width : widths[1];
-                    output_image.pitch[2] = is_roi_valid ? roi_width : widths[2];
-                    channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
-                    channel_sizes[1] = align(output_image.pitch[1] * (is_roi_valid ? roi_height : heights[1]), mem_alignment);
-                    channel_sizes[2] = align(output_image.pitch[2] * (is_roi_valid ? roi_height : heights[2]), mem_alignment);
+                    output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                    output_image.pitch[1] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[1], mem_alignment);
+                    output_image.pitch[2] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[2], mem_alignment);
+                    channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
+                    channel_sizes[1] = output_image.pitch[1] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[1], mem_alignment));
+                    channel_sizes[2] = output_image.pitch[2] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[2], mem_alignment));
                 }
                 break;
             case ROCJPEG_OUTPUT_Y:
                 num_channels = 1;
-                output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                 break;
             case ROCJPEG_OUTPUT_RGB:
                 num_channels = 1;
-                output_image.pitch[0] = (is_roi_valid ? roi_width : widths[0]) * 3;
-                channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                output_image.pitch[0] = (is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment)) * 3;
+                channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                 break;
             case ROCJPEG_OUTPUT_RGB_PLANAR:
                 num_channels = 3;
-                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? roi_width : widths[0];
-                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = align(output_image.pitch[0] * (is_roi_valid ? roi_height : heights[0]), mem_alignment);
+                output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
+                channel_sizes[2] = channel_sizes[1] = channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
                 break;
             default:
                 std::cout << "Unknown output format!" << std::endl;
@@ -567,9 +567,9 @@ public:
                 return;
         }
 
-        uint32_t channel0_size = output_image->pitch[0] * heights[0];
-        uint32_t channel1_size = output_image->pitch[1] * heights[1];
-        uint32_t channel2_size = output_image->pitch[2] * heights[2];
+        uint32_t channel0_size = output_image->pitch[0] * align(heights[0], mem_alignment);
+        uint32_t channel1_size = output_image->pitch[1] * align(heights[1], mem_alignment);
+        uint32_t channel2_size = output_image->pitch[2] * align(heights[2], mem_alignment);
 
         uint32_t output_image_size = channel0_size + channel1_size + channel2_size;
 
@@ -628,7 +628,7 @@ public:
     }
 
 private:
-    static const int mem_alignment = 4 * 1024 * 1024;
+    static const int mem_alignment = 16;
     /**
      * @brief Shows the help message and exits.
      *

@@ -456,9 +456,11 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   cpack_add_component(runtime
                     DISPLAY_NAME "rocjpeg Runtime Package"
 		    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg library and license.txt")
+
   cpack_add_component(dev
                     DISPLAY_NAME "rocjpeg Develop Package"
 		    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg lib, header files and samples")
+
   cpack_add_component(asan
                     DISPLAY_NAME "rocjpeg ASAN Package"
                     DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \

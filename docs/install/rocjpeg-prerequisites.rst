@@ -14,8 +14,6 @@ rocJPEG has been tested on the following Linux environments:
   
 * Ubuntu 22.04 and 24.04
 * RHEL 8 and 9
-* SLES: 15-SP5
-
 
 See `Supported operating systems <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html#supported-operating-systems>`_ for the complete list of ROCm supported Linux environments.
 
@@ -26,3 +24,4 @@ The following prerequisites are installed by the package installer. If you are b
 * Video Acceleration API (VA-API) - libva-amdgpu-dev is an AMD implementation for VA-API
 * AMD VA Drivers
 * libstdc++-12-dev for installations on Ubuntu 22.04 
+

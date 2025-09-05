@@ -226,12 +226,22 @@ int RocJpegApiNegativeTests::TestInvalidCreate() {
         std::cerr << "Expected ROCJPEG_STATUS_EXECUTION_FAILED but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
         return EXIT_FAILURE;
     }
+    rocjpeg_status = rocJpegDestroy(rocjpeg_handle_);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Expected ROCJPEG_STATUS_SUCCESS but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // Scenario 3: Pass valid pointer for handle but invalid device_id
     device_id = 255; // Invalid device ID
     rocjpeg_status = rocJpegCreate(ROCJPEG_BACKEND_HARDWARE, device_id, &rocjpeg_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_INVALID_PARAMETER) {
         std::cerr << "Expected ROCJPEG_STATUS_INVALID_PARAMETER but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+        return EXIT_FAILURE;
+    }
+    rocjpeg_status = rocJpegDestroy(rocjpeg_handle_);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Expected ROCJPEG_STATUS_SUCCESS but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -242,12 +252,22 @@ int RocJpegApiNegativeTests::TestInvalidCreate() {
         std::cerr << "Expected ROCJPEG_STATUS_NOT_IMPLEMENTED but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
         return EXIT_FAILURE;
     }
+    rocjpeg_status = rocJpegDestroy(rocjpeg_handle_);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Expected ROCJPEG_STATUS_SUCCESS but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+        return EXIT_FAILURE;
+    }
 
     // Scenario 5: Use an unsupported backend
     RocJpegBackend backend = static_cast<RocJpegBackend>(-1);
     rocjpeg_status = rocJpegCreate(backend, device_id, &rocjpeg_handle_);
     if (rocjpeg_status != ROCJPEG_STATUS_INVALID_PARAMETER) {
         std::cerr << "Expected ROCJPEG_STATUS_INVALID_PARAMETER but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
+        return EXIT_FAILURE;
+    }
+    rocjpeg_status = rocJpegDestroy(rocjpeg_handle_);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        std::cerr << "Expected ROCJPEG_STATUS_SUCCESS but got " << rocJpegGetErrorName(rocjpeg_status) << std::endl;
         return EXIT_FAILURE;
     }
 

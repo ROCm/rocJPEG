@@ -9,20 +9,20 @@ subtrees:
 - caption: Install
   entries:
   - file: install/rocjpeg-prerequisites.rst
-    title: rocJPEG installation prerequisites
+    title: Installation prerequisites
   - file: install/rocjpeg-package-install.rst
-    title: Installing rocJPEG with the package installer
+    title: Installing with the package installer
   - file: install/rocjpeg-build-and-install.rst
-    title: Building and installing rocJPEG from source code
+    title: Building and installing from source code
 
 - caption: How to
   entries:
   - file: how-to/using-rocjpeg.rst
-    title: Using rocJPEG
+    title: Use rocJPEG
   - file: how-to/rocjpeg-retrieve-image-info.rst
-    title: Retrieving image information with rocJPEG
+    title: Retrieve image information
   - file: how-to/rocjpeg-decoding-a-jpeg-stream.rst
-    title: Decoding a JPEG stream with rocJPEG
+    title: Decode a JPEG stream
 
 - caption: Samples
   entries:
@@ -33,13 +33,13 @@ subtrees:
 - caption: Reference
   entries:
   - file: reference/rocjpeg-formats-and-architectures.rst
-    title: rocJPEG subsampling and hardware capabilities
+    title: Subsampling and hardware capabilities
   - file: doxygen/html/files
-    title: rocJPEG API library
+    title: API library
   - file: doxygen/html/globals
-    title: rocJPEG functions
+    title: Functions
   - file: doxygen/html/annotated
-    title: rocJPEG data structures
+    title: Data structures
 
 - caption: About
   entries:

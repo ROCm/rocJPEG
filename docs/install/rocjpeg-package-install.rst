@@ -8,7 +8,7 @@ Installing rocJPEG with the package installer
 
 .. note::
 
-  ROCm 6.3.0 or later must be installed before installing rocJPEG. See `Quick start installation guide <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html>`_ for detailed ROCm installation instructions. 
+  ROCm must be installed before installing rocJPEG. See `Quick start installation guide <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html>`_ for detailed ROCm installation instructions. 
 
 There are three rocJPEG packages available:
 

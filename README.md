@@ -21,7 +21,7 @@ rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG AP
 * Linux
   * Ubuntu - `22.04` / `24.04`
   * RedHat - `8` / `9`
-  * SLES - `15-SP5`
+  * SLES - `15 SP6` / `15 SP7`
 
 ### Hardware
 * **GPU**: [AMD Radeon&trade; Graphics](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html) / [AMD Instinct&trade; Accelerators](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html)

@@ -55,7 +55,7 @@ THE SOFTWARE.
 #define CHECK_HIP(call) {                                             \
     hipError_t hip_status = (call);                                   \
     if (hip_status != hipSuccess) {                                   \
-        std::cout << "rocJPEG failure: '#" << hip_status << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
+        std::cout << "HIP failure: 'status: " << hipGetErrorName(hip_status) << "' at " <<  __FILE__ << ":" << __LINE__ << std::endl;\
         exit(1);                                                      \
     }                                                                 \
 }
@@ -338,7 +338,7 @@ public:
                         num_channels = 3;
                         output_image.pitch[2] = output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
                         channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
-                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * ((is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment)) >> 1);
+                        channel_sizes[2] = channel_sizes[1] = output_image.pitch[0] * (is_roi_valid ? align(roi_height >> 1, mem_alignment) : align(heights[0] >> 1, mem_alignment));
                         break;
                     case ROCJPEG_CSS_422:
                         num_channels = 1;
@@ -349,7 +349,7 @@ public:
                         num_channels = 2;
                         output_image.pitch[1] = output_image.pitch[0] = is_roi_valid ? align(roi_width, mem_alignment) : align(widths[0], mem_alignment);
                         channel_sizes[0] = output_image.pitch[0] * (is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment));
-                        channel_sizes[1] = output_image.pitch[1] * ((is_roi_valid ? align(roi_height, mem_alignment) : align(heights[0], mem_alignment)) >> 1);
+                        channel_sizes[1] = output_image.pitch[1] * (is_roi_valid ? align(roi_height >> 1, mem_alignment) : align(heights[0] >> 1, mem_alignment));
                         break;
                     case ROCJPEG_CSS_400:
                         num_channels = 1;

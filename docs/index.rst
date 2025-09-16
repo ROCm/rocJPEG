@@ -23,9 +23,9 @@ The rocJPEG public repository is located at `https://github.com/ROCm/rocJPEG <ht
 
   .. grid-item-card:: How to
 
-    * :doc:`Using rocJPEG <how-to/using-rocjpeg>`
-    * :doc:`Retrieving image information with rocJPEG <how-to/rocjpeg-retrieve-image-info>`
-    * :doc:`Decoding a JPEG stream with rocJPEG <how-to/rocjpeg-decoding-a-jpeg-stream>`
+    * :doc:`Use rocJPEG <how-to/using-rocjpeg>`
+    * :doc:`Retrieve image information with rocJPEG <how-to/rocjpeg-retrieve-image-info>`
+    * :doc:`Decode a JPEG stream with rocJPEG <how-to/rocjpeg-decoding-a-jpeg-stream>`
 
   .. grid-item-card:: Samples
 

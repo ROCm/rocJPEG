@@ -159,32 +159,57 @@ commonPackages = [
 
 # Debian packages
 coreDebianPackages = [
-    'rocm-hip-runtime-dev',
-    'libva-amdgpu-dev'
+    'libva-dev',
+    'rocm-hip-runtime-dev'
 ]
 coreDebianU22Packages = [
+    'libva-amdgpu-dev',
+    'rocm-hip-runtime-dev',
     'libstdc++-12-dev'
 ]
 runtimeDebianPackages = [
-    'libva2-amdgpu',
+    'libva-drm2',
+    'mesa-amdgpu-va-drivers',
+    'vainfo'
+]
+runtimeDebianU22Packages = [
     'libva-amdgpu-drm2',
-    'libva-amdgpu-wayland2',
-    'libva-amdgpu-x11-2',
     'mesa-amdgpu-va-drivers',
     'vainfo'
 ]
 
 # RPM Packages
-coreRPMPackages = [
-    'rocm-hip-runtime-devel',
-    'libva-amdgpu-devel'
-]
-
-runtimeRPMPackages = [
-    'libva-amdgpu',
-    'mesa-amdgpu-va-drivers',
-    'libva-utils'
-]
+if "centos" in os_info_data or "redhat" in os_info_data:
+    if "VERSION_ID=7" in os_info_data or "VERSION_ID=8" in os_info_data:
+        coreRPMPackages = [
+            'libva-amdgpu-devel',
+            'rocm-hip-runtime-devel'
+        ]
+        runtimeRPMPackages = [
+            'libva-amdgpu',
+            'mesa-amdgpu-va-drivers',
+            'libva-utils'
+        ]
+    else:
+        coreRPMPackages = [
+            'libva-devel',
+            'rocm-hip-runtime-devel'
+        ]
+        runtimeRPMPackages = [
+            'libva',
+            'mesa-amdgpu-va-drivers',
+            'libva-utils'
+        ]
+else:
+    coreRPMPackages = [
+        'libva-devel',
+        'rocm-hip-runtime-devel'
+    ]
+    runtimeRPMPackages = [
+        'libva-drm2',
+        'mesa-amdgpu-va-drivers',
+        'libva-utils'
+    ]
 
 # update
 ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +' '+linuxSystemInstall_check+' '+osUpdate))
@@ -198,13 +223,14 @@ for i in range(len(commonPackages)):
 # rocJPEG Core - Requirements
 ERROR_CHECK(os.system('sudo '+sudoValidateOption))
 if "Ubuntu" in platfromInfo:
-    for i in range(len(coreDebianPackages)):
-        ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
-                ' '+linuxSystemInstall_check+' install '+ coreDebianPackages[i]))
     if "VERSION_ID=22" in os_info_data:
         for i in range(len(coreDebianU22Packages)):
             ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
                     ' '+linuxSystemInstall_check+' install '+ coreDebianU22Packages[i]))
+    else:
+        for i in range(len(coreDebianPackages)):
+            ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
+                    ' '+linuxSystemInstall_check+' install '+ coreDebianPackages[i]))
 else:
     for i in range(len(coreRPMPackages)):
         ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
@@ -214,9 +240,14 @@ else:
 ERROR_CHECK(os.system('sudo '+sudoValidateOption))
 if runtimeInstall == 'ON':
     if "Ubuntu" in platfromInfo:
-        for i in range(len(runtimeDebianPackages)):
-            ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
-                ' '+linuxSystemInstall_check+' install '+ runtimeDebianPackages[i]))
+        if "VERSION_ID=22" in os_info_data:
+            for i in range(len(runtimeDebianU22Packages)):
+                ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
+                    ' '+linuxSystemInstall_check+' install '+ runtimeDebianU22Packages[i]))
+        else:
+            for i in range(len(runtimeDebianPackages)):
+                ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +
+                    ' '+linuxSystemInstall_check+' install '+ runtimeDebianPackages[i]))
     else:
         for i in range(len(runtimeRPMPackages)):
             ERROR_CHECK(os.system('sudo '+linuxFlag+' '+linuxSystemInstall +

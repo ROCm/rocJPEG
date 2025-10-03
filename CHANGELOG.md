@@ -3,6 +3,17 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
+## (Unreleased) rocjpeg 1.2.0
+
+## Added
+
+## Changed
+
+## Removed
+
+### Resolved issues
+* Fixed an issue where extra padding was incorrectly included when saving decoded JPEG images to files.
+
 ## rocjpeg 1.1.0 for ROCm 7.0.0
 
 ## Added

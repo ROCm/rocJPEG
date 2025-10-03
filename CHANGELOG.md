@@ -3,7 +3,7 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
-## rocjpeg 1.2.0 (unreleased)
+## (Unreleased) rocjpeg 1.2.0
 
 ## Added
 

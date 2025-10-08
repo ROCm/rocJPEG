@@ -10,7 +10,7 @@ These instructions are for building rocJPEG from its source code. If you will no
 
 .. note::
 
-  ROCm 6.3.0 or later must be installed before installing rocJPEG. See `Quick start installation guide <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html>`_ for detailed ROCm installation instructions.
+  ROCm must be installed before installing rocJPEG. See `Quick start installation guide <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html>`_ for detailed ROCm installation instructions.
 
 Use `rocJPEG-setup.py <https://github.com/ROCm/rocJPEG/blob/develop/rocJPEG-setup.py>`_ available from the rocJPEG GitHub repo to install the prerequisites:
 

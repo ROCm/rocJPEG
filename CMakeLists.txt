@@ -36,8 +36,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 set(CMAKE_CXX_EXTENSIONS ON)
 if(NOT DEFINED CMAKE_CXX_COMPILER)
-  set(CMAKE_C_COMPILER ${ROCM_PATH}/bin/amdclang)
-  set(CMAKE_CXX_COMPILER ${ROCM_PATH}/bin/amdclang++)
+  set(CMAKE_C_COMPILER ${ROCM_PATH}/lib/llvm/bin/amdclang)
+  set(CMAKE_CXX_COMPILER ${ROCM_PATH}/lib/llvm/bin/amdclang++)
 endif()
 
 # rocjpeg Version
@@ -455,11 +455,11 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
 
   cpack_add_component(runtime
                     DISPLAY_NAME "rocjpeg Runtime Package"
-		    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg library and license.txt")
+                    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg library and license.txt")
 
   cpack_add_component(dev
                     DISPLAY_NAME "rocjpeg Develop Package"
-		    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg lib, header files and samples")
+                    DESCRIPTION "High perf JPEG decode SDK for AMD GPUs. Rocjpeg lib, header files and samples")
 
   cpack_add_component(asan
                     DISPLAY_NAME "rocjpeg ASAN Package"
@@ -467,8 +467,8 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
 rocjpeg ASAN package provides rocjpeg ASAN libraries")
 
   cpack_add_component(test
-                  DISPLAY_NAME "rocjpeg Test Package"
-                  DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
+                    DISPLAY_NAME "rocjpeg Test Package"
+                    DESCRIPTION "AMD rocjpeg is a high performance JPEG decode SDK for AMD GPUs. \
 rocjpeg Test package provides rocjpeg Test Components")
 
 else()

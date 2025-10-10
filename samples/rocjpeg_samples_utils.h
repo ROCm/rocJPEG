@@ -488,6 +488,7 @@ public:
 
         uint32_t widths[ROCJPEG_MAX_COMPONENT] = {};
         uint32_t heights[ROCJPEG_MAX_COMPONENT] = {};
+        uint32_t aliged_heights[ROCJPEG_MAX_COMPONENT] = {};
 
         switch (output_format) {
             case ROCJPEG_OUTPUT_NATIVE:
@@ -567,9 +568,12 @@ public:
                 return;
         }
 
-        uint32_t channel0_size = output_image->pitch[0] * align(heights[0], mem_alignment);
-        uint32_t channel1_size = output_image->pitch[1] * align(heights[1], mem_alignment);
-        uint32_t channel2_size = output_image->pitch[2] * align(heights[2], mem_alignment);
+        aliged_heights[0] = align(heights[0], mem_alignment);
+        aliged_heights[1] = align(heights[1], mem_alignment);
+        aliged_heights[2] = align(heights[2], mem_alignment);
+        uint32_t channel0_size = output_image->pitch[0] * aliged_heights[0];
+        uint32_t channel1_size = output_image->pitch[1] * aliged_heights[1];
+        uint32_t channel2_size = output_image->pitch[2] * aliged_heights[2];
 
         uint32_t output_image_size = channel0_size + channel1_size + channel2_size;
 
@@ -583,7 +587,7 @@ public:
         fp = fopen(output_file_name.c_str(), "wb");
         if (fp) {
             // write channel0
-            if (widths[0] == output_image->pitch[0]) {
+            if (widths[0] == output_image->pitch[0] && heights[0] == aliged_heights[0]) {
                 fwrite(hst_ptr, 1, channel0_size, fp);
             } else {
                 for (int i = 0; i < heights[0]; i++) {
@@ -595,7 +599,7 @@ public:
             if (channel1_size != 0 && output_image->channel[1] != nullptr) {
                 uint8_t *channel1_hst_ptr = hst_ptr + channel0_size;
                 CHECK_HIP(hipMemcpyDtoH((void *)channel1_hst_ptr, output_image->channel[1], channel1_size));
-                if (widths[1] == output_image->pitch[1]) {
+                if (widths[1] == output_image->pitch[1] && heights[1] == aliged_heights[1]) {
                     fwrite(channel1_hst_ptr, 1, channel1_size, fp);
                 } else {
                     for (int i = 0; i < heights[1]; i++) {
@@ -608,7 +612,7 @@ public:
             if (channel2_size != 0 && output_image->channel[2] != nullptr) {
                 uint8_t *channel2_hst_ptr = hst_ptr + channel0_size + channel1_size;
                 CHECK_HIP(hipMemcpyDtoH((void *)channel2_hst_ptr, output_image->channel[2], channel2_size));
-                if (widths[2] == output_image->pitch[2]) {
+                if (widths[2] == output_image->pitch[2] && heights[2] == aliged_heights[2]) {
                     fwrite(channel2_hst_ptr, 1, channel2_size, fp);
                 } else {
                     for (int i = 0; i < heights[2]; i++) {

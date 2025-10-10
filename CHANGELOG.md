@@ -3,6 +3,15 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
+## rocjpeg 1.2.0 for ROCm 7.1.0
+
+## Changed
+* HIP meta package changed - Use hip-dev/devel to bring required hip dev deps
+
+### Resolved issues
+* Fixed an issue where extra padding was incorrectly included when saving decoded JPEG images to files.
+* Resolved a memory leak in the jpegDecode application.
+
 ## rocjpeg 1.1.0 for ROCm 7.0.0
 
 ## Added

@@ -42,7 +42,7 @@ endif()
 
 # rocjpeg Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "1.2.0")
+set(VERSION "1.3.0")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -136,6 +136,39 @@ option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support"
 find_package(HIP QUIET)
 find_package(Libva QUIET)
 find_package(Libdrm_amdgpu QUIET)
+
+# Check if lib/rocm_sysdeps/lib exists in the libdrm_amdgpu library path which indicates ROCm installation via TheRock
+set(USING_THE_ROCK OFF)
+if(LIBDRM_AMDGPU_LIBRARY)
+  string(FIND "${LIBDRM_AMDGPU_LIBRARY}" "lib/rocm_sysdeps/lib" ROCM_SYSDEPS_FOUND)
+  if(NOT ROCM_SYSDEPS_FOUND EQUAL -1)
+    set(USING_THE_ROCK ON)
+  endif()
+endif()
+
+# Find Ubuntu 22.04
+file(READ "/etc/os-release" OS_RELEASE)
+string(REGEX MATCH "22.04" UBUNTU_22_FOUND ${OS_RELEASE})
+
+# Check Libva version compatibility based on installation method and OS:
+# - Ubuntu 22.04 with standard ROCm installation: requires libva >= 1.16
+# - Other OS versions with standard ROCm: libva >= 1.8 is sufficient
+# - TheRock installation (any OS): libva >= 1.8 is sufficient
+if(UBUNTU_22_FOUND AND NOT USING_THE_ROCK)
+  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 16))
+    message("-- ${White}\tLibva Version Supported${ColourReset}")
+  else()
+    set(Libva_FOUND FALSE)
+    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+  endif()
+else()
+  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 8))
+    message("-- ${White}\tLibva Version Supported${ColourReset}")
+  else()
+    set(Libva_FOUND FALSE)
+    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+  endif()
+endif()
 
 if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
   find_package(rocprofiler-register QUIET
@@ -339,10 +372,6 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   if(DEFINED ENV{ROCM_LIBPATCH_VERSION})
     set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}.$ENV{ROCM_LIBPATCH_VERSION}")
   endif()
-
-  # Find Ubuntu 22.04 - Add libstdc++-12-dev package deps for Dev Package
-  file(READ "/etc/os-release" OS_RELEASE)
-  string(REGEX MATCH "22.04" UBUNTU_22_FOUND ${OS_RELEASE})
 
   # Set the dependent packages
   set(rocJPEG_DEBIAN_PACKAGE_LIST  "hip-runtime-amd, libva-drm2 (>= 2.16.0) | libva-amdgpu-drm2, mesa-amdgpu-va-drivers")

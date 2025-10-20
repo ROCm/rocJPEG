@@ -3,6 +3,11 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
+## (Unreleased) rocJPEG 1.3.0
+
+## Changed
+* Updated libdrm path configuration and libva version requirements for ROCm and TheRock platforms
+
 ## rocjpeg 1.2.0 for ROCm 7.1.0
 
 ## Changed

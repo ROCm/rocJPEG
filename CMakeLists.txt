@@ -258,11 +258,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
               message(STATUS "ROCm version is below the required threshold (>= 7.0.0) for reusing the interop buffer, so the compile option: ENABLE_INTEROP_BUFFER_REUSE is disabled.")
               target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_INTEROP_BUFFER_REUSE=0)
           endif()
-      else()
-          message(WARNING "Failed to parse ROCm version string: ${ROCM_VERSION_STRING}")
       endif()
-  else()
-    message(WARNING "ROCm version file not found at ${ROCM_VERSION_FILE}")
   endif()
 
   #Generate BUILD_INFO

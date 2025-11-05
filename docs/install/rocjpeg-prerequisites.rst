@@ -6,7 +6,7 @@
 rocJPEG prerequisites
 ********************************************************************
 
-rocJPEG requires ROCm running on `accelerators based on the CDNA architecture <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html>`_.
+rocJPEG requires ROCm running on `GPUs based on the CDNA architecture <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html>`_.
 
 ROCm must be installed before installing rocJPEG. See `Quick start installation guide <https://rocm.docs.amd.com/projects/install-on-linux/en/latest/install/quick-start.html>`_ for detailed ROCm installation instructions.
 
@@ -25,4 +25,4 @@ The following prerequisites are installed by the package installer. If you are b
 * Video Acceleration API (VA-API) - libva-amdgpu-dev is an AMD implementation for VA-API
 * AMD VA Drivers
 * libstdc++-12-dev for installations on Ubuntu 22.04 
-
+* HIP, specifically the ``hip-dev`` package

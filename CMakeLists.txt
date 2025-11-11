@@ -373,7 +373,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
 
   # Set the dependent packages
   set(rocJPEG_DEBIAN_PACKAGE_LIST  "hip-runtime-amd, libva-drm2 (>= 2.16.0) | libva-amdgpu-drm2, mesa-amdgpu-va-drivers")
-  set(rocJPEG_RPM_PACKAGE_LIST     "hip-runtime-amd, (libva >= 2.16.0 or libva-drm2 >= 2.16.0 or libva-amdgpu), mesa-amdgpu-va-drivers")
+  set(rocJPEG_RPM_PACKAGE_LIST     "hip-runtime-amd, (libva or libva-drm2), mesa-amdgpu-va-drivers")
   # Add rocprofiler-register dependencies
   if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
     set(rocJPEG_DEBIAN_PACKAGE_LIST "${rocJPEG_DEBIAN_PACKAGE_LIST}, rocprofiler-register")
@@ -384,7 +384,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   if(UBUNTU_22_FOUND)
     set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")
   endif()
-  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "hip-devel, (libva-devel >= 2.16.0 or libva-amdgpu-devel)")
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "hip-devel, libva-devel")
 
   # '%{?dist}' breaks manual builds on debian systems due to empty Provides
   execute_process(

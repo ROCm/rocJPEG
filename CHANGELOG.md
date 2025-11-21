@@ -3,10 +3,12 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
-## (Unreleased) rocJPEG 1.3.0
+## rocJPEG 1.3.0 for ROCm 7.2.0
 
 ## Changed
 * Updated libdrm path configuration and libva version requirements for ROCm and TheRock platforms
+* Drop `libva-amdgpu`/`libva-amdgpu-devel` use in RHEL8, use public `libva-devel` package
+* Use ROCm clang++ from `${ROCM_PATH}/lib/llvm/bin` location
 
 ## rocjpeg 1.2.0 for ROCm 7.1.0
 

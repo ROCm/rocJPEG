@@ -24,7 +24,7 @@ The following prerequisites are installed by the package installer. If you are b
 * AMD Clang++
 * AMD VA Drivers
 * libva-devel on RHEL and SLES
-* libva-dev on Ubuntu 24.04
+* libva-dev on Ubuntu 24.04 and later
 * libva-amdgpu-dev on Ubuntu 22.04 only
 * libstdc++-12-dev on Ubuntu 22.04 only
 * HIP, specifically the ``hip-dev`` package

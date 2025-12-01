@@ -102,7 +102,7 @@ if(NOT GPU_TARGETS AND NOT AMDGPU_TARGETS)
     endif()
     include(ROCMCheckTargetIds OPTIONAL RESULT_VARIABLE HAS_ROCM_CHECK_TARGET_IDS)
 
-    set(OPTIONAL_GPU_TARGETS "gfx950;gfx1200;gfx1201")
+    set(OPTIONAL_GPU_TARGETS "gfx950;gfx1151;gfx1200;gfx1201")
     if(HAS_ROCM_CHECK_TARGET_IDS)
         rocm_check_target_ids(OPTIONAL_GPU_TARGETS_AVAILABLE TARGETS ${OPTIONAL_GPU_TARGETS})
     else() # if we don't have rocm_check_target_ids, just assume the targets are available
@@ -154,19 +154,21 @@ string(REGEX MATCH "22.04" UBUNTU_22_FOUND ${OS_RELEASE})
 # - Ubuntu 22.04 with standard ROCm installation: requires libva >= 1.16
 # - Other OS versions with standard ROCm: libva >= 1.8 is sufficient
 # - TheRock installation (any OS): libva >= 1.8 is sufficient
-if(UBUNTU_22_FOUND AND NOT USING_THE_ROCK)
-  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 16))
-    message("-- ${White}\tLibva Version Supported${ColourReset}")
+if(Libva_FOUND)
+  if(UBUNTU_22_FOUND AND NOT USING_THE_ROCK)
+    if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 16))
+      message("-- ${White}\tLibva Version Supported${ColourReset}")
+    else()
+      set(Libva_FOUND FALSE)
+      message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    endif()
   else()
-    set(Libva_FOUND FALSE)
-    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
-  endif()
-else()
-  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 8))
-    message("-- ${White}\tLibva Version Supported${ColourReset}")
-  else()
-    set(Libva_FOUND FALSE)
-    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 8))
+      message("-- ${White}\tLibva Version Supported${ColourReset}")
+    else()
+      set(Libva_FOUND FALSE)
+      message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    endif()
   endif()
 endif()
 
@@ -371,7 +373,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
 
   # Set the dependent packages
   set(rocJPEG_DEBIAN_PACKAGE_LIST  "hip-runtime-amd, libva-drm2 (>= 2.16.0) | libva-amdgpu-drm2, mesa-amdgpu-va-drivers")
-  set(rocJPEG_RPM_PACKAGE_LIST     "hip-runtime-amd, (libva >= 2.16.0 or libva-drm2 >= 2.16.0 or libva-amdgpu), mesa-amdgpu-va-drivers")
+  set(rocJPEG_RPM_PACKAGE_LIST     "hip-runtime-amd, (libva or libva-drm2), mesa-amdgpu-va-drivers")
   # Add rocprofiler-register dependencies
   if(ROCJPEG_ENABLE_ROCPROFILER_REGISTER)
     set(rocJPEG_DEBIAN_PACKAGE_LIST "${rocJPEG_DEBIAN_PACKAGE_LIST}, rocprofiler-register")
@@ -382,7 +384,7 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   if(UBUNTU_22_FOUND)
     set(rocJPEG_DEBIAN_DEV_PACKAGE_LIST "${rocJPEG_DEBIAN_DEV_PACKAGE_LIST}, libstdc++-12-dev")
   endif()
-  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "hip-devel, (libva-devel >= 2.16.0 or libva-amdgpu-devel)")
+  set(rocJPEG_RPM_DEV_PACKAGE_LIST  "hip-devel, libva-devel")
 
   # '%{?dist}' breaks manual builds on debian systems due to empty Provides
   execute_process(

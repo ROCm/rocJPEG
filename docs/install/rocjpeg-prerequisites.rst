@@ -23,6 +23,8 @@ The following prerequisites are installed by the package installer. If you are b
 * CMake version 3.10 or later
 * AMD Clang++
 * AMD VA Drivers
-* libva-devel on all platforms except Ubuntu 22.04
+* libva-devel on RHEL and SLES
+* libva-dev on Ubuntu 24.04
 * libva-amdgpu-dev on Ubuntu 22.04 only
+* libstdc++-12-dev on Ubuntu 22.04 only
 * HIP, specifically the ``hip-dev`` package

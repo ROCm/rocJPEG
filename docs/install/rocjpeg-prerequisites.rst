@@ -20,9 +20,11 @@ See `Supported operating systems <https://rocm.docs.amd.com/projects/install-on-
 
 The following prerequisites are installed by the package installer. If you are building and installing using the source code, use the `rocJPEG-setup.py <https://github.com/ROCm/rocJPEG/blob/develop/rocJPEG-setup.py>`_ setup script available in the rocJPEG GitHub repository to install these prerequisites. 
 
-* AMD Clang++
 * CMake version 3.10 or later
-* Video Acceleration API (VA-API) - libva-amdgpu-dev is an AMD implementation for VA-API
+* AMD Clang++
 * AMD VA Drivers
-* libstdc++-12-dev for installations on Ubuntu 22.04 
+* libva-devel on RHEL and SLES
+* libva-dev on Ubuntu 24.04 and later
+* libva-amdgpu-dev on Ubuntu 22.04 only
+* libstdc++-12-dev on Ubuntu 22.04 only
 * HIP, specifically the ``hip-dev`` package

@@ -40,7 +40,6 @@ if(NOT DEFINED CMAKE_CXX_COMPILER)
   set(CMAKE_CXX_COMPILER ${ROCM_PATH}/lib/llvm/bin/amdclang++)
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --rocm-path=${ROCM_PATH} --rocm-device-lib-path=${ROCM_PATH}/lib/llvm/amdgcn/bitcode")
 # rocjpeg Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
 set(VERSION "1.4.0")

@@ -3,8 +3,6 @@
 Documentation for rocJPEG is available at
 [https://rocm.docs.amd.com/projects/rocJPEG/en/latest/](https://rocm.docs.amd.com/projects/rocJPEG/en/latest/)
 
-## (Unreleased) rocJPEG 1.4.0
-* Added TheRock compatibility
 
 ## rocJPEG 1.3.0 for ROCm 7.2.0
 

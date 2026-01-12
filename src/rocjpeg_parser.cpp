@@ -330,7 +330,7 @@ bool RocJpegStreamParser::ParseSOS() {
 
     uint32_t num_components = stream_[2];
 
-    if (num_components > NUM_COMPONENTS - 1) {
+    if (num_components > NUM_COMPONENTS - 1 || num_components != jpeg_stream_parameters_.picture_parameter_buffer.num_components) {
         ERR("invalid number of component!")
         return false;
     }

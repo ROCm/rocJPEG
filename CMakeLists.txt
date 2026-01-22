@@ -31,6 +31,20 @@ elseif(ROCM_PATH)
 else()
   set(ROCM_PATH /opt/rocm CACHE PATH "Default ROCm installation path")
 endif()
+
+# Check if lib/rocm_sysdeps/lib exists in the ROCm path which indicates ROCm installation via TheRock
+set(USING_THE_ROCK OFF)
+if(EXISTS "${ROCM_PATH}/lib/rocm_sysdeps/lib")
+  set(USING_THE_ROCK ON)
+endif()
+
+if(USING_THE_ROCK)
+  if(NOT DEFINED ENV{HIP_DEVICE_LIB_PATH})
+    set(ENV{HIP_DEVICE_LIB_PATH} ${ROCM_PATH}/lib/llvm/amdgcn/bitcode)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "HIP_DEVICE_LIB_PATH=${ROCM_PATH}/lib/llvm/amdgcn/bitcode")
+  endif()
+endif()
+
 # Set AMD Clang as default compiler
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
@@ -42,7 +56,7 @@ endif()
 
 # rocjpeg Version
 # NOTE: package version and rocjpeg_version.h is generated with this version
-set(VERSION "1.3.0")
+set(VERSION "1.4.0")
 
 # Set Project Version and Language
 project(rocjpeg VERSION ${VERSION} LANGUAGES CXX)
@@ -102,7 +116,7 @@ if(NOT GPU_TARGETS AND NOT AMDGPU_TARGETS)
     endif()
     include(ROCMCheckTargetIds OPTIONAL RESULT_VARIABLE HAS_ROCM_CHECK_TARGET_IDS)
 
-    set(OPTIONAL_GPU_TARGETS "gfx950;gfx1200;gfx1201")
+    set(OPTIONAL_GPU_TARGETS "gfx950;gfx1151;gfx1200;gfx1201")
     if(HAS_ROCM_CHECK_TARGET_IDS)
         rocm_check_target_ids(OPTIONAL_GPU_TARGETS_AVAILABLE TARGETS ${OPTIONAL_GPU_TARGETS})
     else() # if we don't have rocm_check_target_ids, just assume the targets are available
@@ -133,18 +147,10 @@ message("-- ${White}${PROJECT_NAME} -- AMD GPU_TARGETS: ${GPU_TARGETS}${ColourRe
 # Add an option for enabling the rocprofiler-register
 option(ROCJPEG_ENABLE_ROCPROFILER_REGISTER "Enable rocprofiler-register support" ON)
 
+set (HIP_PLATFORM amd CACHE STRING "HIP platform")
 find_package(HIP QUIET)
 find_package(Libva QUIET)
 find_package(Libdrm_amdgpu QUIET)
-
-# Check if lib/rocm_sysdeps/lib exists in the libdrm_amdgpu library path which indicates ROCm installation via TheRock
-set(USING_THE_ROCK OFF)
-if(LIBDRM_AMDGPU_LIBRARY)
-  string(FIND "${LIBDRM_AMDGPU_LIBRARY}" "lib/rocm_sysdeps/lib" ROCM_SYSDEPS_FOUND)
-  if(NOT ROCM_SYSDEPS_FOUND EQUAL -1)
-    set(USING_THE_ROCK ON)
-  endif()
-endif()
 
 # Find Ubuntu 22.04
 file(READ "/etc/os-release" OS_RELEASE)
@@ -154,19 +160,21 @@ string(REGEX MATCH "22.04" UBUNTU_22_FOUND ${OS_RELEASE})
 # - Ubuntu 22.04 with standard ROCm installation: requires libva >= 1.16
 # - Other OS versions with standard ROCm: libva >= 1.8 is sufficient
 # - TheRock installation (any OS): libva >= 1.8 is sufficient
-if(UBUNTU_22_FOUND AND NOT USING_THE_ROCK)
-  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 16))
-    message("-- ${White}\tLibva Version Supported${ColourReset}")
+if(Libva_FOUND)
+  if(UBUNTU_22_FOUND AND NOT USING_THE_ROCK)
+    if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 16))
+      message("-- ${White}\tLibva Version Supported${ColourReset}")
+    else()
+      set(Libva_FOUND FALSE)
+      message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    endif()
   else()
-    set(Libva_FOUND FALSE)
-    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
-  endif()
-else()
-  if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 8))
-    message("-- ${White}\tLibva Version Supported${ColourReset}")
-  else()
-    set(Libva_FOUND FALSE)
-    message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    if((${Libva_VERSION_MAJOR} GREATER_EQUAL 1) AND (${Libva_VERSION_MINOR} GREATER_EQUAL 8))
+      message("-- ${White}\tLibva Version Supported${ColourReset}")
+    else()
+      set(Libva_FOUND FALSE)
+      message("-- ${Yellow}\tLibva Version Not Supported${ColourReset}")
+    endif()
   endif()
 endif()
 
@@ -193,9 +201,9 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   endif()
 
   # local include files
-  include_directories(api src)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/api ${CMAKE_CURRENT_SOURCE_DIR}/src)
   # source files
-  file(GLOB_RECURSE SOURCES "./src/*.cpp")
+  file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
   # rocjpeg.so
   add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
@@ -219,6 +227,10 @@ if(HIP_FOUND AND Libva_FOUND AND Libdrm_amdgpu_FOUND)
   set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
   set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+
+  if(USING_THE_ROCK)
+    set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN;$ORIGIN/rocm_sysdeps/lib" BUILD_WITH_INSTALL_RPATH TRUE)
+  endif()
 
   # rocprofiler
   if(rocprofiler-register_FOUND)

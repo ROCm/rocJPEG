@@ -44,6 +44,7 @@ project(jpegdecodebatched)
 
 list(APPEND CMAKE_PREFIX_PATH ${ROCM_PATH}/lib/cmake)
 
+set (HIP_PLATFORM amd CACHE STRING "HIP platform")
 find_package(HIP QUIET)
 find_package(rocjpeg QUIET)
 find_package(rocprofiler-register QUIET)

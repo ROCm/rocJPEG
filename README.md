@@ -2,6 +2,9 @@
 
 <p align="center"><img width="70%" src="docs/data/AMD_rocJPEG_Logo.png" /></p>
 
+> [!CAUTION]
+> The rocJPEG repository is retired, please use the [ROCm/rocm-systems](https://github.com/ROCm/rocm-systems) repository
+
 rocJPEG is a high performance JPEG decode SDK for AMD GPUs. Using the rocJPEG API, you can access the JPEG decoding features available on your GPU.
 
 >[!Note]

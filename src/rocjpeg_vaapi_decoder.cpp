@@ -399,9 +399,16 @@ RocJpegStatus RocJpegVappiDecoder::InitializeDecoder(std::string device_name, in
     ComputePartition current_compute_partition = (gpu_uuids_to_compute_partition_map_.find(gpu_uuid) != gpu_uuids_to_compute_partition_map_.end()) ? gpu_uuids_to_compute_partition_map_[gpu_uuid] : kSpx;
     GetDrmNodeOffset(device_name, device_id_, visible_devices, current_compute_partition, offset);
 
-    std::string drm_node = "/dev/dri/renderD";
-    int render_node_id = (gpu_uuids_to_render_nodes_map_.find(gpu_uuid) != gpu_uuids_to_render_nodes_map_.end()) ? gpu_uuids_to_render_nodes_map_[gpu_uuid] : 128;
-    drm_node += std::to_string(render_node_id + offset);
+    std::string drm_node;
+    auto it = gpu_uuids_to_render_nodes_map_.find(gpu_uuid);
+    if (it != gpu_uuids_to_render_nodes_map_.end()) {
+        drm_node = "/dev/dri/renderD" + std::to_string(it->second + offset);
+    } else {
+        drm_node = GetFirstAvailableDrmNode();
+        if (drm_node.empty()) {
+            drm_node = "/dev/dri/renderD128";
+        }
+    }
 
     CHECK_ROCJPEG(InitVAAPI(drm_node));
     CHECK_ROCJPEG(CreateDecoderConfig());
@@ -1084,4 +1091,39 @@ void RocJpegVappiDecoder::GetGpuUuids() {
         }
         closedir(dir);
     }
+}
+
+/**
+ * @brief Returns the path of the first available DRM render node in /dev/dri.
+ *
+ * Scans /dev/dri for renderD* entries and returns the path with the lowest
+ * node number. This allows the decoder to use the device actually present
+ * (e.g. when only one device is passed into Docker via --device).
+ */
+std::string RocJpegVappiDecoder::GetFirstAvailableDrmNode() {
+    std::string dri_path = "/dev/dri";
+    DIR* dir = opendir(dri_path.c_str());
+    if (!dir) {
+        return "";
+    }
+    int min_render_id = -1;
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        std::string filename = entry->d_name;
+        if (filename.find("renderD") == 0 && filename.size() > 7) {
+            try {
+                int render_id = std::stoi(filename.substr(7));
+                if (min_render_id < 0 || render_id < min_render_id) {
+                    min_render_id = render_id;
+                }
+            } catch (...) {
+                // Ignore malformed entries
+            }
+        }
+    }
+    closedir(dir);
+    if (min_render_id < 0) {
+        return "";
+    }
+    return "/dev/dri/renderD" + std::to_string(min_render_id);
 }

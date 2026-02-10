@@ -418,8 +418,15 @@ private:
                                     int &offset);
     /**
      * @brief Retrieves GPU UUIDs and maps them to render node IDs.
-    */
+     */
     void GetGpuUuids();
+
+    /**
+     * @brief Returns the path of the first available DRM render node in /dev/dri.
+     * Used when no GPU UUID mapping exists (e.g. in Docker with a single device).
+     * @return The path (e.g. "/dev/dri/renderD176") or empty string if none found.
+     */
+    std::string GetFirstAvailableDrmNode();
 
     /**
      * @brief Retrieves the number of JPEG cores available.

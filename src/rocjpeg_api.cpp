@@ -210,6 +210,50 @@ RocJpegStatus ROCJPEGAPI rocJpegDecode(RocJpegHandle handle, RocJpegStreamHandle
 }
 
 /**
+ * @brief Submits a JPEG decode operation without waiting for output completion.
+ *
+ * rocJpegSyncSurface must be called with the same rocJPEG handle to wait for completion, write the image,
+ * release internal resources, and clear the pending asynchronous decode state.
+ */
+RocJpegStatus ROCJPEGAPI rocJpegDecodeAsync(RocJpegHandle handle, RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
+
+    if (handle == nullptr || jpeg_stream_handle == nullptr || decode_params == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
+    auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
+    try {
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->DecodeAsync(jpeg_stream_handle, decode_params, destination);
+    } catch (const std::exception& e) {
+        rocjpeg_handle->CaptureError(e.what());
+        ERR(e.what());
+        return ROCJPEG_STATUS_RUNTIME_ERROR;
+    }
+
+    return rocjpeg_status;
+}
+
+/**
+ * @brief Synchronizes an asynchronous JPEG decode surface and writes the decoded output.
+ */
+RocJpegStatus ROCJPEGAPI rocJpegSyncSurface(RocJpegHandle handle, RocJpegImage *destination) {
+    if (handle == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    RocJpegStatus rocjpeg_status = ROCJPEG_STATUS_SUCCESS;
+    auto rocjpeg_handle = static_cast<RocJpegDecoderHandle*>(handle);
+    try {
+        rocjpeg_status = rocjpeg_handle->rocjpeg_decoder->SyncSurface(destination);
+    } catch (const std::exception& e) {
+        rocjpeg_handle->CaptureError(e.what());
+        ERR(e.what());
+        return ROCJPEG_STATUS_RUNTIME_ERROR;
+    }
+
+    return rocjpeg_status;
+}
+
+/**
  * @brief Decodes a batch of JPEG images using the rocJPEG library.
  *
  * Decodes a batch of JPEG images using the specified handle, stream handles, decode parameters, and destination images.

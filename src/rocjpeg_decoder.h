@@ -27,6 +27,7 @@ THE SOFTWARE.
 #include <vector>
 #include <mutex>
 #include <queue>
+#include <memory>
 #include "../api/rocjpeg/rocjpeg.h"
 #include "rocjpeg_api_stream_handle.h"
 #include "rocjpeg_parser.h"
@@ -84,6 +85,22 @@ public:
     */
    RocJpegStatus Decode(RocJpegStreamHandle jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
+    /**
+      * @brief Submits a JPEG decode operation and stores pending state in this decoder handle.
+      * @param jpeg_stream The handle to the JPEG stream.
+      * @param decode_params The decoding parameters.
+         * @param destination Pointer to the output image.
+      * @return The status of the submit operation.
+      */
+      RocJpegStatus DecodeAsync(RocJpegStreamHandle jpeg_stream, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
+
+   /**
+    * @brief Synchronizes an asynchronous decode surface and copies/converts the output.
+   * @param destination Pointer to the destination image.
+    * @return The status of the sync operation.
+    */
+   RocJpegStatus SyncSurface(RocJpegImage *destination);
+
    /**
     * Decodes a batch of JPEG streams.
     *
@@ -100,12 +117,24 @@ public:
    RocJpegStatus DecodeBatched(RocJpegStreamHandle *jpeg_streams, int batch_size, const RocJpegDecodeParams *decode_params, RocJpegImage *destinations);
 
 private:
+   struct AsyncDecodeState {
+      VASurfaceID surface_id;
+      JpegStreamParameters jpeg_stream_params;
+      RocJpegDecodeParams decode_params;
+      RocJpegImage *destination;
+   };
+
    /**
     * @brief Initializes the HIP framework.
     * @param device_id The ID of the device to be used for HIP operations.
     * @return The status of the initialization process.
     */
    RocJpegStatus InitHIP(int device_id);
+
+   /**
+    * @brief Waits for a submitted surface and copies/converts the decoded output.
+    */
+   RocJpegStatus SyncDecodeSurface(VASurfaceID surface_id, const JpegStreamParameters *jpeg_stream_params, const RocJpegDecodeParams *decode_params, RocJpegImage *destination);
 
    /**
     * @brief Retrieves the height of the chroma channel.
@@ -175,6 +204,7 @@ private:
    std::mutex mutex_; // Mutex for thread safety
    RocJpegBackend backend_; // RocJpeg backend
    RocJpegVappiDecoder jpeg_vaapi_decoder_; // RocJpeg VAAPI decoder object
+   std::unique_ptr<AsyncDecodeState> async_decode_state_; // Pending asynchronous decode state
 };
 
 #endif //ROC_JPEG_DECODER_H_

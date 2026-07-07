@@ -26,6 +26,14 @@ RocJpegDecoder::RocJpegDecoder(RocJpegBackend backend, int device_id) :
     num_devices_{0}, device_id_ {device_id}, hip_stream_ {0}, backend_{backend} {}
 
 RocJpegDecoder::~RocJpegDecoder() {
+    if (async_decode_state_) {
+        RocJpegStatus rocjpeg_status = jpeg_vaapi_decoder_.SyncSurface(async_decode_state_->surface_id);
+        if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+            ERR("ERROR: failed to sync pending async surface during destroy!");
+        }
+        jpeg_vaapi_decoder_.SetSurfaceAsIdle(async_decode_state_->surface_id);
+        async_decode_state_.reset();
+    }
     if (hip_stream_) {
         hipError_t hip_status = hipStreamDestroy(hip_stream_);
         if (hip_status != hipSuccess) {
@@ -111,11 +119,86 @@ RocJpegStatus RocJpegDecoder::Decode(RocJpegStreamHandle jpeg_stream_handle, con
     if (jpeg_stream_handle == nullptr || decode_params == nullptr || destination == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
     }
+    if (async_decode_state_) {
+        ERR("ERROR: an asynchronous decode is already pending for this handle!");
+        return ROCJPEG_STATUS_EXECUTION_FAILED;
+    }
     auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
     const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
 
     VASurfaceID current_surface_id;
     CHECK_ROCJPEG(jpeg_vaapi_decoder_.SubmitDecode(jpeg_stream_params, current_surface_id, decode_params));
+
+    RocJpegStatus rocjpeg_status = SyncDecodeSurface(current_surface_id, jpeg_stream_params, decode_params, destination);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        jpeg_vaapi_decoder_.SetSurfaceAsIdle(current_surface_id);
+    }
+    return rocjpeg_status;
+}
+
+/**
+ * @brief Submits a JPEG decode operation and returns immediately with pending state stored in this decoder handle.
+ *
+ * The decoder handle owns the submitted VA surface until SyncSurface is called. SyncSurface waits for the
+ * surface, copies/converts the decoded output, releases the surface back to the pool, and clears the pending state.
+ */
+RocJpegStatus RocJpegDecoder::DecodeAsync(RocJpegStreamHandle jpeg_stream_handle, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (jpeg_stream_handle == nullptr || decode_params == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    if (async_decode_state_) {
+        ERR("ERROR: an asynchronous decode is already pending for this handle!");
+        return ROCJPEG_STATUS_EXECUTION_FAILED;
+    }
+
+    auto rocjpeg_stream_handle = static_cast<RocJpegStreamParserHandle*>(jpeg_stream_handle);
+    const JpegStreamParameters *jpeg_stream_params = rocjpeg_stream_handle->rocjpeg_stream->GetJpegStreamParameters();
+
+    async_decode_state_.reset(new AsyncDecodeState());
+    async_decode_state_->jpeg_stream_params = *jpeg_stream_params;
+    async_decode_state_->decode_params = *decode_params;
+    async_decode_state_->destination = destination;
+
+    RocJpegStatus rocjpeg_status = jpeg_vaapi_decoder_.SubmitDecode(&async_decode_state_->jpeg_stream_params, async_decode_state_->surface_id, &async_decode_state_->decode_params);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        async_decode_state_.reset();
+        return rocjpeg_status;
+    }
+
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Synchronizes an asynchronous decode surface and copies/converts the decoded output.
+ */
+RocJpegStatus RocJpegDecoder::SyncSurface(RocJpegImage *destination) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!async_decode_state_) {
+        ERR("ERROR: no asynchronous decode is pending for this handle!");
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    if (destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+
+    RocJpegStatus rocjpeg_status = SyncDecodeSurface(async_decode_state_->surface_id, &async_decode_state_->jpeg_stream_params, &async_decode_state_->decode_params, destination);
+    if (rocjpeg_status != ROCJPEG_STATUS_SUCCESS) {
+        jpeg_vaapi_decoder_.SetSurfaceAsIdle(async_decode_state_->surface_id);
+        async_decode_state_.reset();
+        return rocjpeg_status;
+    }
+    async_decode_state_.reset();
+    return ROCJPEG_STATUS_SUCCESS;
+}
+
+/**
+ * @brief Waits for a submitted VA surface, maps it through HIP interop, and writes the requested output.
+ */
+RocJpegStatus RocJpegDecoder::SyncDecodeSurface(VASurfaceID current_surface_id, const JpegStreamParameters *jpeg_stream_params, const RocJpegDecodeParams *decode_params, RocJpegImage *destination) {
+    if (jpeg_stream_params == nullptr || decode_params == nullptr || destination == nullptr) {
+        return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
 
     HipInteropDeviceMem hip_interop_dev_mem = {};
     CHECK_ROCJPEG(jpeg_vaapi_decoder_.SyncSurface(current_surface_id));
@@ -201,6 +284,10 @@ RocJpegStatus RocJpegDecoder::DecodeBatched(RocJpegStreamHandle *jpeg_streams, i
     std::lock_guard<std::mutex> lock(mutex_);
     if (jpeg_streams == nullptr || decode_params == nullptr || destinations == nullptr) {
         return ROCJPEG_STATUS_INVALID_PARAMETER;
+    }
+    if (async_decode_state_) {
+        ERR("ERROR: an asynchronous decode is already pending for this handle!");
+        return ROCJPEG_STATUS_EXECUTION_FAILED;
     }
 
     std::vector<VASurfaceID> current_surface_ids;
